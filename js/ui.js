@@ -286,10 +286,35 @@ function renderDispatchTab() {
           return a ? a.name : '?';
         }).join(', ');
 
+        // 파티 HP 현황
+        const partyHpHtml = activeDispatch.team.map(id => {
+          const adv = State.adventurers.find(a => a.id === id);
+          if (!adv) return '';
+          const stats = getEffectiveStats(adv);
+          const curHp = (activeDispatch.partyHp && activeDispatch.partyHp[id] !== undefined)
+            ? activeDispatch.partyHp[id] : stats.hp;
+          const hpPct = Math.max(0, Math.min(100, curHp / stats.hp * 100)).toFixed(0);
+          const hpColor = hpPct > 60 ? 'var(--green)' : hpPct > 30 ? 'var(--gold-dark)' : 'var(--red)';
+          const jobInfo = JOBS[adv.job];
+          return `<div style="flex:1;min-width:80px">
+            <div style="font-size:0.72rem;color:var(--brown-dark);margin-bottom:2px;display:flex;justify-content:space-between">
+              <span class="adv-job-badge ${jobInfo.cssClass}" style="font-size:0.6rem;padding:1px 5px">${jobInfo.name}</span>
+              <span style="font-weight:bold">${adv.name}</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:${hpPct}%;background:${hpColor}"></div>
+            </div>
+            <div style="font-size:0.65rem;color:#888;text-align:right">${Math.max(0,Math.floor(curHp))}/${stats.hp}</div>
+          </div>`;
+        }).join('');
+
+        const bossTag = activeDispatch.isBossEncounter
+          ? '<span style="font-size:0.68rem;background:#fff3e0;color:var(--orange);border:1px solid var(--orange);border-radius:6px;padding:2px 7px">⚠️ 보스</span>' : '';
+
         bodyHtml = `
           <div class="dispatch-slot active-dispatch">
-            <div class="slot-label">✅ 파견 중</div>
-            <div style="font-size:0.85rem;margin-bottom:8px">👥 ${teamNames}</div>
+            <div class="slot-label">✅ 파견 중 ${bossTag}</div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">${partyHpHtml}</div>
             <div style="font-size:0.82rem;color:#6b4c30;margin-bottom:4px">
               누적: 💰 ${accGold.toLocaleString()} 골드 · 재료 ${accMat}
             </div>
@@ -533,78 +558,115 @@ function openBattlePopup(areaId) {
   if (!dispatch) return;
   const area = AREAS.find(a => a.id === areaId);
   if (!area) return;
+  if (window._currentBattle) window._currentBattle.stop();
 
-  const allies = dispatch.team.map(id => State.adventurers.find(a => a.id === id)).filter(Boolean);
-  const isBoss = Math.random() < 0.1;
-  const monsterPool = area.monsters.filter(m => m.boss === isBoss || (!isBoss && !m.boss));
-  const count = isBoss ? 1 : Math.min(3, 1 + Math.floor(Math.random() * 3));
-  const monsters = Array.from({ length: count }, () => {
-    const pick = monsterPool[Math.floor(Math.random() * monsterPool.length)];
-    const stats = generateMonsterStats(area, dispatch.progress, isBoss);
-    return { ...stats, name: pick.name, sprite: pick.sprite };
-  });
+  // 파티 CombatUnit 생성 (저장된 HP 반영)
+  const allies = dispatch.team
+    .map(id => State.adventurers.find(a => a.id === id))
+    .filter(Boolean)
+    .map(adv => new CombatUnit(
+      { ...adv, _dispatchHp: dispatch.partyHp?.[adv.id] },
+      true
+    ));
 
-  renderBattleUI(allies, monsters);
+  // 적 그룹 생성
+  const enemies = generateEnemyGroup(area, Math.floor(dispatch.progress));
+
+  // 팝업 UI 초기 렌더
+  renderBattleUI(allies, enemies);
   openPopup('battle-popup');
 
-  const battle = new LiveBattle(allies, monsters,
+  const battle = new LiveBattle(allies, enemies,
     (b) => updateBattleUI(b),
-    (win) => {
-      setTimeout(() => {
-        document.getElementById('battle-log').innerHTML +=
-          `<div class="log-entry log-system">${win ? '🏆 승리!' : '💀 전멸...'}</div>`;
-      }, 500);
-    }
+    (win) => { /* 관람용이므로 state 변경 없음 */ }
   );
   window._currentBattle = battle;
   battle.start();
 
   document.getElementById('btn-close-battle').onclick = () => {
-    if (window._currentBattle) window._currentBattle.stop();
+    window._currentBattle?.stop();
     closePopup('battle-popup');
   };
 }
 
-function renderBattleUI(allies, monsters) {
-  const allySide = document.getElementById('battle-allies');
+function renderBattleUI(allies, enemies) {
+  const allySide  = document.getElementById('battle-allies');
   const enemySide = document.getElementById('battle-enemies');
 
-  allySide.innerHTML = allies.map(a => {
-    const st = getEffectiveStats(a);
-    return `<div class="battle-unit" id="battle-ally-${a.id}">
-      <div class="battle-unit-name">${a.name}</div>
-      <div class="battle-hp-bar"><div class="battle-hp-fill" style="width:100%" id="hp-ally-${a.id}"></div></div>
-      <div style="font-size:0.7rem;color:#888" id="hp-text-ally-${a.id}">${st.hp}/${st.hp}</div>
+  allySide.innerHTML = allies.map(u => {
+    const jobInfo = JOBS[u.job] || {};
+    return `<div class="battle-unit" id="bu-ally-${u.id}">
+      <div class="battle-unit-name">
+        <span class="adv-job-badge ${jobInfo.cssClass || ''}" style="font-size:0.58rem;padding:1px 5px">${jobInfo.name || ''}</span>
+        ${u.name}
+      </div>
+      <div class="battle-hp-bar">
+        <div class="battle-hp-fill" id="hp-ally-${u.id}" style="width:${(u.currentHp/u.maxHp*100).toFixed(0)}%"></div>
+      </div>
+      <div class="battle-unit-info" id="info-ally-${u.id}" style="font-size:0.65rem;color:#888">
+        ${Math.floor(u.currentHp)}/${u.maxHp} HP
+      </div>
     </div>`;
   }).join('');
 
-  enemySide.innerHTML = monsters.map((m, i) => `
-    <div class="battle-unit" id="battle-enemy-${i}">
-      <div class="battle-unit-name">${m.name}</div>
-      <div class="battle-hp-bar"><div class="battle-hp-fill" style="width:100%;background:var(--red)" id="hp-enemy-${i}"></div></div>
-      <div style="font-size:0.7rem;color:#888" id="hp-text-enemy-${i}">${m.hp}/${m.hp}</div>
+  enemySide.innerHTML = enemies.map((u, i) => `
+    <div class="battle-unit" id="bu-enemy-${i}">
+      <div class="battle-unit-name">
+        ${u.isBoss ? '<span style="color:var(--orange);font-weight:bold">[BOSS] </span>' : ''}${u.name}
+      </div>
+      ${u.sprite ? `<img src="${u.sprite}" alt="${u.name}" style="width:32px;height:32px;object-fit:contain;image-rendering:pixelated;display:block;margin:2px 0">` : ''}
+      <div class="battle-hp-bar">
+        <div class="battle-hp-fill" id="hp-enemy-${i}" style="width:100%;background:var(--red)"></div>
+      </div>
+      <div class="battle-unit-info" id="info-enemy-${i}" style="font-size:0.65rem;color:#888">
+        ${u.maxHp}/${u.maxHp} HP
+      </div>
     </div>`).join('');
 
-  document.getElementById('battle-log').innerHTML = '<div class="log-entry log-system">— 전투 시작! —</div>';
+  document.getElementById('battle-log').innerHTML =
+    '<div class="log-entry log-system">⚔️ — 전투 시작! —</div>';
 }
 
 function updateBattleUI(battle) {
-  for (const unit of battle.allies) {
-    const fill = document.getElementById(`hp-ally-${unit.id}`);
-    const text = document.getElementById(`hp-text-ally-${unit.id}`);
-    if (fill) fill.style.width = `${Math.max(0, unit.currentHp / unit.maxHp * 100).toFixed(1)}%`;
-    if (text) text.textContent = `${Math.max(0, unit.currentHp)}/${unit.maxHp}`;
-  }
-  for (let i = 0; i < battle.enemies.length; i++) {
-    const unit = battle.enemies[i];
+  // 아군 HP 갱신
+  battle.allies.forEach(u => {
+    const fill = document.getElementById(`hp-ally-${u.id}`);
+    const info = document.getElementById(`info-ally-${u.id}`);
+    if (fill) {
+      const pct = Math.max(0, u.currentHp / u.maxHp * 100).toFixed(1);
+      fill.style.width = pct + '%';
+      fill.style.background = pct > 60 ? 'var(--green)' : pct > 30 ? 'var(--gold-dark)' : 'var(--red)';
+    }
+    if (info) {
+      const statusIcons = [
+        u.hasStatus('stun')    ? '😵기절' : '',
+        u.hasStatus('poison')  ? '☠️독' : '',
+        u.shield > 0           ? `🛡️${u.shield}` : '',
+        u.taunting > 0         ? '🎯도발' : '',
+      ].filter(Boolean).join(' ');
+      info.innerHTML = `${Math.max(0, Math.floor(u.currentHp))}/${u.maxHp} HP${statusIcons ? ' · ' + statusIcons : ''}`;
+    }
+  });
+
+  // 적 HP 갱신
+  battle.enemies.forEach((u, i) => {
     const fill = document.getElementById(`hp-enemy-${i}`);
-    const text = document.getElementById(`hp-text-enemy-${i}`);
-    if (fill) fill.style.width = `${Math.max(0, unit.currentHp / unit.maxHp * 100).toFixed(1)}%`;
-    if (text) text.textContent = `${Math.max(0, unit.currentHp)}/${unit.maxHp}`;
-  }
+    const info = document.getElementById(`info-enemy-${i}`);
+    if (fill) fill.style.width = Math.max(0, u.currentHp / u.maxHp * 100).toFixed(1) + '%';
+    if (info) {
+      const statusIcons = [
+        u.hasStatus('stun')    ? '😵기절' : '',
+        u.hasStatus('poison')  ? '☠️독' : '',
+        u.marked               ? '🏹표식' : '',
+      ].filter(Boolean).join(' ');
+      info.innerHTML = `${Math.max(0, Math.floor(u.currentHp))}/${u.maxHp} HP${statusIcons ? ' · ' + statusIcons : ''}`;
+    }
+  });
+
+  // 로그 갱신
   const logEl = document.getElementById('battle-log');
   if (logEl) {
-    logEl.innerHTML = battle.log.slice(-30).map(l => `<div class="log-entry">${l}</div>`).join('');
+    logEl.innerHTML = battle.log.slice(-35).map(l => `<div class="log-entry">${l}</div>`).join('');
     logEl.scrollTop = logEl.scrollHeight;
   }
 }

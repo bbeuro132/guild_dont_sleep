@@ -259,13 +259,18 @@ function startDispatch(areaId, teamIds) {
     }
   }
 
-  State.dispatches.push({
+  const dispatch = {
     areaId,
     team: teamIds,
     startTime: Date.now(),
     accumulated: { gold: 0, material: 0, items: [] },
     progress: 0,
-  });
+    partyHp: {},
+    combatCooldown: 2,
+    lastBattleLog: [],
+    isBossEncounter: false,
+  };
+  State.dispatches.push(dispatch);
   showToast('파견 시작!', 'success');
   return true;
 }
@@ -295,18 +300,14 @@ function tickDispatches(deltaSeconds) {
   for (const dispatch of State.dispatches) {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
+
+    // 재화 누적
     dispatch.accumulated.gold     += area.goldPerSec * deltaSeconds;
     dispatch.accumulated.material += area.materialPerMin * (deltaSeconds / 60);
 
-    // 진행도 (4초당 1)
-    const prevProgress = dispatch.progress;
-    dispatch.progress += deltaSeconds / 4;
-    if (dispatch.progress >= area.maxProgress) {
-      dispatch.progress = area.maxProgress;
-    }
-
-    // 지역 개방 체크
-    checkAreaUnlocks();
+    // 전투 로직 (combat.js)
+    initDispatchCombat(dispatch);
+    tickDispatchCombat(dispatch, deltaSeconds);
   }
 }
 
