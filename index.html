@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>길드는 잠들지 않는다</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- 헤더 -->
+<header id="header">
+  <div id="guild-title">
+    <span class="guild-icon">⚔️</span>
+    <h1 id="guild-name">베른 모험가 길드</h1>
+  </div>
+  <div id="resources">
+    <div class="resource-chip">
+      <img src="assets/items/E_Gold01.png" alt="골드" class="res-icon" onerror="this.textContent='💰';this.style.fontSize='1rem'" />
+      <span id="gold-amount">0</span>
+      <span class="res-label">골드</span>
+    </div>
+    <div class="resource-chip">
+      <img src="assets/items/I_Crystal01.png" alt="재료" class="res-icon" onerror="this.textContent='💎';this.style.fontSize='1rem'" />
+      <span id="material-amount">0</span>
+      <span class="res-label">재료</span>
+    </div>
+    <div class="resource-chip">
+      <span style="font-size:0.85rem">⏱</span>
+      <span id="time-display">--:--:--</span>
+    </div>
+  </div>
+</header>
+
+<!-- 탭 바 -->
+<nav id="tab-bar">
+  <button class="tab-btn active" data-tab="guild">
+    <span class="tab-icon">🏰</span>
+    <span class="tab-label">길드</span>
+  </button>
+  <button class="tab-btn" data-tab="adventurer">
+    <span class="tab-icon">🗡️</span>
+    <span class="tab-label">모험가</span>
+  </button>
+  <button class="tab-btn" data-tab="dispatch">
+    <span class="tab-icon">🗺️</span>
+    <span class="tab-label">파견</span>
+  </button>
+  <button class="tab-btn" data-tab="recruit">
+    <span class="tab-icon">📜</span>
+    <span class="tab-label">모집</span>
+  </button>
+  <button class="tab-btn" data-tab="shop">
+    <span class="tab-icon">🛒</span>
+    <span class="tab-label">상점</span>
+  </button>
+</nav>
+
+<!-- 탭 콘텐츠 -->
+<main id="main-content">
+
+  <!-- 길드 탭 -->
+  <section id="tab-guild" class="tab-panel active">
+    <h2 class="panel-title">🏰 길드 인프라</h2>
+    <div id="buildings-grid"></div>
+  </section>
+
+  <!-- 모험가 탭 -->
+  <section id="tab-adventurer" class="tab-panel">
+    <h2 class="panel-title">🗡️ 모험가 목록
+      <span class="count-badge" id="adv-count">0 / 0</span>
+    </h2>
+    <div id="adv-detail-panel" class="detail-panel hidden"></div>
+    <div id="adventurer-list"></div>
+  </section>
+
+  <!-- 파견 탭 -->
+  <section id="tab-dispatch" class="tab-panel">
+    <h2 class="panel-title">🗺️ 파견 지역</h2>
+    <div id="dispatch-areas"></div>
+  </section>
+
+  <!-- 모집 탭 -->
+  <section id="tab-recruit" class="tab-panel">
+    <div id="recruit-chloe">
+      <img id="chloe-img" src="assets/characters/클로에_모험가_모집.png" alt="클로에"
+           onerror="this.style.display='none'" />
+      <div id="chloe-speech">
+        <p id="chloe-text">길드장님! 오늘도 모험가 지원서가 들어왔어요. 함께 검토해 볼까요?</p>
+      </div>
+    </div>
+    <div id="recruit-actions">
+      <div id="recruit-timer">
+        자동 갱신: <span id="recruit-countdown">--:--</span>
+      </div>
+      <button class="btn btn-gold" id="btn-refresh-recruit">
+        💰 즉시 갱신 (500 골드)
+      </button>
+    </div>
+    <div id="application-cards"></div>
+  </section>
+
+  <!-- 상점 탭 -->
+  <section id="tab-shop" class="tab-panel">
+    <div id="shop-npc">
+      <div id="shop-npc-avatar">
+        <img src="assets/characters/황금_상인.png" alt="황금의 길 상인" id="shop-npc-img" />
+        <div class="npc-name">황금의 길 상인</div>
+      </div>
+      <div id="shop-npc-bubble">
+        <p>어서오세요~ 황금의 길 최고의 상품들을 준비했답니다! 마음에 드는 게 있으면 주저 말고 말씀해 주세요. 💛</p>
+      </div>
+    </div>
+    <div id="shop-items"></div>
+  </section>
+
+</main>
+
+<!-- 전투 관람 팝업 -->
+<div id="battle-popup" class="popup hidden">
+  <div class="popup-inner">
+    <button class="popup-close" id="btn-close-battle">✕</button>
+    <h3 class="popup-title">⚔️ 전투 진행 중</h3>
+    <div id="battle-display">
+      <div id="battle-allies" class="battle-side"></div>
+      <div id="battle-vs">VS</div>
+      <div id="battle-enemies" class="battle-side"></div>
+    </div>
+    <div id="battle-log"></div>
+  </div>
+</div>
+
+<!-- 정산 팝업 -->
+<div id="settlement-popup" class="popup hidden">
+  <div class="popup-inner">
+    <button class="popup-close" id="btn-close-settlement">✕</button>
+    <div id="settlement-chloe">
+      <img src="assets/characters/모험 정산.png" alt="클로에 정산" id="settlement-img"
+           onerror="this.style.display='none'" />
+    </div>
+    <h3 class="popup-title">📋 파견 정산 보고서</h3>
+    <div id="settlement-result"></div>
+    <button class="btn btn-gold btn-full" id="btn-confirm-settlement">✅ 수령하기</button>
+  </div>
+</div>
+
+<!-- 오버레이 -->
+<div id="overlay" class="hidden"></div>
+
+<!-- 튜토리얼 오버레이 -->
+<div id="tutorial-overlay" class="hidden">
+  <div id="tutorial-highlight"></div>
+  <div id="tutorial-box">
+    <img id="tutorial-chloe" src="assets/characters/클로에 스탠딩.png" alt="클로에" />
+    <div id="tutorial-bubble">
+      <p id="tutorial-text"></p>
+      <button class="btn btn-primary" id="btn-tutorial-next">다음 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 컨테이너 -->
+<div id="toast-container"></div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
