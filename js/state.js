@@ -524,6 +524,17 @@ function equipItem(advId, inventoryIdx) {
   if (!adv) return;
   const item = State.inventory[inventoryIdx];
   if (!item || !item.slot) return;
+
+  // 무기 직업 제한 검사
+  if (item.slot === 'weapon' && item.jobClass) {
+    const advBranch = JOBS[adv.job]?.branch;
+    if (item.jobClass !== advBranch) {
+      const branchLabel = { warrior: '전사', rogue: '도적', mage: '마법사' }[item.jobClass] || item.jobClass;
+      showToast(`이 무기는 ${branchLabel} 계열 전용입니다.`, 'error');
+      return;
+    }
+  }
+
   if (adv.equipment[item.slot]) {
     State.inventory.push(adv.equipment[item.slot]);
   }
@@ -552,7 +563,7 @@ function buyShopItem(itemId) {
     State.inventory.push({ type: 'exp_book', expValue: item.expValue, name: item.name, icon: item.icon });
     showToast(`${item.name} 구매 완료!`, 'success');
   } else if (item.type === 'equipment') {
-    const eq = generateEquipment(item.slot, item.grade);
+    const eq = generateEquipment(item.slot, item.grade, item.branch || null);
     State.inventory.push(eq);
     showToast(`${eq.name} 구매 완료! (모험가 상세에서 장착)`, 'success');
   }

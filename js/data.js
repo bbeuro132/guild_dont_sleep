@@ -1004,13 +1004,30 @@ const AREAS = [
 ];
 
 // ===== 장비 템플릿 =====
+// weapon은 branch(warrior/rogue/mage)별로 구분, armor/accessory는 공용
 const EQUIPMENT_TEMPLATES = {
   weapon: {
-    names: { '일반': '낡은 검',   '마법': '강철 검',   '희귀': '은빛 검',   '영웅': '성검',        '전설': '전설의 검',   '신화': '신화의 검'    },
-    icons: { '일반': 'assets/items/W_Sword001.png', '마법': 'assets/items/W_Sword003.png',
-             '희귀': 'assets/items/W_Sword006.png', '영웅': 'assets/items/W_Sword009.png',
-             '전설': 'assets/items/W_Sword013.png', '신화': 'assets/items/W_Sword013.png' },
-    stats: { '일반': { atk: 8 }, '마법': { atk: 18 }, '희귀': { atk: 40 }, '영웅': { atk: 80 }, '전설': { atk: 160 }, '신화': { atk: 320 } },
+    warrior: {
+      names: { '일반': '낡은 검', '마법': '강철 검', '희귀': '은빛 검', '영웅': '성검', '전설': '전설의 검', '신화': '신화의 검' },
+      icons: { '일반': 'assets/items/W_Sword001.png', '마법': 'assets/items/W_Sword003.png',
+               '희귀': 'assets/items/W_Sword006.png', '영웅': 'assets/items/W_Sword009.png',
+               '전설': 'assets/items/W_Sword013.png', '신화': 'assets/items/W_Sword016.png' },
+      stats: { '일반': { atk: 8 }, '마법': { atk: 18 }, '희귀': { atk: 40 }, '영웅': { atk: 80 }, '전설': { atk: 160 }, '신화': { atk: 320 } },
+    },
+    rogue: {
+      names: { '일반': '낡은 단검', '마법': '강철 단검', '희귀': '은빛 단검', '영웅': '암살자의 단검', '전설': '전설의 단검', '신화': '신화의 단검' },
+      icons: { '일반': 'assets/items/W_Dagger001.png', '마법': 'assets/items/W_Dagger003.png',
+               '희귀': 'assets/items/W_Dagger007.png', '영웅': 'assets/items/W_Dagger010.png',
+               '전설': 'assets/items/W_Dagger014.png', '신화': 'assets/items/W_Dagger018.png' },
+      stats: { '일반': { atk: 8 }, '마법': { atk: 18 }, '희귀': { atk: 40 }, '영웅': { atk: 80 }, '전설': { atk: 160 }, '신화': { atk: 320 } },
+    },
+    mage: {
+      names: { '일반': '낡은 지팡이', '마법': '마법 지팡이', '희귀': '현자의 지팡이', '영웅': '대마법사 지팡이', '전설': '전설의 지팡이', '신화': '신화의 지팡이' },
+      icons: { '일반': 'assets/items/W_Staff01.png', '마법': 'assets/items/W_Staff02.png',
+               '희귀': 'assets/items/W_Staff04.png', '영웅': 'assets/items/W_Staff05.png',
+               '전설': 'assets/items/W_Staff07.png', '신화': 'assets/items/W_Staff08.png' },
+      stats: { '일반': { atk: 8 }, '마법': { atk: 18 }, '희귀': { atk: 40 }, '영웅': { atk: 80 }, '전설': { atk: 160 }, '신화': { atk: 320 } },
+    },
   },
   armor: {
     names: { '일반': '낡은 갑옷', '마법': '강철 갑옷', '희귀': '미스릴 갑옷', '영웅': '성기사 갑옷', '전설': '전설의 갑옷', '신화': '신화의 갑옷'  },
@@ -1073,12 +1090,21 @@ const EQUIPMENT_OPTIONS = {
   ],
 };
 
-function generateEquipment(slot, grade) {
-  const tmpl  = EQUIPMENT_TEMPLATES[slot];
+function generateEquipment(slot, grade, branch = null) {
+  let tmpl;
+  let jobClass = null;
+
+  if (slot === 'weapon') {
+    const branches = ['warrior', 'rogue', 'mage'];
+    jobClass = branch || branches[Math.floor(Math.random() * branches.length)];
+    tmpl = EQUIPMENT_TEMPLATES.weapon[jobClass];
+  } else {
+    tmpl = EQUIPMENT_TEMPLATES[slot];
+  }
+
   const gIdx  = GRADE_IDX[grade];
   const count = OPTION_COUNT[grade];
 
-  // 랜덤 옵션 추출
   const pool    = [...EQUIPMENT_OPTIONS[slot]].sort(() => Math.random() - 0.5);
   const options = pool.slice(0, count).map(opt => ({
     id:             opt.id,
@@ -1093,13 +1119,14 @@ function generateEquipment(slot, grade) {
   }));
 
   return {
-    id:      `eq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    name:    tmpl.names[grade],
+    id:       `eq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    name:     tmpl.names[grade],
     slot,
     grade,
-    icon:    tmpl.icons[grade],
-    stats:   { ...tmpl.stats[grade] },
+    icon:     tmpl.icons[grade],
+    stats:    { ...tmpl.stats[grade] },
     options,
+    jobClass, // weapon만 설정 (null = 공용)
   };
 }
 
@@ -1163,14 +1190,37 @@ const SHOP_ITEMS = [
     amount: 1,
   },
   {
-    id: 'shop_weapon_d',
-    name: '낡은 검 (일반)',
+    id: 'shop_weapon_warrior',
+    name: '낡은 검 (전사용)',
     icon: 'assets/items/W_Sword001.png',
-    desc: '공격력 +8. 모험가 상세에서 무기 슬롯에 장착.',
+    desc: '공격력 +8. 전사 계열 전용 무기.',
     price: 800,
     type: 'equipment',
     slot: 'weapon',
     grade: '일반',
+    branch: 'warrior',
+  },
+  {
+    id: 'shop_weapon_rogue',
+    name: '낡은 단검 (도적용)',
+    icon: 'assets/items/W_Dagger001.png',
+    desc: '공격력 +8. 도적 계열 전용 무기.',
+    price: 800,
+    type: 'equipment',
+    slot: 'weapon',
+    grade: '일반',
+    branch: 'rogue',
+  },
+  {
+    id: 'shop_weapon_mage',
+    name: '낡은 지팡이 (마법사용)',
+    icon: 'assets/items/W_Staff01.png',
+    desc: '공격력 +8. 마법사 계열 전용 무기.',
+    price: 800,
+    type: 'equipment',
+    slot: 'weapon',
+    grade: '일반',
+    branch: 'mage',
   },
   {
     id: 'shop_armor_d',

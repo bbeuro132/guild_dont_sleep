@@ -269,8 +269,12 @@ function renderEquipSlot(adv, slot, label) {
 
   if (item) {
     const optHtml = formatEquipOptions(item.options);
+    const jobClassTag = item.slot === 'weapon' && item.jobClass
+      ? `<div style="font-size:0.58rem;color:var(--brown);margin-bottom:1px">${{ warrior:'전사', rogue:'도적', mage:'마법사' }[item.jobClass]}계</div>`
+      : '';
     return `<div class="equip-slot has-item">
       <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'">
+      ${jobClassTag}
       <div style="font-size:0.7rem;color:var(--brown-dark);font-weight:bold">${item.name}</div>
       <div style="font-size:0.65rem;color:${gradeColor(item.grade)};font-weight:bold">${item.grade}급</div>
       <div style="font-size:0.6rem;color:#888;line-height:1.4;margin:2px 0">${formatEquipStats(item.stats)}</div>
@@ -280,10 +284,6 @@ function renderEquipSlot(adv, slot, label) {
     </div>`;
   }
 
-  const avail = State.inventory
-    .map((it, idx) => ({ it, idx }))
-    .filter(({ it }) => it.slot === slot);
-
   if (dispatched) {
     return `<div class="equip-slot">
       <div style="font-size:1.2rem">＋</div>
@@ -292,27 +292,24 @@ function renderEquipSlot(adv, slot, label) {
     </div>`;
   }
 
-  if (avail.length === 0) {
-    return `<div class="equip-slot" style="cursor:pointer" onclick="openInventoryPopup()">
-      <div style="font-size:1.2rem">＋</div>
-      <div style="font-size:0.75rem">${label}</div>
-      <div style="font-size:0.6rem;color:#bbb">없음</div>
-      <div style="font-size:0.55rem;color:var(--brown);margin-top:2px">🎒 인벤토리</div>
-    </div>`;
-  }
+  // 인벤토리에서 해당 슬롯 + 직업 호환 장비 수 계산
+  const advBranch = JOBS[adv.job]?.branch;
+  const avail = State.inventory.filter(it => {
+    if (it.slot !== slot) return false;
+    if (slot === 'weapon' && it.jobClass && it.jobClass !== advBranch) return false;
+    return true;
+  });
 
-  const options = avail.map(({ it, idx }) =>
-    `<option value="${idx}">[${it.grade}] ${it.name} — ${formatEquipStats(it.stats)}</option>`
-  ).join('');
+  // 빈 슬롯: 장착 가능 여부와 무관하게 인벤토리 팝업으로 연결
+  const countLabel = avail.length > 0
+    ? `<div style="font-size:0.62rem;color:var(--green-dark);margin-top:2px">장착 가능 ${avail.length}개</div>`
+    : `<div style="font-size:0.6rem;color:#bbb">없음</div>`;
 
-  return `<div class="equip-slot" style="gap:3px">
-    <div style="font-size:1.1rem">＋</div>
-    <div style="font-size:0.72rem;font-weight:bold">${label}</div>
-    <select style="font-size:0.6rem;width:100%;padding:2px 4px;border-radius:4px;border:1px solid var(--brown);background:var(--bg-mid);color:var(--cream);margin-top:2px"
-      onchange="if(this.value!==''){equipItem(${adv.id},parseInt(this.value));renderAdventurerTab()}">
-      <option value="">장착...</option>
-      ${options}
-    </select>
+  return `<div class="equip-slot" style="cursor:pointer" onclick="openInventoryPopup()">
+    <div style="font-size:1.2rem">＋</div>
+    <div style="font-size:0.75rem">${label}</div>
+    ${countLabel}
+    <div style="font-size:0.55rem;color:var(--brown);margin-top:2px">🎒 인벤토리</div>
   </div>`;
 }
 
@@ -937,11 +934,20 @@ function renderInventoryPopup(filter) {
   const idleAdv = State.adventurers.filter(a => !dispatched.has(a.id));
 
   // 장비 행 렌더
+  const BRANCH_LABEL = { warrior: '전사', rogue: '도적', mage: '마법사' };
   const eqRows = filtered.filter(i => i.slot).map(item => {
     const realIdx = items.indexOf(item);
-    const advOpts = idleAdv.map(a =>
+    // 무기는 직업 계열이 일치하는 모험가만 선택 가능
+    const compatAdv = idleAdv.filter(a => {
+      if (item.slot !== 'weapon' || !item.jobClass) return true;
+      return JOBS[a.job]?.branch === item.jobClass;
+    });
+    const advOpts = compatAdv.map(a =>
       `<option value="${a.id}">${a.name} (${JOBS[a.job].name})</option>`
     ).join('');
+    const jobClassTag = item.slot === 'weapon' && item.jobClass
+      ? `<span class="inv-item-slot-tag" style="color:#8b5e3c">${BRANCH_LABEL[item.jobClass]}계 전용</span>`
+      : '';
     const optHtml = formatEquipOptions(item.options);
     const sellGold = (SELL_PRICES    && SELL_PRICES[item.grade])    || 80;
     const dismMat  = (DISMANTLE_MATS && DISMANTLE_MATS[item.grade]) || 1;
@@ -956,9 +962,10 @@ function renderInventoryPopup(filter) {
           <div class="inv-item-stats">${formatEquipStats(item.stats)}</div>
           ${optHtml ? `<div class="equip-options-wrap" style="margin-top:3px">${optHtml}</div>` : ''}
           <div class="inv-item-slot-tag">${slotLabel(item.slot)}</div>
+          ${jobClassTag}
         </div>
         <div class="inv-item-action">
-          ${idleAdv.length > 0 ? `
+          ${compatAdv.length > 0 ? `
             <select id="inv-sel-${realIdx}" class="inv-adv-select">
               <option value="">모험가 선택</option>
               ${advOpts}
@@ -967,7 +974,9 @@ function renderInventoryPopup(filter) {
               onclick="equipFromInventory(${realIdx}, document.getElementById('inv-sel-${realIdx}').value)">
               장착
             </button>
-          ` : `<span class="inv-no-action">대기 중<br>모험가 없음</span>`}
+          ` : idleAdv.length > 0
+            ? `<span class="inv-no-action">호환 모험가<br>없음</span>`
+            : `<span class="inv-no-action">대기 중<br>모험가 없음</span>`}
           <div class="inv-sell-row">
             <button class="inv-sell-btn inv-sell-gold" onclick="sellEquipment(${realIdx});renderInventoryPopup()">
               💰 ${sellGold.toLocaleString()}
