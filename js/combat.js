@@ -662,24 +662,23 @@ class CombatUnit {
 }
 
 // ===== 몬스터 그룹 생성 =====
-// 난이도 구조: 국가 경계(5단계마다) ×5 급등 + 국가 내 단계당 ×1.2 완만 성장
-// HP = 8 × diff × progMult × bossMult  (팀 최대 3명 기준 조율)
-// ATK = 2.5 × sqrt(diff) × progMult    (제곱근 성장 → 고단계에서 즉사 방지)
-// DEF = 2 × s^1.1 × progMult           (단계 직접 참조 → 방어 수치 선형 봉쇄)
+// 난이도 구조: 단계 기반 멱함수 스케일링 (diff 지수폭증 제거)
+// HP  = 80 × s^1.15 × progMult × hpMult   (1단계 HP≈80, 40단계≈6300)
+// ATK = 8  × s^0.65 × progMult × atkMult  (1단계 ATK≈8, 40단계≈66)
+// DEF = 2  × s^0.8  × progMult            (1단계 DEF≈2, 40단계≈35)
+// 보스: HP ×3.0 / ATK ×1.5 (더 단단하지만 공격력은 소폭 증가)
 function generateEnemyGroup(area, progress) {
-  const isBoss    = Math.random() < 0.08;
-  const s         = area.stage;
-  const nationIdx = Math.floor((s - 1) / 5);   // 0=베른 ~ 7=미지의영역
-  const withinPos = (s - 1) % 5;               // 0~4: 국가 내 단계 위치
-  const diff      = Math.pow(5.0, nationIdx) * Math.pow(1.2, withinPos);
-  const progMult  = 1 + (progress / area.maxProgress) * 1.5;
-  const bossMult  = isBoss ? 2.5 : 1;
+  const isBoss   = Math.random() < 0.08;
+  const s        = area.stage;
+  const progMult = 1 + (progress / area.maxProgress) * 1.0;
+  const hpMult   = isBoss ? 3.0 : 1;
+  const atkMult  = isBoss ? 1.5 : 1;
 
   const makeMonster = (m, isBoss) => {
-    const hp  = Math.floor(8   * diff * progMult * bossMult);
-    const atk = Math.floor(2.5 * Math.sqrt(diff) * progMult * bossMult);
-    const def = Math.floor(2   * Math.pow(s, 1.1) * progMult);
-    const spd = Math.floor(6   * Math.pow(s, 0.5) + 4);
+    const hp  = Math.floor(80  * Math.pow(s, 1.15) * progMult * hpMult);
+    const atk = Math.floor(8   * Math.pow(s, 0.65) * progMult * atkMult);
+    const def = Math.floor(2   * Math.pow(s, 0.8)  * progMult);
+    const spd = Math.floor(5   * Math.pow(s, 0.3)  + 6);
     return new CombatUnit({
       name: m.name, sprite: m.sprite,
       isBoss, maxHp: hp, atk, def, spd, crit: isBoss ? 18 : 8, critDmg: isBoss ? 190 : 150,

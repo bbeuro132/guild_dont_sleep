@@ -280,11 +280,20 @@ function renderEquipSlot(adv, slot, label) {
     .map((it, idx) => ({ it, idx }))
     .filter(({ it }) => it.slot === slot);
 
-  if (avail.length === 0 || dispatched) {
+  if (dispatched) {
     return `<div class="equip-slot">
       <div style="font-size:1.2rem">＋</div>
       <div style="font-size:0.75rem">${label}</div>
-      <div style="font-size:0.6rem;color:#bbb">${dispatched ? '파견 중' : '없음'}</div>
+      <div style="font-size:0.6rem;color:#bbb">파견 중</div>
+    </div>`;
+  }
+
+  if (avail.length === 0) {
+    return `<div class="equip-slot" style="cursor:pointer" onclick="openInventoryPopup()">
+      <div style="font-size:1.2rem">＋</div>
+      <div style="font-size:0.75rem">${label}</div>
+      <div style="font-size:0.6rem;color:#bbb">없음</div>
+      <div style="font-size:0.55rem;color:var(--brown);margin-top:2px">🎒 인벤토리</div>
     </div>`;
   }
 
@@ -394,9 +403,14 @@ function renderDispatchTab() {
         </div>`
       ).join('');
 
-      const progressVal = activeDispatch
-        ? Math.floor(activeDispatch.progress)
-        : (State.areaProgress[area.id] || 0);
+      const bestProgress = State.areaProgress[area.id] || 0;
+      const progressSpan = area.unlocked
+        ? (activeDispatch
+            ? `<span class="area-progress">진행도 ${Math.floor(activeDispatch.progress)}/${area.maxProgress}</span>`
+            : bestProgress > 0
+              ? `<span class="area-progress" style="opacity:0.6">최고 ${bestProgress}/${area.maxProgress}</span>`
+              : `<span class="area-progress" style="opacity:0.35">-/${area.maxProgress}</span>`)
+        : `<span class="area-lock-info">🔒 ${area.unlockDesc}</span>`;
 
       let bodyHtml = '';
       if (area.unlocked) {
@@ -501,9 +515,7 @@ function renderDispatchTab() {
             ${activeDispatch ? '<span style="font-size:0.7rem;background:#e8f5e9;color:#388e3c;border-radius:6px;padding:2px 7px;border:1px solid #388e3c">파견 중</span>' : ''}
           </div>
           <div class="area-header-right">
-            ${area.unlocked
-              ? `<span class="area-progress">진행도 ${progressVal}/${area.maxProgress}</span>`
-              : `<span class="area-lock-info">🔒 ${area.unlockDesc}</span>`}
+            ${progressSpan}
             <span class="area-arrow" id="area-arrow-${area.id}">${isAreaOpen ? '▲' : '▼'}</span>
           </div>
         </div>
