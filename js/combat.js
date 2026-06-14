@@ -880,8 +880,21 @@ function tickDispatchCombat(dispatch, delta) {
       const pool = GRADE_POOLS[stageIdx];
       const grade = pool[Math.floor(Math.random() * pool.length)];
       const eq = generateEquipment(slot, grade);
-      State.inventory.push(eq);
-      showToast(`⚔️ 장비 획득: ${eq.name} (${eq.grade}급)`, 'success');
+      if (State.inventory.length < getInventoryCapacity()) {
+        State.inventory.push(eq);
+        showToast(`⚔️ 장비 획득: ${eq.name} (${eq.grade}급)`, 'success');
+      } else {
+        // 창고 가득 - 자동 골드 전환
+        const autoSellGold = SELL_PRICES?.[grade] || 80;
+        addGold(autoSellGold);
+        showToast(`📦 창고 가득! ${eq.name} 자동 판매 (+${autoSellGold.toLocaleString()}G)`, 'info');
+      }
+    }
+
+    // 파견 EXP: 전투 승리 시 모험가에게 소량 경험치
+    const battleExp = Math.floor(Math.sqrt(area.stage) * 2 * (isBossFight ? 3 : 1));
+    for (const adv of advList) {
+      giveExp(adv.id, battleExp);
     }
 
     // 최대 진행도 도달 시 재시작

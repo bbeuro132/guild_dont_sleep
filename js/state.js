@@ -296,6 +296,10 @@ function getMaxDispatchSlots() {
   return getBuildingLevel('headquarters');
 }
 
+function getInventoryCapacity() {
+  return getBuildingLevel('warehouse') * 5 + 10;
+}
+
 function startDispatch(areaId, teamIds) {
   if (teamIds.length === 0) { showToast('팀원을 1명 이상 선택하세요.', 'error'); return false; }
   if (teamIds.length > 3)   { showToast('팀원은 최대 3명입니다.', 'error'); return false; }
@@ -563,6 +567,11 @@ function buyShopItem(itemId) {
     State.inventory.push({ type: 'exp_book', expValue: item.expValue, name: item.name, icon: item.icon });
     showToast(`${item.name} 구매 완료!`, 'success');
   } else if (item.type === 'equipment') {
+    if (State.inventory.length >= getInventoryCapacity()) {
+      showToast('창고가 가득 찼습니다. 창고를 업그레이드하거나 아이템을 정리하세요.', 'error');
+      addGold(item.price); // 골드 환불
+      return false;
+    }
     const eq = generateEquipment(item.slot, item.grade, item.branch || null);
     State.inventory.push(eq);
     showToast(`${eq.name} 구매 완료! (모험가 상세에서 장착)`, 'success');

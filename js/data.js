@@ -1051,19 +1051,40 @@ const EQUIPMENT_TEMPLATES = {
 const GRADE_IDX   = { '일반': 0, '마법': 1, '희귀': 2, '영웅': 3, '전설': 4, '신화': 5 };
 const OPTION_COUNT = { '일반': 0, '마법': 1, '희귀': 1, '영웅': 2, '전설': 3, '신화': 4 };
 
+// 무기 옵션은 계열(branch)별로 구분
+const _W_COMMON = [
+  { id: 'w_crit_rate',  name: '치명타 확률',   type: 'stat',     stat: 'crit',    values: [3,4,6,9,13,18],    desc: v => `치명타 +${v}%` },
+  { id: 'w_crit_dmg',  name: '치명타 데미지', type: 'stat',     stat: 'critDmg', values: [10,15,22,32,45,65], desc: v => `치명타 배율 +${v}%` },
+  { id: 'w_atk_pct',   name: '공격력 강화',   type: 'stat_pct', stat: 'atk',     values: [5,7,10,15,22,32],   desc: v => `공격력 +${v}%` },
+  { id: 'w_first_crit',name: '선제 치명타',   type: 'battle',   effect: 'firstStrikeCrit', values: [1,1,1,1,1,1], desc: () => `첫 공격 치명타 확정` },
+  { id: 'w_def_break', name: '방어 감소',     type: 'battle',   effect: 'defBreak',        values: [20,25,30,40,50,65], desc: v => `방어 감소 ${v}%` },
+  { id: 'w_all_pct',   name: '전능력치 강화', type: 'stat_pct', stat: 'all',     values: [2,3,5,7,10,15],    desc: v => `전능력치 +${v}%` },
+];
+
 const EQUIPMENT_OPTIONS = {
-  weapon: [
-    { id: 'w_crit_rate',    name: '치명타 확률',    type: 'stat',     stat: 'crit',              values: [3,4,6,9,13,18],     desc: v => `치명타 +${v}%` },
-    { id: 'w_crit_dmg',     name: '치명타 데미지',  type: 'stat',     stat: 'critDmg',           values: [10,15,22,32,45,65],  desc: v => `치명타 배율 +${v}%` },
-    { id: 'w_atk_pct',      name: '공격력 강화',    type: 'stat_pct', stat: 'atk',               values: [5,7,10,15,22,32],    desc: v => `공격력 +${v}%` },
-    { id: 'w_armor_pierce', name: '방어력 무시',    type: 'battle',   effect: 'armorPierce',     values: [10,15,20,30,42,60],  desc: v => `방어 무시 ${v}%` },
-    { id: 'w_bleed',        name: '출혈',            type: 'battle',   effect: 'bleed',           values: [15,20,25,32,40,55],  desc: v => `출혈 부여 ${v}%` },
-    { id: 'w_first_crit',   name: '선제 치명타',    type: 'battle',   effect: 'firstStrikeCrit', values: [1,1,1,1,1,1],        desc: () => `첫 공격 치명타 확정` },
-    { id: 'w_double_atk',   name: '연속 공격',      type: 'battle',   effect: 'doubleAttack',    values: [10,12,16,22,30,42],  desc: v => `연속공격 ${v}%` },
-    { id: 'w_hp_scale',     name: '체력 비례 피해', type: 'battle',   effect: 'hpScaleDmg',      values: [3,4,6,9,13,18],      desc: v => `HP비례 추가피해 +${v}%` },
-    { id: 'w_def_break',    name: '방어 감소',      type: 'battle',   effect: 'defBreak',        values: [20,25,30,40,50,65],  desc: v => `방어 감소 ${v}%` },
-    { id: 'w_all_pct',      name: '전능력치 강화',  type: 'stat_pct', stat: 'all',               values: [2,3,5,7,10,15],      desc: v => `전능력치 +${v}%` },
-  ],
+  weapon: {
+    warrior: [
+      ..._W_COMMON,
+      { id: 'w_armor_pierce', name: '방어력 무시',    type: 'battle', effect: 'armorPierce',  values: [10,15,20,30,42,60], desc: v => `방어 무시 ${v}%` },
+      { id: 'w_bleed',        name: '출혈',            type: 'battle', effect: 'bleed',        values: [15,20,25,32,40,55], desc: v => `출혈 부여 ${v}%` },
+      { id: 'w_double_atk',   name: '연속 공격',      type: 'battle', effect: 'doubleAttack', values: [10,12,16,22,30,42], desc: v => `연속공격 ${v}%` },
+      { id: 'w_hp_scale',     name: '체력 비례 피해', type: 'battle', effect: 'hpScaleDmg',   values: [3,4,6,9,13,18],    desc: v => `HP비례 추가피해 +${v}%` },
+    ],
+    rogue: [
+      ..._W_COMMON,
+      { id: 'w_armor_pierce', name: '방어력 무시',    type: 'battle', effect: 'armorPierce',  values: [10,15,20,30,42,60], desc: v => `방어 무시 ${v}%` },
+      { id: 'w_bleed',        name: '출혈',            type: 'battle', effect: 'bleed',        values: [15,20,25,32,40,55], desc: v => `출혈 부여 ${v}%` },
+      { id: 'w_double_atk',   name: '연속 공격',      type: 'battle', effect: 'doubleAttack', values: [10,12,16,22,30,42], desc: v => `연속공격 ${v}%` },
+      { id: 'w_hp_scale',     name: '체력 비례 피해', type: 'battle', effect: 'hpScaleDmg',   values: [3,4,6,9,13,18],    desc: v => `HP비례 추가피해 +${v}%` },
+    ],
+    mage: [
+      ..._W_COMMON,
+      { id: 'w_spd',      name: '시전 속도',     type: 'stat',     stat: 'spd',     values: [2,4,6,9,13,18],    desc: v => `속도 +${v}` },
+      { id: 'w_hp_pct',   name: '마력 체력',     type: 'stat_pct', stat: 'hp',      values: [4,6,9,13,18,26],   desc: v => `체력 +${v}%` },
+      { id: 'w_crit_spd', name: '치명 시전',     type: 'stat',     stat: 'crit',    values: [5,7,10,14,20,28],  desc: v => `치명타 +${v}%` },
+      { id: 'w_mag_pen',  name: '마법 관통',     type: 'battle',   effect: 'armorPierce', values: [15,20,28,38,50,65], desc: v => `방어 무시 ${v}%` },
+    ],
+  },
   armor: [
     { id: 'a_dmg_reduce',  name: '피해 감소',    type: 'battle',     effect: 'damageReduction', values: [5,7,10,14,20,28],    desc: v => `피해 감소 ${v}%` },
     { id: 'a_hp_pct',      name: '체력 강화',    type: 'stat_pct',   stat: 'hp',                values: [8,12,17,24,35,50],   desc: v => `체력 +${v}%` },
@@ -1105,7 +1126,8 @@ function generateEquipment(slot, grade, branch = null) {
   const gIdx  = GRADE_IDX[grade];
   const count = OPTION_COUNT[grade];
 
-  const pool    = [...EQUIPMENT_OPTIONS[slot]].sort(() => Math.random() - 0.5);
+  const optPool = slot === 'weapon' ? EQUIPMENT_OPTIONS.weapon[jobClass] : EQUIPMENT_OPTIONS[slot];
+  const pool    = [...optPool].sort(() => Math.random() - 0.5);
   const options = pool.slice(0, count).map(opt => ({
     id:             opt.id,
     name:           opt.name,
