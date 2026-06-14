@@ -218,14 +218,18 @@ function renderAdvDetail(advId) {
       </div>
     </div>
     ${(() => {
-      const expBooks = State.inventory
-        .map((item, idx) => ({ ...item, _idx: idx }))
-        .filter(item => item.type === 'exp_book');
-      if (expBooks.length === 0) return '';
-      const btnHtml = expBooks.map(item =>
+      const bookCount = State.inventory.filter(i => i.type === 'exp_book').length;
+      if (bookCount === 0) return '';
+      const bookMap = {};
+      State.inventory.forEach((item, idx) => {
+        if (item.type !== 'exp_book') return;
+        if (!bookMap[item.name]) bookMap[item.name] = { item, count: 0 };
+        bookMap[item.name].count++;
+      });
+      const btnHtml = Object.values(bookMap).map(({ item, count }) =>
         `<button class="btn btn-gold" style="font-size:0.75rem;padding:4px 10px"
-          onclick="useExpBook(${adv.id}, ${item._idx}); renderAdventurerTab()">
-          📚 ${item.name} (+${item.expValue} XP)
+          onclick="useExpBookByName(${adv.id}, '${item.name}')">
+          📚 ${item.name}${count > 1 ? ` ×${count}` : ''} (+${item.expValue.toLocaleString()} XP)
         </button>`
       ).join('');
       return `<div style="margin-bottom:10px">
@@ -923,69 +927,90 @@ function renderInventoryPopup(filter) {
   const dispatched = getDispatchedAdvIds();
   const idleAdv = State.adventurers.filter(a => !dispatched.has(a.id));
 
-  const itemsHtml = filtered.length === 0
-    ? `<div class="empty-state" style="padding:24px 0">
-        <div class="empty-icon">📦</div>
-        <p>아이템이 없습니다.</p>
-       </div>`
-    : filtered.map(item => {
-        const realIdx = items.indexOf(item);
-        if (item.slot) {
-          const advOpts = idleAdv.map(a =>
-            `<option value="${a.id}">${a.name} (${JOBS[a.job].name})</option>`
-          ).join('');
-          const optHtml = formatEquipOptions(item.options);
-          return `
-            <div class="inv-item-row">
-              <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
-              <div class="inv-item-info">
-                <div class="inv-item-name">
-                  ${item.name}
-                  <span style="color:${gradeColor(item.grade)};font-weight:bold;margin-left:4px">${item.grade}급</span>
-                </div>
-                <div class="inv-item-stats">${formatEquipStats(item.stats)}</div>
-                ${optHtml ? `<div class="equip-options-wrap" style="margin-top:3px">${optHtml}</div>` : ''}
-                <div class="inv-item-slot-tag">${slotLabel(item.slot)}</div>
-              </div>
-              <div class="inv-item-action">
-                ${idleAdv.length > 0 ? `
-                  <select id="inv-sel-${realIdx}" class="inv-adv-select">
-                    <option value="">모험가 선택</option>
-                    ${advOpts}
-                  </select>
-                  <button class="btn btn-primary inv-action-btn"
-                    onclick="equipFromInventory(${realIdx}, document.getElementById('inv-sel-${realIdx}').value)">
-                    장착
-                  </button>
-                ` : `<span class="inv-no-action">대기 중<br>모험가 없음</span>`}
-              </div>
-            </div>`;
-        } else {
-          const advOpts = State.adventurers.map(a =>
-            `<option value="${a.id}">${a.name} Lv.${a.level}</option>`
-          ).join('');
-          return `
-            <div class="inv-item-row">
-              <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
-              <div class="inv-item-info">
-                <div class="inv-item-name">${item.name}</div>
-                <div class="inv-item-stats" style="color:var(--green-dark)">경험치 +${item.expValue}</div>
-              </div>
-              <div class="inv-item-action">
-                ${State.adventurers.length > 0 ? `
-                  <select id="inv-sel-${realIdx}" class="inv-adv-select">
-                    <option value="">모험가 선택</option>
-                    ${advOpts}
-                  </select>
-                  <button class="btn btn-gold inv-action-btn"
-                    onclick="useBookFromInventory(${realIdx}, document.getElementById('inv-sel-${realIdx}').value)">
-                    사용
-                  </button>
-                ` : `<span class="inv-no-action">모험가 없음</span>`}
-              </div>
-            </div>`;
-        }
-      }).join('');
+  // 장비 행 렌더
+  const eqRows = filtered.filter(i => i.slot).map(item => {
+    const realIdx = items.indexOf(item);
+    const advOpts = idleAdv.map(a =>
+      `<option value="${a.id}">${a.name} (${JOBS[a.job].name})</option>`
+    ).join('');
+    const optHtml = formatEquipOptions(item.options);
+    const sellGold = (SELL_PRICES    && SELL_PRICES[item.grade])    || 80;
+    const dismMat  = (DISMANTLE_MATS && DISMANTLE_MATS[item.grade]) || 1;
+    return `
+      <div class="inv-item-row">
+        <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
+        <div class="inv-item-info">
+          <div class="inv-item-name">
+            ${item.name}
+            <span style="color:${gradeColor(item.grade)};font-weight:bold;margin-left:4px">${item.grade}급</span>
+          </div>
+          <div class="inv-item-stats">${formatEquipStats(item.stats)}</div>
+          ${optHtml ? `<div class="equip-options-wrap" style="margin-top:3px">${optHtml}</div>` : ''}
+          <div class="inv-item-slot-tag">${slotLabel(item.slot)}</div>
+        </div>
+        <div class="inv-item-action">
+          ${idleAdv.length > 0 ? `
+            <select id="inv-sel-${realIdx}" class="inv-adv-select">
+              <option value="">모험가 선택</option>
+              ${advOpts}
+            </select>
+            <button class="btn btn-primary inv-action-btn"
+              onclick="equipFromInventory(${realIdx}, document.getElementById('inv-sel-${realIdx}').value)">
+              장착
+            </button>
+          ` : `<span class="inv-no-action">대기 중<br>모험가 없음</span>`}
+          <div class="inv-sell-row">
+            <button class="inv-sell-btn inv-sell-gold" onclick="sellEquipment(${realIdx});renderInventoryPopup()">
+              💰 ${sellGold.toLocaleString()}
+            </button>
+            <button class="inv-sell-btn inv-sell-mat" onclick="dismantleEquipment(${realIdx});renderInventoryPopup()">
+              🔧+${dismMat}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // 경험치 서 — 같은 이름끼리 묶어서 스택 표시
+  const bookMap = {};
+  filtered.filter(i => i.type === 'exp_book').forEach(item => {
+    if (!bookMap[item.name]) bookMap[item.name] = { item, count: 0 };
+    bookMap[item.name].count++;
+  });
+  const bookRows = Object.values(bookMap).map(({ item, count }) => {
+    const advOpts = State.adventurers.map(a =>
+      `<option value="${a.id}">${a.name} Lv.${a.level}</option>`
+    ).join('');
+    const safeKey = item.name.replace(/[\[\] ]/g, '_');
+    return `
+      <div class="inv-item-row">
+        <div style="position:relative;flex-shrink:0">
+          <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
+          ${count > 1 ? `<span class="inv-stack-badge">${count}</span>` : ''}
+        </div>
+        <div class="inv-item-info">
+          <div class="inv-item-name">${item.name}</div>
+          <div class="inv-item-stats" style="color:var(--green-dark)">경험치 +${item.expValue.toLocaleString()}</div>
+        </div>
+        <div class="inv-item-action">
+          ${State.adventurers.length > 0 ? `
+            <select id="inv-bsel-${safeKey}" class="inv-adv-select">
+              <option value="">모험가 선택</option>
+              ${advOpts}
+            </select>
+            <button class="btn btn-gold inv-action-btn"
+              onclick="useBookByName('${item.name}', document.getElementById('inv-bsel-${safeKey}').value)">
+              사용 (${count}개)
+            </button>
+          ` : `<span class="inv-no-action">모험가 없음</span>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  const itemsHtml = (eqRows + bookRows) || `<div class="empty-state" style="padding:24px 0">
+      <div class="empty-icon">📦</div>
+      <p>아이템이 없습니다.</p>
+     </div>`;
 
   document.getElementById('inventory-content').innerHTML = `
     <div class="inv-filter-tabs">
@@ -1016,6 +1041,22 @@ function useBookFromInventory(inventoryIdx, advIdStr) {
   useExpBook(parseInt(advIdStr), inventoryIdx);
   updateInvBadge();
   renderInventoryPopup();
+}
+
+function useBookByName(bookName, advIdStr) {
+  if (!advIdStr) { showToast('모험가를 선택하세요.', 'error'); return; }
+  const idx = State.inventory.findIndex(i => i.type === 'exp_book' && i.name === bookName);
+  if (idx === -1) { showToast('해당 경험치 서를 찾을 수 없습니다.', 'error'); return; }
+  useExpBook(parseInt(advIdStr), idx);
+  updateInvBadge();
+  renderInventoryPopup();
+}
+
+function useExpBookByName(advId, bookName) {
+  const idx = State.inventory.findIndex(i => i.type === 'exp_book' && i.name === bookName);
+  if (idx === -1) { showToast('해당 경험치 서를 찾을 수 없습니다.', 'error'); return; }
+  useExpBook(advId, idx);
+  renderAdventurerTab();
 }
 
 function updateInvBadge() {

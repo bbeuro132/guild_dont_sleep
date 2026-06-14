@@ -1602,6 +1602,52 @@ body {
   line-height: 1.4;
 }
 
+.inv-stack-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  background: var(--brown-dark);
+  color: var(--cream);
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.inv-sell-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.inv-sell-btn {
+  flex: 1;
+  font-size: 0.6rem !important;
+  padding: 3px 2px !important;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+.inv-sell-gold {
+  background: #4e342e;
+  color: #ffe0b2;
+}
+
+.inv-sell-gold:hover { background: #6d4c41; }
+
+.inv-sell-mat {
+  background: #1b5e20;
+  color: #c8e6c9;
+}
+
+.inv-sell-mat:hover { background: #2e7d32; }
+
 /* 반응형 */
 @media (max-width: 480px) {
   #header { padding: 8px 12px; }

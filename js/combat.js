@@ -822,9 +822,15 @@ function tickDispatchCombat(dispatch, delta) {
     // 진행도 +1
     dispatch.progress = Math.min(dispatch.progress + 1, area.maxProgress);
 
-    // 장비 드롭 (스테이지·보스 여부에 따른 확률)
+    // 몬스터 처치 즉시 골드 보너스 (#9)
     const isBossFight = enemies.some(e => e.isBoss);
-    const dropChance = 0.05 + area.stage * 0.01 + (isBossFight ? 0.10 : 0);
+    const killGold = Math.floor(enemies.length * area.stage * 1.5 * (isBossFight ? 2 : 1));
+    const killMat  = isBossFight ? area.stage * 0.2 : area.stage * 0.04;
+    dispatch.accumulated.gold     += killGold;
+    dispatch.accumulated.material += killMat;
+
+    // 장비 드롭 (드롭률 하향 조정 #3)
+    const dropChance = 0.02 + area.stage * 0.005 + (isBossFight ? 0.08 : 0);
     if (Math.random() < dropChance) {
       const SLOTS = ['weapon', 'armor', 'accessory'];
       const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];

@@ -126,8 +126,8 @@ const AREAS = [
       { name: '곰 (보스)',     sprite: 'assets/monsters/animals/bear.png', boss: true },
       { name: '와르그 (보스)', sprite: 'assets/monsters/animals/warg.png', boss: true },
     ],
-    goldPerSec: 2,
-    materialPerMin: 0.5,
+    goldPerSec: 5,
+    materialPerMin: 1.5,
   },
   {
     id: 'mine',
@@ -148,8 +148,8 @@ const AREAS = [
       { name: '거대 전갈 (보스)',   sprite: 'assets/monsters/animals/giant_scorpion.png', boss: true },
       { name: '암석 지렁이 (보스)', sprite: 'assets/monsters/animals/lava_worm.png',      boss: true },
     ],
-    goldPerSec: 5,
-    materialPerMin: 1.5,
+    goldPerSec: 12,
+    materialPerMin: 3.5,
   },
   {
     id: 'mountain',

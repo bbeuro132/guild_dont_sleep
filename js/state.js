@@ -101,11 +101,17 @@ function processOfflineProgress() {
 
     const gold = area.goldPerSec * elapsed;
     const mat  = area.materialPerMin * (elapsed / 60);
-    totalGold += gold;
-    totalMat  += mat;
 
-    dispatch.accumulated.gold     += gold;
-    dispatch.accumulated.material += mat;
+    // 오프라인 처치 보너스 (전투 1회당 4초, 평균 2명 처치 기준)
+    const battles    = Math.floor(elapsed / 4);
+    const killGold   = battles * area.stage * 2 * 1.5;
+    const killMat    = battles * area.stage * 0.04;
+
+    totalGold += gold + killGold;
+    totalMat  += mat  + killMat;
+
+    dispatch.accumulated.gold     += gold + killGold;
+    dispatch.accumulated.material += mat  + killMat;
 
     // 진행도 누적 (대략 4초당 1진행도)
     const progressGain = Math.floor(elapsed / 4);
@@ -119,8 +125,8 @@ function processOfflineProgress() {
     areaResults.push({
       name: area.name,
       icon: area.icon,
-      gold: Math.floor(gold),
-      mat:  Math.floor(mat),
+      gold: Math.floor(gold + killGold),
+      mat:  Math.floor(mat  + killMat),
       progressFrom: prevProgress,
       progressTo:   Math.floor(dispatch.progress),
       maxProgress:  area.maxProgress,
@@ -542,6 +548,30 @@ function buyShopItem(itemId) {
     showToast(`${eq.name} 구매 완료! (모험가 상세에서 장착)`, 'success');
   }
   return true;
+}
+
+// ===== 장비 판매 / 분해 =====
+const SELL_PRICES    = { '일반': 80, '마법': 350, '희귀': 1500, '영웅': 6000, '전설': 25000, '신화': 100000 };
+const DISMANTLE_MATS = { '일반': 1,  '마법': 3,   '희귀': 10,   '영웅': 30,   '전설': 100,   '신화': 350 };
+
+function sellEquipment(idx) {
+  const item = State.inventory[idx];
+  if (!item || !item.slot) return;
+  const gold = SELL_PRICES[item.grade] || 80;
+  State.inventory.splice(idx, 1);
+  addGold(gold);
+  saveState();
+  showToast(`${item.name} 판매 → 💰 ${gold.toLocaleString()} 골드`, 'success');
+}
+
+function dismantleEquipment(idx) {
+  const item = State.inventory[idx];
+  if (!item || !item.slot) return;
+  const mat = DISMANTLE_MATS[item.grade] || 1;
+  State.inventory.splice(idx, 1);
+  addMaterial(mat);
+  saveState();
+  showToast(`${item.name} 분해 → 💎 재료 ${mat}`, 'success');
 }
 
 // ===== 현재 파견 중인 모험가 ID 집합 =====
