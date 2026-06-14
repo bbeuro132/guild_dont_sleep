@@ -295,9 +295,10 @@ function renderEquipSlot(adv, slot, label) {
 
   // 인벤토리에서 해당 슬롯 + 직업 호환 장비 수 계산
   const advBranch = JOBS[adv.job]?.branch;
+  const weaponBranch = advBranch === 'healer' ? 'mage' : advBranch; // 치유사는 마법사 무기 사용
   const avail = State.inventory.filter(it => {
     if (it.slot !== slot) return false;
-    if (slot === 'weapon' && it.jobClass && it.jobClass !== advBranch) return false;
+    if (slot === 'weapon' && it.jobClass && it.jobClass !== weaponBranch) return false;
     return true;
   });
 
@@ -939,13 +940,15 @@ function renderInventoryPopup(filter) {
   const idleAdv = State.adventurers.filter(a => !dispatched.has(a.id));
 
   // 장비 행 렌더
-  const BRANCH_LABEL = { warrior: '전사', rogue: '도적', mage: '마법사' };
+  const BRANCH_LABEL = { warrior: '전사', rogue: '도적', mage: '마법사/치유사' };
   const eqRows = filtered.filter(i => i.slot).map(item => {
     const realIdx = items.indexOf(item);
-    // 무기는 직업 계열이 일치하는 모험가만 선택 가능
+    // 무기는 직업 계열이 일치하는 모험가만 선택 가능 (치유사는 mage 무기 공유)
     const compatAdv = idleAdv.filter(a => {
       if (item.slot !== 'weapon' || !item.jobClass) return true;
-      return JOBS[a.job]?.branch === item.jobClass;
+      const branch = JOBS[a.job]?.branch;
+      const effectiveBranch = branch === 'healer' ? 'mage' : branch;
+      return effectiveBranch === item.jobClass;
     });
     const advOpts = compatAdv.map(a =>
       `<option value="${a.id}">${a.name} (${JOBS[a.job].name})</option>`

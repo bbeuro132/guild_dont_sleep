@@ -19,6 +19,12 @@ const JOBS = {
   cathedral_scholar:  { name: '대성당 학자',    tier: 3, branch: 'mage',    cssClass: 'job-cathedral-scholar' },
   ivory_sorcerer:     { name: '상아탑 술사',    tier: 2, branch: 'mage',    cssClass: 'job-ivory-sorcerer' },
   ivory_sage:         { name: '상아탑 현자',    tier: 3, branch: 'mage',    cssClass: 'job-ivory-sage' },
+
+  healer:             { name: '치유사',         tier: 1, branch: 'healer',  cssClass: 'job-healer' },
+  cleric:             { name: '성직자',         tier: 2, branch: 'healer',  cssClass: 'job-cleric' },
+  priest:             { name: '신관',           tier: 3, branch: 'healer',  cssClass: 'job-priest' },
+  dragon_priest:      { name: '용사제',         tier: 2, branch: 'healer',  cssClass: 'job-dragon-priest' },
+  inquisitor:         { name: '심문관',         tier: 3, branch: 'healer',  cssClass: 'job-inquisitor' },
 };
 
 // 전직 트리 (jobKey → 가능한 2차 전직 목록)
@@ -32,6 +38,9 @@ const JOB_PROMOTIONS = {
   mage:               ['cathedral_sorcerer', 'ivory_sorcerer'],
   cathedral_sorcerer: ['cathedral_scholar'],
   ivory_sorcerer:     ['ivory_sage'],
+  healer:             ['cleric', 'dragon_priest'],
+  cleric:             ['priest'],
+  dragon_priest:      ['inquisitor'],
 };
 
 // 전직 비용 (레벨, 골드, 재료)

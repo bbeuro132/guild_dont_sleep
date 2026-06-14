@@ -334,7 +334,102 @@ const SKILLS = {
       log(`⚡💀 [번개 지옥] ${u.name}: ${hits}회 번개 총 <b class="log-damage">${total}</b>!`);
     },
   },
+
+
+  /* ---------- 치유사 계열 ---------- */
+  healer_first_aid: {
+    name: '응급 처치', type: 'cooldown', cooldown: 4,
+    exec(u, al, en, log) {
+      const alive = al.filter(a => a.isAlive());
+      const t = alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+      if (!t) return;
+      const h = t.heal(Math.floor(u.atk * 3.0));
+      log(`🚑 [응급 처치] ${u.name}→${t.name}: <b class="log-heal">${h}</b> 대량 회복!`);
+    },
+  },
+
+  cleric_light_veil: {
+    name: '빛의 장막', type: 'battle_start',
+    exec(u, al, en, log) {
+      u.lightVeil = 1;
+      log(`🌟 [빛의 장막] ${u.name}: 피격 확률 감소!`);
+    },
+  },
+  cleric_warm_light: {
+    name: '따스한 빛', type: 'cooldown', cooldown: 3,
+    exec(u, al, en, log) {
+      const h = Math.floor(u.atk * 0.8);
+      al.filter(a => a.isAlive()).forEach(a => a.heal(h));
+      log(`☀️ [따스한 빛] ${u.name}: 아군 전체 <b class="log-heal">${h}</b> 회복!`);
+    },
+  },
+
+  priest_blessing: {
+    name: '빛의 축복', type: 'battle_start',
+    exec(u, al, en, log) {
+      u.lightVeil = 2;
+      log(`✨ [빛의 축복] ${u.name}: 피격 확률 크게 감소!`);
+    },
+  },
+  priest_embrace: {
+    name: '포옹하는 빛', type: 'cooldown', cooldown: 5,
+    exec(u, al, en, log) {
+      u.embraceAoe = 3;
+      log(`💖 [포옹하는 빛] ${u.name}: 3번의 기본 공격이 전체 회복으로 변경!`);
+    },
+  },
+
+  dragon_priest_punish: {
+    name: '처벌', type: 'cooldown', cooldown: 3,
+    exec(u, al, en, log) {
+      const t = pickRandom(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const crit = rollCrit(u);
+      const d = magicDmg(u.atk, 1.8, crit, u.critDmg);
+      const r = t.takeDamage(d);
+      log(`⚡ [처벌] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b>${crit ? ' 💥' : ''}`);
+    },
+  },
+  dragon_priest_sermon: {
+    name: '설교', type: 'cooldown', cooldown: 3,
+    exec(u, al, en, log) {
+      const alive = en.filter(e => e.isAlive());
+      let total = 0;
+      alive.forEach(t => { total += t.takeDamage(magicDmg(u.atk, 0.6, false, u.critDmg)).actual; });
+      log(`📢 [설교] ${u.name}: 적 전체 총 <b class="log-damage">${total}</b> 피해!`);
+    },
+  },
+
+  inquisitor_conviction: {
+    name: '단죄', type: 'cooldown', cooldown: 3,
+    exec(u, al, en, log) {
+      const t = pickRandom(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const crit = rollCrit(u);
+      const d = magicDmg(u.atk, 2.2, crit, u.critDmg);
+      const r = t.takeDamage(d);
+      const healAmt = Math.floor(r.actual * 0.4);
+      const lowestHp = al.filter(a => a.isAlive()).sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+      if (lowestHp) lowestHp.heal(healAmt);
+      log(`⚖️ [단죄] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b>${crit ? ' 💥' : ''}${lowestHp ? ` + ${lowestHp.name} <b class="log-heal">${healAmt}</b> 회복` : ''}`);
+    },
+  },
+  inquisitor_oration: {
+    name: '웅변', type: 'cooldown', cooldown: 3,
+    exec(u, al, en, log) {
+      const alive = en.filter(e => e.isAlive());
+      let total = 0;
+      alive.forEach(t => {
+        total += t.takeDamage(magicDmg(u.atk, 0.6, false, u.critDmg)).actual;
+        t.addStatus('acc_down', 1, 0.35);
+      });
+      log(`📣 [웅변] ${u.name}: 적 전체 총 <b class="log-damage">${total}</b> 피해 + 1턴 명중률 하락!`);
+    },
+  },
 };
+
+// 치유사 계열 직업 집합
+const HEALER_JOBS = new Set(['healer', 'cleric', 'priest', 'dragon_priest', 'inquisitor']);
 
 // 직업 → 스킬 매핑
 const JOB_SKILLS = {
@@ -353,6 +448,11 @@ const JOB_SKILLS = {
   cathedral_scholar:  ['scholar_shield2', 'scholar_isolate'],
   ivory_sorcerer:     ['ivory_coordinate', 'ivory_lightning'],
   ivory_sage:         ['sage_collapse', 'sage_lightning_hell'],
+  healer:             ['healer_first_aid'],
+  cleric:             ['cleric_light_veil', 'cleric_warm_light'],
+  priest:             ['priest_blessing', 'priest_embrace'],
+  dragon_priest:      ['dragon_priest_punish', 'dragon_priest_sermon'],
+  inquisitor:         ['inquisitor_conviction', 'inquisitor_oration'],
 };
 
 // ===== CombatUnit 클래스 =====
@@ -489,7 +589,12 @@ class CombatUnit {
 
   hasStatus(type) { return this.statusEffects.some(s => s.type === type && s.duration > 0); }
 
-  getTargetWeight() { return this.taunting > 0 ? 8 : 1; }
+  getTargetWeight() {
+    if (this.taunting > 0) return 8;
+    if (this.lightVeil === 2) return 0.25; // 빛의 축복
+    if (this.lightVeil === 1) return 0.5;  // 빛의 장막
+    return 1;
+  }
 
   // 턴 시작: 상태이상 처리 및 쿨다운 감소
   tickStart(log) {
@@ -528,6 +633,24 @@ class CombatUnit {
   normalAttack(enemies, allies, log) {
     if (this.hasStatus('stun')) {
       log(`😵 ${this.name}: 기절로 행동 불가!`);
+      return;
+    }
+
+    // 치유사 계열: 기본 공격 대신 아군 회복
+    if (HEALER_JOBS.has(this.job)) {
+      const alive = allies.filter(a => a.isAlive());
+      if (this.embraceAoe > 0) {
+        const h = Math.floor(this.atk * 0.6);
+        alive.forEach(a => a.heal(h));
+        this.embraceAoe--;
+        log(`💖 ${this.name}: 아군 전체 <b class="log-heal">${h}</b> 회복!`);
+      } else {
+        const t = alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+        if (t) {
+          const h = t.heal(Math.floor(this.atk * 1.0));
+          log(`💚 ${this.name}→${t.name}: <b class="log-heal">${h}</b> 회복!`);
+        }
+      }
       return;
     }
 

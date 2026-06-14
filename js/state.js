@@ -221,6 +221,21 @@ function generateAdventurer(gradeOverride) {
   const shuffledTraits = [...TRAITS].sort(() => Math.random() - 0.5);
   const traits = shuffledTraits.slice(0, traitCount).map(t => t.id);
 
+  const baseStats = {
+    hp:      Math.floor((60 + Math.random() * 40) * baseMult),
+    atk:     Math.floor((12 + Math.random() * 8)  * baseMult),
+    def:     Math.floor((6  + Math.random() * 6)  * baseMult),
+    spd:     Math.floor((8  + Math.random() * 6)  * baseMult),
+    crit:    Math.floor((5  + Math.random() * 10) * baseMult),
+    critDmg: Math.floor((150 + Math.random() * 50)),
+  };
+
+  // 치유사 계열: 속도 절반, HP 소폭 증가 (항상 후순위 행동)
+  if (jobInfo.branch === 'healer') {
+    baseStats.spd = Math.floor(baseStats.spd * 0.5);
+    baseStats.hp  = Math.floor(baseStats.hp  * 1.2);
+  }
+
   return {
     id: State.nextAdvId++,
     name,
@@ -230,14 +245,7 @@ function generateAdventurer(gradeOverride) {
     exp: 0,
     traits,
     equipment: { weapon: null, armor: null, accessory: null },
-    baseStats: {
-      hp:      Math.floor((60 + Math.random() * 40) * baseMult),
-      atk:     Math.floor((12 + Math.random() * 8)  * baseMult),
-      def:     Math.floor((6  + Math.random() * 6)  * baseMult),
-      spd:     Math.floor((8  + Math.random() * 6)  * baseMult),
-      crit:    Math.floor((5  + Math.random() * 10) * baseMult),
-      critDmg: Math.floor((150 + Math.random() * 50)),
-    },
+    baseStats,
   };
 }
 
@@ -260,7 +268,7 @@ function pickGrade(pool) {
 }
 
 function pickJob() {
-  const tierOneJobs = ['warrior', 'rogue', 'mage'];
+  const tierOneJobs = ['warrior', 'rogue', 'mage', 'healer'];
   return tierOneJobs[Math.floor(Math.random() * tierOneJobs.length)];
 }
 
