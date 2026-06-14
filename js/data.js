@@ -61,7 +61,8 @@ const BUILDINGS = [
     desc: '길드의 중심. 레벨에 따라 동시 파견 가능한 팀 수가 결정됩니다.',
     effectLabel: (lv) => `파견 슬롯: ${lv}팀`,
     baseCost: { gold: 5000, material: 20 },
-    costMult: 2.0,
+    costMult: 2.5,
+    maxLevel: 10,
   },
   {
     id: 'lounge',
@@ -71,6 +72,7 @@ const BUILDINGS = [
     effectLabel: (lv) => `최대 모험가: ${lv + 2}명`,
     baseCost: { gold: 2000, material: 8 },
     costMult: 1.7,
+    maxLevel: 10,
   },
   {
     id: 'application',
@@ -90,6 +92,7 @@ const BUILDINGS = [
     effectLabel: (lv) => `보관 칸: ${lv * 5 + 10}칸`,
     baseCost: { gold: 800, material: 4 },
     costMult: 1.5,
+    maxLevel: 18,
   },
   {
     id: 'laboratory',
@@ -102,6 +105,7 @@ const BUILDINGS = [
     },
     baseCost: { gold: 1200, material: 6 },
     costMult: 1.6,
+    maxLevel: 12,
   },
 ];
 
