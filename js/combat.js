@@ -894,7 +894,7 @@ function tickDispatchCombat(dispatch, delta) {
     }
 
     // 파견 EXP: 전투 승리 시 모험가에게 소량 경험치
-    const battleExp = Math.floor(Math.sqrt(area.stage) * 2 * (isBossFight ? 3 : 1));
+    const battleExp = Math.floor((area.stage * 2 + 3) * (isBossFight ? 3 : 1));
     for (const adv of advList) {
       giveExp(adv.id, battleExp);
     }
