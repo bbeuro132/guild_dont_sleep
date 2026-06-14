@@ -668,7 +668,9 @@ class CombatUnit {
 // DEF = 2  × s^0.8  × progMult            (1단계 DEF≈2, 40단계≈35)
 // 보스: HP ×3.0 / ATK ×1.5 (더 단단하지만 공격력은 소폭 증가)
 function generateEnemyGroup(area, progress) {
-  const isBoss   = Math.random() < 0.08;
+  // 진행도 비율에 따라 보스 등장 확률 점진 증가: 2%(시작) → 15%(최대)
+  const progressRatio = Math.min(1, progress / area.maxProgress);
+  const isBoss   = Math.random() < (0.02 + progressRatio * 0.13);
   const s        = area.stage;
   const progMult = 1 + (progress / area.maxProgress) * 1.0;
   const hpMult   = isBoss ? 3.0 : 1;
@@ -797,6 +799,27 @@ function tickDispatchCombat(dispatch, delta) {
     .map(id => State.adventurers.find(a => a.id === id))
     .filter(Boolean);
   if (advList.length === 0) return;
+
+  // 30% 확률: 탐색 이벤트 (전투 없이 진행도 +1 + HP 회복)
+  if (Math.random() < 0.30) {
+    const healRatio = 0.12;
+    for (const adv of advList) {
+      const maxHp = getEffectiveStats(adv).hp;
+      const curHp = dispatch.partyHp[adv.id] ?? maxHp;
+      dispatch.partyHp[adv.id] = Math.min(maxHp, Math.floor(curHp + maxHp * healRatio));
+    }
+    dispatch.progress = Math.min(dispatch.progress + 1, area.maxProgress);
+    dispatch.lastBattleLog = ['<span class="log-system">🌿 탐색: 이번 구역은 조용했다. 파티 HP +12% 회복</span>'];
+    dispatch.isBossEncounter = false;
+
+    if (dispatch.progress >= area.maxProgress) {
+      dispatch.progress = 1;
+      State.areaProgress[area.id] = area.maxProgress;
+      checkAreaUnlocks();
+      showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
+    }
+    return;
+  }
 
   const allies = advList.map(adv => {
     const clone = { ...adv, _dispatchHp: dispatch.partyHp[adv.id] };
