@@ -48,8 +48,10 @@ function loadState() {
     if (raw) {
       const saved = JSON.parse(raw);
       State = Object.assign({}, DEFAULT_STATE, saved);
-      // 오프라인 누적 처리
-      processOfflineProgress();
+      // 오프라인 누적 처리 — 결과를 init()에서 팝업으로 표시
+      window._pendingOffline = processOfflineProgress();
+      // 저장된 areaProgress 기반으로 지역 해금 복원 (토스트 없이)
+      checkAreaUnlocks(true);
     } else {
       State = JSON.parse(JSON.stringify(DEFAULT_STATE));
       State.lastSaveTime = Date.now();
@@ -70,31 +72,55 @@ function resetState() {
 
 // ===== 오프라인 진행 계산 =====
 function processOfflineProgress() {
-  if (!State.lastSaveTime) return;
+  if (!State.lastSaveTime) return null;
   const now = Date.now();
   const elapsed = Math.min((now - State.lastSaveTime) / 1000, 3600 * 8); // 최대 8시간
-  if (elapsed < 1) return;
+  if (elapsed < 30) return null; // 30초 미만은 알림 불필요
 
-  let offlineGold = 0;
-  let offlineMat = 0;
+  let totalGold = 0;
+  let totalMat  = 0;
+  const areaResults = [];
 
   for (const dispatch of State.dispatches) {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
-    offlineGold += area.goldPerSec * elapsed;
-    offlineMat  += area.materialPerMin * (elapsed / 60);
-    dispatch.accumulated.gold     += area.goldPerSec * elapsed;
-    dispatch.accumulated.material += area.materialPerMin * (elapsed / 60);
+
+    const gold = area.goldPerSec * elapsed;
+    const mat  = area.materialPerMin * (elapsed / 60);
+    totalGold += gold;
+    totalMat  += mat;
+
+    dispatch.accumulated.gold     += gold;
+    dispatch.accumulated.material += mat;
 
     // 진행도 누적 (대략 4초당 1진행도)
     const progressGain = Math.floor(elapsed / 4);
+    const prevProgress = Math.floor(dispatch.progress);
     dispatch.progress += progressGain;
-    if (dispatch.progress > area.maxProgress) dispatch.progress = area.maxProgress;
+    if (dispatch.progress >= area.maxProgress) {
+      dispatch.progress = area.maxProgress;
+      State.areaProgress[area.id] = area.maxProgress;
+    }
+
+    areaResults.push({
+      name: area.name,
+      icon: area.icon,
+      gold: Math.floor(gold),
+      mat:  Math.floor(mat),
+      progressFrom: prevProgress,
+      progressTo:   Math.floor(dispatch.progress),
+      maxProgress:  area.maxProgress,
+    });
   }
 
-  if (offlineGold > 0) {
-    console.log(`오프라인 보상: 골드 +${Math.floor(offlineGold)}, 재료 +${offlineMat.toFixed(1)}`);
-  }
+  if (areaResults.length === 0) return null;
+
+  return {
+    elapsed:    Math.floor(elapsed),
+    totalGold:  Math.floor(totalGold),
+    totalMat:   Math.floor(totalMat),
+    areas:      areaResults,
+  };
 }
 
 // ===== 재화 조작 =====
@@ -291,8 +317,22 @@ function settleDispatch(areaId) {
     State.areaProgress[areaId] = dispatch.progress;
   }
 
+  // 누적 재화만 초기화 — 파티는 귀환하지 않음
+  dispatch.accumulated = { gold: 0, material: 0, items: [] };
+
+  return { gold: goldEarned, material: matEarned, items: [], progress: dispatch.progress };
+}
+
+function recallDispatch(areaId) {
+  const idx = State.dispatches.findIndex(d => d.areaId === areaId);
+  if (idx === -1) return false;
+  // 잔여 누적 재화 지급 후 귀환
+  const dispatch = State.dispatches[idx];
+  addGold(Math.floor(dispatch.accumulated.gold));
+  addMaterial(Math.floor(dispatch.accumulated.material));
   State.dispatches.splice(idx, 1);
-  return { gold: goldEarned, material: matEarned, items: dispatch.accumulated.items, progress: dispatch.progress };
+  showToast('파견 팀이 귀환했습니다.', 'info');
+  return true;
 }
 
 // ===== 파견 누적 업데이트 (틱마다 호출) =====
@@ -311,18 +351,25 @@ function tickDispatches(deltaSeconds) {
   }
 }
 
-function checkAreaUnlocks() {
+function checkAreaUnlocks(silent = false) {
   for (const area of AREAS) {
     if (area.unlocked) continue;
     const cond = area.unlockCondition;
     if (!cond) continue;
     if (cond.areaId) {
       const prog = State.areaProgress[cond.areaId] || 0;
-      if (prog >= cond.progress) { area.unlocked = true; showToast(`새 지역 개방: ${area.name}!`, 'success'); }
+      if (prog >= cond.progress) {
+        area.unlocked = true;
+        if (!silent) showToast(`새 지역 개방: ${area.name}!`, 'success');
+      }
     } else if (cond.anyAreaId) {
       for (const aid of cond.anyAreaId) {
         const prog = State.areaProgress[aid] || 0;
-        if (prog >= cond.progress) { area.unlocked = true; showToast(`새 지역 개방: ${area.name}!`, 'success'); break; }
+        if (prog >= cond.progress) {
+          area.unlocked = true;
+          if (!silent) showToast(`새 지역 개방: ${area.name}!`, 'success');
+          break;
+        }
       }
     }
   }
@@ -348,6 +395,16 @@ function getEffectiveStats(adv) {
       s[trait.stat] = Math.floor(s[trait.stat] * (1 + trait.mult));
     }
   }
+  // 장비 보정 (평탄 수치)
+  if (adv.equipment) {
+    for (const slot of ['weapon', 'armor', 'accessory']) {
+      const item = adv.equipment[slot];
+      if (!item || !item.stats) continue;
+      for (const [key, val] of Object.entries(item.stats)) {
+        s[key] = (s[key] || 0) + val;
+      }
+    }
+  }
   return s;
 }
 
@@ -369,6 +426,49 @@ function giveExp(advId, amount) {
   }
 }
 
+// ===== 모험가 해고 =====
+function dismissAdventurer(advId) {
+  const idx = State.adventurers.findIndex(a => a.id === advId);
+  if (idx === -1) return false;
+  const adv = State.adventurers[idx];
+
+  if (getDispatchedAdvIds().has(advId)) {
+    showToast('파견 중인 모험가는 해고할 수 없습니다.', 'error');
+    return false;
+  }
+
+  // 장착 장비 인벤토리로 반환
+  for (const slot of ['weapon', 'armor', 'accessory']) {
+    if (adv.equipment[slot]) State.inventory.push(adv.equipment[slot]);
+  }
+
+  State.adventurers.splice(idx, 1);
+  showToast(`${adv.name}을(를) 해고했습니다.`, 'info');
+  return true;
+}
+
+// ===== 장비 장착/해제 =====
+function equipItem(advId, inventoryIdx) {
+  const adv = State.adventurers.find(a => a.id === advId);
+  if (!adv) return;
+  const item = State.inventory[inventoryIdx];
+  if (!item || !item.slot) return;
+  if (adv.equipment[item.slot]) {
+    State.inventory.push(adv.equipment[item.slot]);
+  }
+  adv.equipment[item.slot] = item;
+  State.inventory.splice(inventoryIdx, 1);
+  showToast(`${item.name} 장착!`, 'success');
+}
+
+function unequipItem(advId, slot) {
+  const adv = State.adventurers.find(a => a.id === advId);
+  if (!adv || !adv.equipment[slot]) return;
+  State.inventory.push(adv.equipment[slot]);
+  adv.equipment[slot] = null;
+  showToast('장비 해제됨', 'info');
+}
+
 // ===== 상점 구매 =====
 function buyShopItem(itemId) {
   const item = SHOP_ITEMS.find(i => i.id === itemId);
@@ -380,6 +480,10 @@ function buyShopItem(itemId) {
   } else if (item.type === 'exp_book') {
     State.inventory.push({ type: 'exp_book', expValue: item.expValue, name: item.name, icon: item.icon });
     showToast(`${item.name} 구매 완료!`, 'success');
+  } else if (item.type === 'equipment') {
+    const eq = generateEquipment(item.slot, item.grade);
+    State.inventory.push(eq);
+    showToast(`${eq.name} 구매 완료! (모험가 상세에서 장착)`, 'success');
   }
   return true;
 }

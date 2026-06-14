@@ -95,6 +95,7 @@ function renderAdventurerTab() {
 
   if (State.adventurers.length === 0) {
     list.innerHTML = '<div class="empty-state"><div class="empty-icon">🗡️</div><p>아직 길드에 합류한 모험가가 없습니다.<br>모집 탭에서 모험가를 영입해 보세요!</p></div>';
+    renderAdvDetail(null);
     return;
   }
 
@@ -115,7 +116,7 @@ function renderAdventurerTab() {
 
     const traitBadges = adv.traits.map(tid => {
       const t = TRAITS.find(x => x.id === tid);
-      return t ? `<span class="trait-badge" title="${t.desc}">${t.name}</span>` : '';
+      return t ? `<span class="trait-badge" data-tooltip="${t.name}: ${t.desc}">${t.name}</span>` : '';
     }).join('');
 
     card.innerHTML = `
@@ -172,7 +173,7 @@ function renderAdvDetail(advId) {
 
   const traitHtml = adv.traits.map(tid => {
     const t = TRAITS.find(x => x.id === tid);
-    return t ? `<span class="trait-badge">${t.name}: ${t.desc}</span>` : '';
+    return t ? `<span class="trait-badge" data-tooltip="${t.name}: ${t.desc}">${t.name}</span>` : '';
   }).join('');
 
   panel.innerHTML = `
@@ -181,8 +182,14 @@ function renderAdvDetail(advId) {
         <div style="font-size:1.2rem;font-weight:bold;color:var(--brown-dark)">${adv.name}</div>
         <div style="font-size:0.85rem;color:${gradeColor(adv.grade)};font-weight:bold">${adv.grade}급 · <span class="${jobInfo.cssClass}" style="padding:2px 8px;border-radius:6px;color:white;font-size:0.8rem">${jobInfo.name}</span></div>
       </div>
-      <button class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px"
-        onclick="selectedAdvId=null;renderAdventurerTab()">✕ 닫기</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-danger" style="font-size:0.8rem;padding:6px 12px"
+          onclick="if(confirm('정말 ${adv.name}을(를) 해고하시겠습니까?\\n장착 중인 장비는 인벤토리로 반환됩니다.')){if(dismissAdventurer(${adv.id})){selectedAdvId=null;renderAdventurerTab();renderHeader()}}">
+          🚪 해고
+        </button>
+        <button class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px"
+          onclick="selectedAdvId=null;renderAdventurerTab()">✕ 닫기</button>
+      </div>
     </div>
     <div style="margin-bottom:10px">
       <div style="font-size:0.8rem;color:#888;margin-bottom:3px">경험치 Lv.${adv.level} (${adv.exp}/${expNeed})</div>
@@ -208,6 +215,22 @@ function renderAdvDetail(advId) {
         ${renderEquipSlot(adv, 'accessory', '악세서리')}
       </div>
     </div>
+    ${(() => {
+      const expBooks = State.inventory
+        .map((item, idx) => ({ ...item, _idx: idx }))
+        .filter(item => item.type === 'exp_book');
+      if (expBooks.length === 0) return '';
+      const btnHtml = expBooks.map(item =>
+        `<button class="btn btn-gold" style="font-size:0.75rem;padding:4px 10px"
+          onclick="useExpBook(${adv.id}, ${item._idx}); renderAdventurerTab()">
+          📚 ${item.name} (+${item.expValue} XP)
+        </button>`
+      ).join('');
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">경험치 서 사용</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${btnHtml}</div>
+      </div>`;
+    })()}
     ${promoTargets.length > 0 ? `
     <div>
       <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">
@@ -218,16 +241,51 @@ function renderAdvDetail(advId) {
   `;
 }
 
+function formatEquipStats(stats) {
+  const labels = { atk: '공격', def: '방어', hp: 'HP', spd: '속도', crit: '치명타%', critDmg: '치명타배율' };
+  return Object.entries(stats).map(([k, v]) => `${labels[k] || k}+${v}`).join(' / ');
+}
+
 function renderEquipSlot(adv, slot, label) {
   const item = adv.equipment[slot];
+  const dispatched = getDispatchedAdvIds().has(adv.id);
+
   if (item) {
     return `<div class="equip-slot has-item">
       <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'">
       <div style="font-size:0.7rem;color:var(--brown-dark);font-weight:bold">${item.name}</div>
-      <div style="font-size:0.65rem;color:${gradeColor(item.grade)}">${item.grade}급</div>
+      <div style="font-size:0.65rem;color:${gradeColor(item.grade)};font-weight:bold">${item.grade}급</div>
+      <div style="font-size:0.6rem;color:#888;line-height:1.4;margin:2px 0">${formatEquipStats(item.stats)}</div>
+      ${dispatched ? '' : `<button class="btn btn-outline" style="font-size:0.6rem;padding:2px 6px;margin-top:4px;width:100%"
+        onclick="event.stopPropagation();unequipItem(${adv.id},'${slot}');renderAdventurerTab()">해제</button>`}
     </div>`;
   }
-  return `<div class="equip-slot"><div style="font-size:1.2rem">＋</div><div>${label}</div></div>`;
+
+  const avail = State.inventory
+    .map((it, idx) => ({ it, idx }))
+    .filter(({ it }) => it.slot === slot);
+
+  if (avail.length === 0 || dispatched) {
+    return `<div class="equip-slot">
+      <div style="font-size:1.2rem">＋</div>
+      <div style="font-size:0.75rem">${label}</div>
+      <div style="font-size:0.6rem;color:#bbb">${dispatched ? '파견 중' : '없음'}</div>
+    </div>`;
+  }
+
+  const options = avail.map(({ it, idx }) =>
+    `<option value="${idx}">[${it.grade}] ${it.name} — ${formatEquipStats(it.stats)}</option>`
+  ).join('');
+
+  return `<div class="equip-slot" style="gap:3px">
+    <div style="font-size:1.1rem">＋</div>
+    <div style="font-size:0.72rem;font-weight:bold">${label}</div>
+    <select style="font-size:0.6rem;width:100%;padding:2px 4px;border-radius:4px;border:1px solid var(--brown);background:var(--bg-mid);color:var(--cream);margin-top:2px"
+      onchange="if(this.value!==''){equipItem(${adv.id},parseInt(this.value));renderAdventurerTab()}">
+      <option value="">장착...</option>
+      ${options}
+    </select>
+  </div>`;
 }
 
 function gradeColor(grade) {
@@ -246,6 +304,13 @@ function promoteAdventurer(advId, targetJob) {
   if (!spendMaterial(cost.material)) { addGold(cost.gold); showToast('재료가 부족합니다.', 'error'); return; }
   adv.job = targetJob;
   showToast(`${adv.name} → ${JOBS[targetJob].name} 전직 완료!`, 'success');
+}
+
+function useExpBook(advId, itemIdx) {
+  const item = State.inventory[itemIdx];
+  if (!item || item.type !== 'exp_book') { showToast('아이템을 찾을 수 없습니다.', 'error'); return; }
+  State.inventory.splice(itemIdx, 1);
+  giveExp(advId, item.expValue);
 }
 
 // ===== 파견 탭 =====
@@ -272,7 +337,9 @@ function renderDispatchTab() {
       </div>`
     ).join('');
 
-    const progressVal = State.areaProgress[area.id] || 0;
+    const progressVal = activeDispatch
+      ? Math.floor(activeDispatch.progress)
+      : (State.areaProgress[area.id] || 0);
     const progressPct = (progressVal / area.maxProgress * 100).toFixed(1);
 
     let bodyHtml = '';
@@ -323,6 +390,7 @@ function renderDispatchTab() {
             <div class="dispatch-actions">
               <button class="btn btn-gold" onclick="openSettlement('${area.id}')">📋 정산하기</button>
               <button class="btn btn-primary" onclick="openBattlePopup('${area.id}')">⚔️ 전투 관람</button>
+              <button class="btn btn-outline" onclick="if(confirm('파견 팀을 귀환시키겠습니까?\\n잔여 누적 재화도 함께 수령합니다.')){recallDispatch('${area.id}');renderDispatchTab();renderHeader()}">🏠 귀환 명령</button>
             </div>
           </div>
         `;
@@ -443,6 +511,7 @@ function openSettlement(areaId) {
     <div class="settlement-row"><span class="settlement-label">📍 도달 진행도</span><span class="settlement-value">${Math.min(result.progress, 200).toFixed(0)} / 200</span></div>
   `;
 
+  document.getElementById('btn-confirm-settlement').textContent = '✅ 수령하기 (파견 유지)';
   openPopup('settlement-popup');
   document.getElementById('btn-confirm-settlement').onclick = () => {
     closePopup('settlement-popup');
@@ -472,7 +541,7 @@ function renderRecruitTab() {
 
     const traitHtml = app.traits.map(tid => {
       const t = TRAITS.find(x => x.id === tid);
-      return t ? `<span class="trait-badge">${t.name}</span>` : '';
+      return t ? `<span class="trait-badge" data-tooltip="${t.name}: ${t.desc}">${t.name}</span>` : '';
     }).join('');
 
     const card = document.createElement('div');
@@ -554,11 +623,54 @@ function closePopup(id) {
 }
 
 function openBattlePopup(areaId) {
-  const dispatch = State.dispatches.find(d => d.areaId === areaId);
-  if (!dispatch) return;
   const area = AREAS.find(a => a.id === areaId);
   if (!area) return;
   if (window._currentBattle) window._currentBattle.stop();
+
+  // 전투 1회를 시작하는 내부 함수 — 승패 후 2초 뒤 자동으로 재호출됨
+  function startBattle(allies) {
+    const dispatch = State.dispatches.find(d => d.areaId === areaId);
+    if (!dispatch) return; // 파견이 정산되면 중단
+
+    const enemies = generateEnemyGroup(area, Math.floor(dispatch.progress));
+    renderBattleUI(allies, enemies);
+
+    const battle = new LiveBattle(
+      allies, enemies,
+      (b) => updateBattleUI(b),
+      (win) => {
+        // 팝업이 닫혔으면 중단
+        const popup = document.getElementById('battle-popup');
+        if (!popup || popup.classList.contains('hidden')) return;
+
+        // 2초 후 다음 전투 자동 시작
+        setTimeout(() => {
+          const popup2 = document.getElementById('battle-popup');
+          if (!popup2 || popup2.classList.contains('hidden')) return;
+
+          const d = State.dispatches.find(d => d.areaId === areaId);
+          if (!d) return;
+
+          // 승리: 현재 HP 이어받기 / 패배: 풀 HP 회복
+          const nextAllies = d.team
+            .map(id => State.adventurers.find(a => a.id === id))
+            .filter(Boolean)
+            .map(adv => {
+              const prevUnit = battle.allies.find(u => u.id === adv.id);
+              const hp = win && prevUnit ? Math.max(1, prevUnit.currentHp) : undefined;
+              return new CombatUnit({ ...adv, _dispatchHp: hp }, true);
+            });
+
+          startBattle(nextAllies);
+        }, 2000);
+      }
+    );
+    window._currentBattle = battle;
+    battle.start();
+  }
+
+  const dispatch = State.dispatches.find(d => d.areaId === areaId);
+  if (!dispatch) return;
 
   // 파티 CombatUnit 생성 (저장된 HP 반영)
   const allies = dispatch.team
@@ -569,19 +681,8 @@ function openBattlePopup(areaId) {
       true
     ));
 
-  // 적 그룹 생성
-  const enemies = generateEnemyGroup(area, Math.floor(dispatch.progress));
-
-  // 팝업 UI 초기 렌더
-  renderBattleUI(allies, enemies);
   openPopup('battle-popup');
-
-  const battle = new LiveBattle(allies, enemies,
-    (b) => updateBattleUI(b),
-    (win) => { /* 관람용이므로 state 변경 없음 */ }
-  );
-  window._currentBattle = battle;
-  battle.start();
+  startBattle(allies);
 
   document.getElementById('btn-close-battle').onclick = () => {
     window._currentBattle?.stop();
@@ -669,6 +770,65 @@ function updateBattleUI(battle) {
     logEl.innerHTML = battle.log.slice(-35).map(l => `<div class="log-entry">${l}</div>`).join('');
     logEl.scrollTop = logEl.scrollHeight;
   }
+}
+
+// ===== 오프라인 복귀 알림 =====
+function showOfflinePopup(result) {
+  const h = Math.floor(result.elapsed / 3600);
+  const m = Math.floor((result.elapsed % 3600) / 60);
+  const s = result.elapsed % 60;
+  const timeStr = h > 0 ? `${h}시간 ${m}분` : m > 0 ? `${m}분 ${s}초` : `${s}초`;
+
+  const areaHtml = result.areas.map(a => `
+    <div class="offline-area-row">
+      <div class="offline-area-name">${a.icon} ${a.name}</div>
+      <div class="offline-area-gains">
+        <span style="color:var(--gold-dark);font-weight:bold">💰 ${a.gold.toLocaleString()} G</span>
+        <span style="color:var(--blue);font-weight:bold">💎 재료 ${a.mat}개</span>
+        <span class="offline-progress">진행도 ${a.progressFrom}→${a.progressTo}/${a.maxProgress}</span>
+      </div>
+    </div>`).join('');
+
+  let popup = document.getElementById('offline-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'offline-popup';
+    popup.className = 'popup';
+    document.body.appendChild(popup);
+  }
+
+  popup.innerHTML = `
+    <div class="popup-inner">
+      <div id="offline-header">
+        <img src="assets/characters/클로에 스탠딩.png" alt="클로에" id="offline-chloe-img"
+             onerror="this.style.display='none'" />
+        <div>
+          <h3 class="popup-title" style="margin:0 0 4px">⏰ 오프라인 보상</h3>
+          <div style="font-size:0.82rem;color:#666">
+            <strong style="color:var(--orange);font-size:1rem">${timeStr}</strong> 동안 자리를 비우셨네요!
+          </div>
+        </div>
+      </div>
+      <div id="offline-areas">${areaHtml}</div>
+      <div id="offline-total">
+        <span style="color:#666;font-size:0.82rem">총 누적</span>
+        <span>
+          <span style="color:var(--gold-dark);font-weight:bold">💰 ${result.totalGold.toLocaleString()} G</span>
+          <span style="color:#555"> &nbsp;·&nbsp; </span>
+          <span style="color:var(--blue);font-weight:bold">💎 ${result.totalMat}개</span>
+        </span>
+      </div>
+      <p style="font-size:0.75rem;color:#888;margin:10px 0 14px;text-align:center">
+        누적 재화는 파견 탭 → 정산하기로 수령하세요.
+      </p>
+      <button class="btn btn-gold btn-full"
+        onclick="document.getElementById('offline-popup').classList.add('hidden');document.getElementById('overlay').classList.add('hidden')">
+        ✅ 확인했습니다
+      </button>
+    </div>`;
+
+  popup.classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
 }
 
 // ===== 튜토리얼 =====

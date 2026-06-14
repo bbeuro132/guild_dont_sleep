@@ -1,6 +1,7 @@
 // ===== main.js: 진입점 및 게임 루프 =====
 
 let lastTick = 0;
+let _dispatchRenderTimer = 0; // 파견 탭 렌더 쓰로틀 (초)
 
 function gameLoop(timestamp) {
   const delta = (timestamp - lastTick) / 1000; // 초 단위
@@ -16,7 +17,17 @@ function gameLoop(timestamp) {
   // 현재 탭 실시간 갱신이 필요한 것들
   const tab = getCurrentTab();
   if (tab === 'dispatch') {
-    renderDispatchTab();
+    // 1초에 1번만 전체 재렌더 — 매 프레임 DOM을 교체하면
+    // mousedown·mouseup 사이에 요소가 바뀌어 클릭 이벤트가 소실됨
+    _dispatchRenderTimer -= delta;
+    if (_dispatchRenderTimer <= 0) {
+      // 드롭다운(select)이 포커스 중이면 DOM 재구성 스킵 — 강제 닫힘 방지
+      const focused = document.activeElement;
+      const selectOpen = focused && focused.tagName === 'SELECT'
+        && focused.closest('#dispatch-areas');
+      if (!selectOpen) renderDispatchTab();
+      _dispatchRenderTimer = 1;
+    }
   } else if (tab === 'recruit') {
     updateRecruitCountdown();
   }
@@ -35,12 +46,14 @@ function checkAutoRecruitRefresh() {
   }
 }
 
-// ===== 시계 표시 =====
+// ===== 세션 경과 시간 표시 =====
+const _sessionStart = Date.now();
+
 function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  const s = String(now.getSeconds()).padStart(2,'0');
+  const elapsed = Math.floor((Date.now() - _sessionStart) / 1000);
+  const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
   const el = document.getElementById('time-display');
   if (el) el.textContent = `${h}:${m}:${s}`;
 }
@@ -115,6 +128,14 @@ function init() {
   // 게임 루프 시작
   lastTick = performance.now();
   requestAnimationFrame(gameLoop);
+
+  // 오프라인 복귀 알림 (저장 데이터가 있을 때만)
+  if (window._pendingOffline) {
+    setTimeout(() => {
+      showOfflinePopup(window._pendingOffline);
+      window._pendingOffline = null;
+    }, 600);
+  }
 
   console.log('길드는 잠들지 않는다 — 초기화 완료');
 }

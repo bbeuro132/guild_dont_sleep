@@ -252,6 +252,45 @@ const AREAS = [
   },
 ];
 
+// ===== 장비 템플릿 =====
+const EQUIPMENT_TEMPLATES = {
+  weapon: {
+    names:  { D: '낡은 검',   C: '강철 검',     B: '은빛 검',       A: '성검',         S: '전설의 검'   },
+    icons:  { D: 'assets/items/W_Sword001.png', C: 'assets/items/W_Sword003.png',
+              B: 'assets/items/W_Sword006.png', A: 'assets/items/W_Sword009.png',
+              S: 'assets/items/W_Sword013.png' },
+    stats:  { D: { atk: 8 }, C: { atk: 18 }, B: { atk: 40 }, A: { atk: 80 }, S: { atk: 160 } },
+  },
+  armor: {
+    names:  { D: '낡은 갑옷', C: '강철 갑옷',   B: '미스릴 갑옷',   A: '성기사 갑옷',  S: '전설의 갑옷' },
+    icons:  { D: 'assets/items/A_Clothing01.png', C: 'assets/items/A_Armour01.png',
+              B: 'assets/items/A_Armour02.png',   A: 'assets/items/A_Armour03.png',
+              S: 'assets/items/A_Armor05.png' },
+    stats:  { D: { hp: 30, def: 5 }, C: { hp: 70, def: 12 }, B: { hp: 150, def: 25 },
+              A: { hp: 300, def: 50 }, S: { hp: 600, def: 100 } },
+  },
+  accessory: {
+    names:  { D: '낡은 반지', C: '은 목걸이',   B: '마법 반지',     A: '성기사 훈장',  S: '전설의 보석' },
+    icons:  { D: 'assets/items/Ac_Necklace01.png', C: 'assets/items/Ac_Ring01.png',
+              B: 'assets/items/Ac_Necklace03.png',  A: 'assets/items/Ac_Medal02.png',
+              S: 'assets/items/Ac_Ring02.png' },
+    stats:  { D: { spd: 3, crit: 3 }, C: { spd: 6, crit: 6 }, B: { spd: 12, crit: 10 },
+              A: { spd: 25, crit: 15 }, S: { spd: 50, crit: 25 } },
+  },
+};
+
+function generateEquipment(slot, grade) {
+  const tmpl = EQUIPMENT_TEMPLATES[slot];
+  return {
+    id:    `eq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    name:  tmpl.names[grade],
+    slot,
+    grade,
+    icon:  tmpl.icons[grade],
+    stats: { ...tmpl.stats[grade] },
+  };
+}
+
 // 상점 아이템 정의
 const SHOP_ITEMS = [
   {
@@ -310,6 +349,36 @@ const SHOP_ITEMS = [
     type: 'material',
     grade: 'B',
     amount: 1,
+  },
+  {
+    id: 'shop_weapon_d',
+    name: '낡은 검 (D급)',
+    icon: 'assets/items/W_Sword001.png',
+    desc: '공격력 +8. 모험가 상세에서 무기 슬롯에 장착.',
+    price: 800,
+    type: 'equipment',
+    slot: 'weapon',
+    grade: 'D',
+  },
+  {
+    id: 'shop_armor_d',
+    name: '낡은 갑옷 (D급)',
+    icon: 'assets/items/A_Clothing01.png',
+    desc: 'HP +30, 방어력 +5. 방어구 슬롯에 장착.',
+    price: 600,
+    type: 'equipment',
+    slot: 'armor',
+    grade: 'D',
+  },
+  {
+    id: 'shop_accessory_d',
+    name: '낡은 반지 (D급)',
+    icon: 'assets/items/Ac_Necklace01.png',
+    desc: '속도 +3, 치명타 +3%. 악세서리 슬롯에 장착.',
+    price: 500,
+    type: 'equipment',
+    slot: 'accessory',
+    grade: 'D',
   },
 ];
 

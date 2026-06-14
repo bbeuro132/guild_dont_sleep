@@ -730,6 +730,28 @@ function tickDispatchCombat(dispatch, delta) {
     // 진행도 +1
     dispatch.progress = Math.min(dispatch.progress + 1, area.maxProgress);
 
+    // 장비 드롭 (스테이지·보스 여부에 따른 확률)
+    const isBossFight = enemies.some(e => e.isBoss);
+    const dropChance = 0.05 + area.stage * 0.01 + (isBossFight ? 0.10 : 0);
+    if (Math.random() < dropChance) {
+      const SLOTS = ['weapon', 'armor', 'accessory'];
+      const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
+      const GRADE_POOLS = [
+        ['D','D','D','C'],      // stage 1
+        ['D','D','C','C'],      // stage 2
+        ['D','C','C','B'],      // stage 3
+        ['C','C','B','B'],      // stage 4
+        ['C','B','B','A'],      // stage 5
+        ['B','B','A','A'],      // stage 6
+        ['B','A','A','S'],      // stage 7
+      ];
+      const pool = GRADE_POOLS[Math.min(area.stage - 1, 6)];
+      const grade = pool[Math.floor(Math.random() * pool.length)];
+      const eq = generateEquipment(slot, grade);
+      State.inventory.push(eq);
+      showToast(`⚔️ 장비 획득: ${eq.name} (${eq.grade}급)`, 'success');
+    }
+
     // 최대 진행도 도달 시 재시작
     if (dispatch.progress >= area.maxProgress) {
       dispatch.progress = 1;
@@ -750,12 +772,13 @@ class LiveBattle {
   constructor(allies, enemies, onUpdate, onEnd) {
     this.allies  = allies;
     this.enemies = enemies;
-    this.turn    = 0;
+    this.round   = 0;
     this.log     = [];
     this.onUpdate = onUpdate;
     this.onEnd    = onEnd;
     this.timer    = null;
-    this._startDone = false;
+    this._startDone  = false;
+    this._actionQueue = []; // 속도 순 행동 큐 (1틱 = 1명 행동)
   }
 
   addLog(html) {
@@ -774,47 +797,71 @@ class LiveBattle {
       ));
     }
     this.onUpdate(this);
-    this.timer = setInterval(() => this.tick(), 2000);
+    this.timer = setInterval(() => this.tick(), 1500);
   }
 
   stop() {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
   }
 
+  // 매 1.5초마다 호출 — 유닛 1명만 행동
   tick() {
-    this.turn++;
-    const all = [...this.allies, ...this.enemies].filter(u => u.isAlive());
-    all.sort((a, b) => b.spd - a.spd);
+    // 큐가 비면 새 라운드: 생존 유닛을 속도 내림차순으로 정렬해 채움
+    if (this._actionQueue.length === 0) {
+      const alive = [...this.allies, ...this.enemies].filter(u => u.isAlive());
+      if (alive.length === 0) return;
+      this.round++;
+      this._actionQueue = alive.sort((a, b) => b.spd - a.spd);
+      this.addLog(`<span class="log-system">── ${this.round}라운드 ──</span>`);
+    }
 
-    for (const unit of all) {
-      if (!unit.isAlive()) continue;
-      const myTeam  = unit.isAlly ? this.allies : this.enemies;
-      const oppTeam = unit.isAlly ? this.enemies : this.allies;
-      if (!oppTeam.some(u => u.isAlive())) break;
+    // 다음 행동 유닛 꺼내기
+    const unit = this._actionQueue.shift();
+    if (!unit || !unit.isAlive()) {
+      // 이미 죽은 유닛은 건너뛰고 끝 판정만
+      this._checkEnd();
+      return;
+    }
 
-      unit.tickStart((t) => this.addLog(t));
-      if (!unit.isAlive()) continue;
+    const myTeam  = unit.isAlly ? this.allies : this.enemies;
+    const oppTeam = unit.isAlly ? this.enemies : this.allies;
 
-      const usedSkill = unit.isAlly
-        ? unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t))
-        : false;
-      if (!usedSkill) {
-        unit.normalAttack(oppTeam, myTeam, (t) => this.addLog(t));
-      }
+    if (!oppTeam.some(u => u.isAlive())) {
+      this._checkEnd();
+      return;
+    }
+
+    // 턴 시작 처리 (상태이상 틱, 쿨다운 감소)
+    unit.tickStart((t) => this.addLog(t));
+    if (!unit.isAlive()) {
+      this.onUpdate(this);
+      this._checkEnd();
+      return;
+    }
+
+    // 스킬 우선, 없으면 일반 공격
+    const usedSkill = unit.isAlly
+      ? unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t))
+      : false;
+    if (!usedSkill) {
+      unit.normalAttack(oppTeam, myTeam, (t) => this.addLog(t));
     }
 
     this.onUpdate(this);
+    this._checkEnd();
+  }
 
+  _checkEnd() {
     const aliveA = this.allies.filter(u => u.isAlive()).length;
     const aliveE = this.enemies.filter(u => u.isAlive()).length;
 
     if (aliveE === 0) {
-      this.addLog('<span class="log-system">🏆 승리! 다음 전투 대기 중...</span>');
+      this.addLog('<span class="log-system">🏆 승리! 2초 후 다음 전투...</span>');
       this.onUpdate(this);
       this.stop();
       this.onEnd(true);
     } else if (aliveA === 0) {
-      this.addLog('<span class="log-system">💀 전멸... 체력 회복 후 재도전</span>');
+      this.addLog('<span class="log-system">💀 전멸... 2초 후 재도전</span>');
       this.onUpdate(this);
       this.stop();
       this.onEnd(false);

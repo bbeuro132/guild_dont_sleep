@@ -302,12 +302,13 @@ body {
 }
 .btn-green:hover { background: linear-gradient(135deg, #81c784, #43a047); }
 
-.btn-red {
+.btn-red, .btn-danger {
   background: linear-gradient(135deg, #ef5350, var(--red));
   color: white;
   border: 2px solid #c62828;
   box-shadow: 0 3px 8px rgba(229,57,53,0.3);
 }
+.btn-red:hover, .btn-danger:hover { background: linear-gradient(135deg, #e53935, #b71c1c); }
 
 .btn-outline {
   background: transparent;
@@ -431,6 +432,32 @@ body {
   color: var(--purple);
   border-radius: 6px;
   padding: 2px 7px;
+  position: relative;
+}
+.trait-badge[data-tooltip] {
+  cursor: help;
+}
+.trait-badge[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2c1a0e;
+  color: var(--cream);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+  border: 1px solid rgba(123, 31, 162, 0.4);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.trait-badge[data-tooltip]:hover::after {
+  opacity: 1;
 }
 
 .adv-status-badge {
@@ -678,15 +705,22 @@ body {
 /* ===== 모집 탭 ===== */
 #recruit-chloe {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 14px;
   margin-bottom: 14px;
+}
+
+#chloe-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 #chloe-img {
   width: 90px;
   object-fit: contain;
-  flex-shrink: 0;
 }
 
 #chloe-speech {
@@ -706,7 +740,8 @@ body {
   content: '';
   position: absolute;
   left: -12px;
-  bottom: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   border: 6px solid transparent;
   border-right-color: var(--brown);
 }
@@ -715,7 +750,8 @@ body {
   content: '';
   position: absolute;
   left: -9px;
-  bottom: 21px;
+  top: 50%;
+  transform: translateY(-50%);
   border: 5px solid transparent;
   border-right-color: white;
 }
@@ -814,29 +850,23 @@ body {
 #shop-npc {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, rgba(90,50,10,0.5), rgba(60,30,5,0.4));
-  border: 2px solid var(--gold-dark);
-  border-radius: var(--radius);
-  padding: 12px 16px;
 }
 
 #shop-npc-avatar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 #shop-npc-img {
-  width: 120px;
-  height: 160px;
+  width: 90px;
+  height: auto;
   object-fit: contain;
-  object-position: bottom;
   image-rendering: pixelated;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
 }
 
 .npc-name {
@@ -1032,15 +1062,72 @@ body {
 .log-skill { color: var(--purple); font-weight: bold; }
 .log-system { color: #888; }
 
+/* 오프라인 복귀 팝업 */
+#offline-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+#offline-chloe-img {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+#offline-areas {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.offline-area-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.offline-area-row:last-child { border-bottom: none; }
+.offline-area-name { font-size: 0.85rem; font-weight: bold; white-space: nowrap; }
+.offline-area-gains {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 0.78rem;
+  color: var(--brown-dark);
+}
+.offline-progress { font-size: 0.7rem; color: #666; }
+#offline-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(245,200,66,0.08);
+  border-radius: 8px;
+  margin-bottom: 2px;
+}
+
 /* 정산 팝업 */
-#settlement-chloe {
-  text-align: center;
-  margin-bottom: 10px;
+#settlement-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+#settlement-header .popup-title {
+  margin: 0;
+  flex: 1;
 }
 
 #settlement-img {
-  height: 120px;
+  height: 64px;
+  width: auto;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 #settlement-result {

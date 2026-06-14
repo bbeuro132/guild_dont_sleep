@@ -63,6 +63,9 @@
   <section id="tab-guild" class="tab-panel active">
     <h2 class="panel-title">🏰 길드 인프라</h2>
     <div id="buildings-grid"></div>
+    <div style="margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);text-align:right">
+      <button class="btn btn-danger" onclick="resetState()">🗑️ 세이브 초기화</button>
+    </div>
   </section>
 
   <!-- 모험가 탭 -->
@@ -83,8 +86,11 @@
   <!-- 모집 탭 -->
   <section id="tab-recruit" class="tab-panel">
     <div id="recruit-chloe">
-      <img id="chloe-img" src="assets/characters/클로에_모험가_모집.png" alt="클로에"
-           onerror="this.style.display='none'" />
+      <div id="chloe-avatar">
+        <img id="chloe-img" src="assets/characters/클로에_모험가_모집.png" alt="클로에"
+             onerror="this.style.display='none'" />
+        <div class="npc-name">길드 비서 클로에</div>
+      </div>
       <div id="chloe-speech">
         <p id="chloe-text">길드장님! 오늘도 모험가 지원서가 들어왔어요. 함께 검토해 볼까요?</p>
       </div>
@@ -134,11 +140,11 @@
 <div id="settlement-popup" class="popup hidden">
   <div class="popup-inner">
     <button class="popup-close" id="btn-close-settlement">✕</button>
-    <div id="settlement-chloe">
-      <img src="assets/characters/모험 정산.png" alt="클로에 정산" id="settlement-img"
+    <div id="settlement-header">
+      <img src="assets/characters/모험_정산.png" alt="클로에 정산" id="settlement-img"
            onerror="this.style.display='none'" />
+      <h3 class="popup-title">📋 파견 정산 보고서</h3>
     </div>
-    <h3 class="popup-title">📋 파견 정산 보고서</h3>
     <div id="settlement-result"></div>
     <button class="btn btn-gold btn-full" id="btn-confirm-settlement">✅ 수령하기</button>
   </div>
