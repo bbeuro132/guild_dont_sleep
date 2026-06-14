@@ -95,7 +95,7 @@ const BUILDINGS = [
     id: 'laboratory',
     name: '연구소',
     icon: '⚗️',
-    desc: '경험치 책을 제작하고 재료를 합성합니다. 레벨이 높을수록 더 좋은 책과 빠른 제작이 가능합니다.',
+    desc: '경험치 책을 제작합니다. 레벨이 높을수록 더 좋은 책과 빠른 제작이 가능합니다.',
     effectLabel: (lv) => {
       const maxGrade = lv >= 8 ? '전설' : lv >= 6 ? '영웅' : lv >= 4 ? '희귀' : lv >= 2 ? '마법' : '일반';
       return `제작 속도: ${100 + lv * 10}%, 최고 책: ${maxGrade}`;
@@ -1185,7 +1185,7 @@ const SHOP_ITEMS = [
     id: 'material_d',
     name: '재료 (일반)',
     icon: 'assets/items/I_Crystal01.png',
-    desc: '건물 업그레이드 및 합성에 사용',
+    desc: '건물 업그레이드 및 제작에 사용',
     price: 100,
     type: 'material',
     grade: '일반',
