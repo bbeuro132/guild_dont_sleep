@@ -532,7 +532,93 @@ body {
 #dispatch-areas {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+}
+
+/* ===== 국가 대분류 섹션 ===== */
+.nation-section {
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 2px solid rgba(139,94,60,0.4);
+}
+
+.nation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  background: linear-gradient(90deg, #2e1a0e, #5c3820);
+  cursor: pointer;
+  gap: 10px;
+  transition: background 0.15s;
+}
+
+.nation-header:hover {
+  background: linear-gradient(90deg, #3d2210, #6b4223);
+}
+
+.nation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+.nation-stages {
+  font-size: 0.72rem;
+  color: var(--cream-dark);
+  font-weight: normal;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.nation-dispatch-badge {
+  font-size: 0.68rem;
+  background: #e8f5e9;
+  color: #388e3c;
+  border: 1px solid #388e3c;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.nation-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.nation-unlock-info {
+  font-size: 0.75rem;
+  color: var(--cream-dark);
+}
+
+.nation-arrow {
+  font-size: 0.9rem;
+  color: var(--cream-dark);
+  width: 16px;
+  text-align: center;
+}
+
+.nation-body {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(0,0,0,0.12);
+}
+
+.nation-body.open {
+  display: flex;
+}
+
+/* 국가 body 안 area는 border-radius 약간 축소 */
+.nation-body .dispatch-area {
+  border-radius: calc(var(--radius) - 2px);
+  margin-bottom: 0;
 }
 
 .dispatch-area {
@@ -583,8 +669,22 @@ body {
   color: #c9a05e;
 }
 
+.area-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .area-progress {
   font-size: 0.8rem;
+  color: var(--cream-dark);
+  text-align: right;
+}
+
+.area-arrow {
+  font-size: 1rem;
   color: var(--cream-dark);
   text-align: right;
 }

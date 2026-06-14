@@ -331,166 +331,209 @@ function useExpBook(advId, itemIdx) {
 // ===== 파견 탭 =====
 let dispatchTeamBuffer = {};   // {areaId: [advId, ...]}
 
+const NATION_META = {
+  '베른':         { icon: '🏰', stages: '1~5단계' },
+  '칸':           { icon: '⚒️', stages: '6~10단계' },
+  '솔':           { icon: '🌊', stages: '11~15단계' },
+  '에테리아':     { icon: '✨', stages: '16~20단계' },
+  '오르도스':     { icon: '🏜️', stages: '21~25단계' },
+  '아이언피스트': { icon: '⚙️', stages: '26~30단계' },
+  '드래곤 왕국':  { icon: '🐉', stages: '31~35단계' },
+  '미지의 영역':  { icon: '🌌', stages: '36~40단계' },
+};
+
 function renderDispatchTab() {
   const container = document.getElementById('dispatch-areas');
   container.innerHTML = '';
 
   const dispatched = getDispatchedAdvIds();
-  const maxSlots = getMaxDispatchSlots();
+  const maxSlots   = getMaxDispatchSlots();
 
-  for (const area of AREAS) {
-    const activeDispatch = State.dispatches.find(d => d.areaId === area.id);
-    const isOpen = !!sessionStorage.getItem(`area_open_${area.id}`);
+  for (const [country, meta] of Object.entries(NATION_META)) {
+    const nationAreas       = AREAS.filter(a => a.country === country);
+    if (nationAreas.length === 0) continue;
 
-    const div = document.createElement('div');
-    div.className = `dispatch-area${area.unlocked ? '' : ' locked'}`;
+    const unlockedCount     = nationAreas.filter(a => a.unlocked).length;
+    const hasActiveDispatch = nationAreas.some(a => State.dispatches.find(d => d.areaId === a.id));
+    const nationId          = country.replace(/\s/g, '_');
+    const nationKey         = `nation_open_${country}`;
 
-    const monsterIcons = area.monsters.slice(0, 5).map(m =>
-      `<div class="monster-sprite-item">
-        <img src="${m.sprite}" alt="${m.name}" onerror="this.src='assets/items/I_Chest01.png'" />
-        <span>${m.name.replace(' (보스)', '')}</span>
-      </div>`
-    ).join('');
+    const stored       = sessionStorage.getItem(nationKey);
+    const isNationOpen = stored !== null ? stored === '1'
+                       : (hasActiveDispatch || country === '베른');
 
-    const progressVal = activeDispatch
-      ? Math.floor(activeDispatch.progress)
-      : (State.areaProgress[area.id] || 0);
-    const progressPct = (progressVal / area.maxProgress * 100).toFixed(1);
+    const nationDiv = document.createElement('div');
+    nationDiv.className = 'nation-section';
+    nationDiv.innerHTML = `
+      <div class="nation-header" onclick="toggleNation('${country}')">
+        <div class="nation-title">
+          <span>${meta.icon}</span>
+          <strong>${country}</strong>
+          <span class="nation-stages">${meta.stages}</span>
+          ${hasActiveDispatch ? '<span class="nation-dispatch-badge">파견 중</span>' : ''}
+        </div>
+        <div class="nation-right">
+          <span class="nation-unlock-info">${unlockedCount === 0 ? '🔒 미개방' : `${unlockedCount}/${nationAreas.length} 지역`}</span>
+          <span class="nation-arrow" id="nation-arrow-${nationId}">${isNationOpen ? '▲' : '▼'}</span>
+        </div>
+      </div>
+      <div class="nation-body${isNationOpen ? ' open' : ''}" id="nation-body-${nationId}"></div>
+    `;
+    container.appendChild(nationDiv);
 
-    let bodyHtml = '';
-    if (area.unlocked) {
-      if (activeDispatch) {
-        const accGold = Math.floor(activeDispatch.accumulated.gold);
-        const accMat  = activeDispatch.accumulated.material.toFixed(1);
-        const prog    = Math.min(activeDispatch.progress, area.maxProgress).toFixed(0);
-        const teamNames = activeDispatch.team.map(id => {
-          const a = State.adventurers.find(x => x.id === id);
-          return a ? a.name : '?';
-        }).join(', ');
+    const nationBody = nationDiv.querySelector('.nation-body');
 
-        // 파티 HP 현황
-        const partyHpHtml = activeDispatch.team.map(id => {
-          const adv = State.adventurers.find(a => a.id === id);
-          if (!adv) return '';
-          const stats = getEffectiveStats(adv);
-          const curHp = (activeDispatch.partyHp && activeDispatch.partyHp[id] !== undefined)
-            ? activeDispatch.partyHp[id] : stats.hp;
-          const hpPct = Math.max(0, Math.min(100, curHp / stats.hp * 100)).toFixed(0);
-          const hpColor = hpPct > 60 ? 'var(--green)' : hpPct > 30 ? 'var(--gold-dark)' : 'var(--red)';
-          const jobInfo = JOBS[adv.job];
-          return `<div style="flex:1;min-width:80px">
-            <div style="font-size:0.72rem;color:var(--brown-dark);margin-bottom:2px;display:flex;justify-content:space-between">
-              <span class="adv-job-badge ${jobInfo.cssClass}" style="font-size:0.6rem;padding:1px 5px">${jobInfo.name}</span>
-              <span style="font-weight:bold">${adv.name}</span>
+    for (const area of nationAreas) {
+      const activeDispatch = State.dispatches.find(d => d.areaId === area.id);
+      const isAreaOpen     = !!sessionStorage.getItem(`area_open_${area.id}`);
+
+      const monsterIcons = area.monsters.slice(0, 5).map(m =>
+        `<div class="monster-sprite-item">
+          <img src="${m.sprite}" alt="${m.name}" onerror="this.src='assets/items/I_Chest01.png'" />
+          <span>${m.name.replace(' (보스)', '')}</span>
+        </div>`
+      ).join('');
+
+      const progressVal = activeDispatch
+        ? Math.floor(activeDispatch.progress)
+        : (State.areaProgress[area.id] || 0);
+
+      let bodyHtml = '';
+      if (area.unlocked) {
+        if (activeDispatch) {
+          const accGold = Math.floor(activeDispatch.accumulated.gold);
+          const accMat  = activeDispatch.accumulated.material.toFixed(1);
+          const prog    = Math.min(activeDispatch.progress, area.maxProgress).toFixed(0);
+
+          const partyHpHtml = activeDispatch.team.map(id => {
+            const adv = State.adventurers.find(a => a.id === id);
+            if (!adv) return '';
+            const stats = getEffectiveStats(adv);
+            const curHp = (activeDispatch.partyHp && activeDispatch.partyHp[id] !== undefined)
+              ? activeDispatch.partyHp[id] : stats.hp;
+            const hpPct   = Math.max(0, Math.min(100, curHp / stats.hp * 100)).toFixed(0);
+            const hpColor = hpPct > 60 ? 'var(--green)' : hpPct > 30 ? 'var(--gold-dark)' : 'var(--red)';
+            const jobInfo = JOBS[adv.job];
+            return `<div style="flex:1;min-width:80px">
+              <div style="font-size:0.72rem;color:var(--brown-dark);margin-bottom:2px;display:flex;justify-content:space-between">
+                <span class="adv-job-badge ${jobInfo.cssClass}" style="font-size:0.6rem;padding:1px 5px">${jobInfo.name}</span>
+                <span style="font-weight:bold">${adv.name}</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" style="width:${hpPct}%;background:${hpColor}"></div>
+              </div>
+              <div style="font-size:0.65rem;color:#888;text-align:right">${Math.max(0,Math.floor(curHp))}/${stats.hp}</div>
+            </div>`;
+          }).join('');
+
+          const bossTag = activeDispatch.isBossEncounter
+            ? '<span style="font-size:0.68rem;background:#fff3e0;color:var(--orange);border:1px solid var(--orange);border-radius:6px;padding:2px 7px">⚠️ 보스</span>' : '';
+
+          bodyHtml = `
+            <div class="dispatch-slot active-dispatch">
+              <div class="slot-label">✅ 파견 중 ${bossTag}</div>
+              <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">${partyHpHtml}</div>
+              <div style="font-size:0.82rem;color:#6b4c30;margin-bottom:4px">
+                누적: 💰 ${accGold.toLocaleString()} 골드 · 재료 ${accMat}
+              </div>
+              <div style="font-size:0.78rem;color:#888;margin-bottom:4px">진행도: ${prog} / ${area.maxProgress}</div>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${(prog/area.maxProgress*100).toFixed(1)}%"></div></div>
+              <div class="dispatch-actions">
+                <button class="btn btn-gold" onclick="openSettlement('${area.id}')">📋 정산하기</button>
+                <button class="btn btn-primary" onclick="openBattlePopup('${area.id}')">⚔️ 전투 관람</button>
+                <button class="btn btn-outline" onclick="if(confirm('파견 팀을 귀환시키겠습니까?\\n잔여 누적 재화도 함께 수령합니다.')){recallDispatch('${area.id}');renderDispatchTab();renderHeader()}">🏠 귀환 명령</button>
+              </div>
             </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-bar-fill" style="width:${hpPct}%;background:${hpColor}"></div>
-            </div>
-            <div style="font-size:0.65rem;color:#888;text-align:right">${Math.max(0,Math.floor(curHp))}/${stats.hp}</div>
-          </div>`;
-        }).join('');
+          `;
+        } else {
+          if (!dispatchTeamBuffer[area.id]) dispatchTeamBuffer[area.id] = [];
+          const teamBuf  = dispatchTeamBuffer[area.id];
+          const availAdv = State.adventurers.filter(a => !dispatched.has(a.id));
+          const addOptions = availAdv
+            .filter(a => !teamBuf.includes(a.id))
+            .map(a => `<option value="${a.id}">${a.name} (${JOBS[a.job].name} Lv.${a.level})</option>`)
+            .join('');
+          const memberTags = teamBuf.map(id => {
+            const a = State.adventurers.find(x => x.id === id);
+            return a ? `<span class="slot-member">${a.name}<button class="remove-member" onclick="removeFromTeamBuffer('${area.id}', ${id})">✕</button></span>` : '';
+          }).join('');
 
-        const bossTag = activeDispatch.isBossEncounter
-          ? '<span style="font-size:0.68rem;background:#fff3e0;color:var(--orange);border:1px solid var(--orange);border-radius:6px;padding:2px 7px">⚠️ 보스</span>' : '';
+          bodyHtml = `
+            <div class="dispatch-slot">
+              <div class="slot-label">팀 구성 (최대 3명)</div>
+              <div class="slot-team" id="team-buf-${area.id}">
+                ${memberTags || '<span style="color:#bbb;font-size:0.82rem">모험가를 추가하세요</span>'}
+              </div>
+              ${availAdv.length > 0 && teamBuf.length < 3 ? `
+              <select class="adv-select" style="margin-top:8px;width:100%;padding:6px;border-radius:6px;border:1px solid var(--brown);font-family:inherit"
+                onchange="addToTeamBuffer('${area.id}', parseInt(this.value)); this.value=''; renderDispatchTab()">
+                <option value="">+ 모험가 추가...</option>
+                ${addOptions}
+              </select>` : ''}
+              <div class="dispatch-actions" style="margin-top:10px">
+                <button class="btn btn-green" onclick="doDispatch('${area.id}')" ${teamBuf.length === 0 ? 'disabled' : ''}>
+                  🗺️ 파견 출발!
+                </button>
+              </div>
+            </div>
+          `;
+        }
 
-        bodyHtml = `
-          <div class="dispatch-slot active-dispatch">
-            <div class="slot-label">✅ 파견 중 ${bossTag}</div>
-            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">${partyHpHtml}</div>
-            <div style="font-size:0.82rem;color:#6b4c30;margin-bottom:4px">
-              누적: 💰 ${accGold.toLocaleString()} 골드 · 재료 ${accMat}
-            </div>
-            <div style="font-size:0.78rem;color:#888;margin-bottom:4px">진행도: ${prog} / ${area.maxProgress}</div>
-            <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${(prog/area.maxProgress*100).toFixed(1)}%"></div></div>
-            <div class="dispatch-actions">
-              <button class="btn btn-gold" onclick="openSettlement('${area.id}')">📋 정산하기</button>
-              <button class="btn btn-primary" onclick="openBattlePopup('${area.id}')">⚔️ 전투 관람</button>
-              <button class="btn btn-outline" onclick="if(confirm('파견 팀을 귀환시키겠습니까?\\n잔여 누적 재화도 함께 수령합니다.')){recallDispatch('${area.id}');renderDispatchTab();renderHeader()}">🏠 귀환 명령</button>
-            </div>
+        bodyHtml += `
+          <div class="area-monsters">
+            <div class="area-monsters-title">출현 몬스터</div>
+            <div class="monster-sprites">${monsterIcons}</div>
           </div>
-        `;
-      } else {
-        if (!dispatchTeamBuffer[area.id]) dispatchTeamBuffer[area.id] = [];
-        const teamBuf = dispatchTeamBuffer[area.id];
-
-        const availAdv = State.adventurers.filter(a => !dispatched.has(a.id));
-        const addOptions = availAdv
-          .filter(a => !teamBuf.includes(a.id))
-          .map(a => `<option value="${a.id}">${a.name} (${JOBS[a.job].name} Lv.${a.level})</option>`)
-          .join('');
-
-        const memberTags = teamBuf.map(id => {
-          const a = State.adventurers.find(x => x.id === id);
-          return a ? `<span class="slot-member">
-            ${a.name}
-            <button class="remove-member" onclick="removeFromTeamBuffer('${area.id}', ${id})">✕</button>
-          </span>` : '';
-        }).join('');
-
-        bodyHtml = `
-          <div class="dispatch-slot">
-            <div class="slot-label">팀 구성 (최대 3명)</div>
-            <div class="slot-team" id="team-buf-${area.id}">
-              ${memberTags || '<span style="color:#bbb;font-size:0.82rem">모험가를 추가하세요</span>'}
-            </div>
-            ${availAdv.length > 0 && teamBuf.length < 3 ? `
-            <select class="adv-select" style="margin-top:8px;width:100%;padding:6px;border-radius:6px;border:1px solid var(--brown);font-family:inherit"
-              onchange="addToTeamBuffer('${area.id}', parseInt(this.value)); this.value=''; renderDispatchTab()">
-              <option value="">+ 모험가 추가...</option>
-              ${addOptions}
-            </select>` : ''}
-            <div class="dispatch-actions" style="margin-top:10px">
-              <button class="btn btn-green" onclick="doDispatch('${area.id}')"
-                ${teamBuf.length === 0 ? 'disabled' : ''}>
-                🗺️ 파견 출발!
-              </button>
-            </div>
+          <div style="font-size:0.78rem;color:#888;margin-top:8px">
+            💰 ${area.goldPerSec}/초 · 재료 ${area.materialPerMin}/분
           </div>
         `;
       }
 
-      bodyHtml += `
-        <div class="area-monsters">
-          <div class="area-monsters-title">출현 몬스터</div>
-          <div class="monster-sprites">${monsterIcons}</div>
+      const areaDiv = document.createElement('div');
+      areaDiv.className = `dispatch-area${area.unlocked ? '' : ' locked'}`;
+      areaDiv.innerHTML = `
+        <div class="area-header" onclick="toggleArea('${area.id}')">
+          <div class="area-title">
+            <span>${area.icon}</span>
+            <span>${area.name}</span>
+            <span class="area-stage-badge">${area.stage}단계</span>
+            ${activeDispatch ? '<span style="font-size:0.7rem;background:#e8f5e9;color:#388e3c;border-radius:6px;padding:2px 7px;border:1px solid #388e3c">파견 중</span>' : ''}
+          </div>
+          <div class="area-header-right">
+            ${area.unlocked
+              ? `<span class="area-progress">진행도 ${progressVal}/${area.maxProgress}</span>`
+              : `<span class="area-lock-info">🔒 ${area.unlockDesc}</span>`}
+            <span class="area-arrow" id="area-arrow-${area.id}">${isAreaOpen ? '▲' : '▼'}</span>
+          </div>
         </div>
-        <div style="font-size:0.78rem;color:#888;margin-top:8px">
-          💰 ${area.goldPerSec}/초 · 재료 ${area.materialPerMin}/분
+        <div class="area-body${isAreaOpen ? ' open' : ''}" id="area-body-${area.id}">
+          ${area.unlocked ? bodyHtml : `<div style="color:#888;text-align:center;padding:20px">🔒 ${area.unlockDesc}</div>`}
         </div>
       `;
+      nationBody.appendChild(areaDiv);
     }
-
-    div.innerHTML = `
-      <div class="area-header" onclick="toggleArea('${area.id}', this)">
-        <div class="area-title">
-          <span>${area.icon}</span>
-          <span>${area.name}</span>
-          <span class="area-stage-badge">${area.stage}단계</span>
-          ${activeDispatch ? '<span style="font-size:0.7rem;background:#e8f5e9;color:#388e3c;border-radius:6px;padding:2px 7px;border:1px solid #388e3c">파견 중</span>' : ''}
-        </div>
-        <div>
-          ${area.unlocked
-            ? `<div class="area-progress">진행도 ${progressVal}/${area.maxProgress}</div>`
-            : `<div class="area-lock-info">🔒 ${area.unlockDesc}</div>`}
-          <div style="font-size:1rem;color:var(--cream-dark);text-align:right">${isOpen ? '▲' : '▼'}</div>
-        </div>
-      </div>
-      <div class="area-body${isOpen ? ' open' : ''}" id="area-body-${area.id}">
-        ${area.unlocked ? bodyHtml : `<div style="color:#888;text-align:center;padding:20px">🔒 ${area.unlockDesc}</div>`}
-      </div>
-    `;
-
-    container.appendChild(div);
   }
 }
 
-function toggleArea(areaId, headerEl) {
-  const body = document.getElementById(`area-body-${areaId}`);
+function toggleNation(country) {
+  const nationId = country.replace(/\s/g, '_');
+  const body  = document.getElementById(`nation-body-${nationId}`);
+  const arrow = document.getElementById(`nation-arrow-${nationId}`);
+  if (!body) return;
+  const isOpen = body.classList.toggle('open');
+  if (isOpen) sessionStorage.setItem(`nation_open_${country}`, '1');
+  else         sessionStorage.removeItem(`nation_open_${country}`);
+  if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
+}
+
+function toggleArea(areaId) {
+  const body  = document.getElementById(`area-body-${areaId}`);
+  const arrow = document.getElementById(`area-arrow-${areaId}`);
+  if (!body) return;
   const isOpen = body.classList.toggle('open');
   if (isOpen) sessionStorage.setItem(`area_open_${areaId}`, '1');
   else         sessionStorage.removeItem(`area_open_${areaId}`);
-  // 화살표 갱신
-  const arrow = headerEl.querySelector('div:last-child div:last-child');
   if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
 }
 
