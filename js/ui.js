@@ -1094,6 +1094,8 @@ const TUTORIAL_STEPS = [
   { text: '길드에 합류한 모험가는 모험가 탭에서 확인할 수 있어요. 장비도 장착하고, 레벨업도 시킬 수 있답니다!', highlight: '#tab-bar .tab-btn:nth-child(2)' },
   { text: '파견 탭에서 팀을 꾸려 지역으로 파견을 보내세요. 파견 중인 모험가들은 알아서 싸우고 골드와 재료를 모아온답니다!', highlight: '#tab-bar .tab-btn:nth-child(3)' },
   { text: '모험가들이 돌아오면 정산 버튼으로 성과물을 회수하세요. 골드와 재료로 길드 건물을 업그레이드할 수 있어요!', highlight: '#tab-bar .tab-btn:nth-child(1)' },
+  { text: '연구소에서는 경험치 책을 제작해 모험가를 빠르게 성장시킬 수 있어요. 골드가 많이 모이면 영구 단련도 해보세요. 리빌딩 후에도 효과가 사라지지 않는 강력한 강화랍니다!', highlight: '#tab-bar .tab-btn:nth-child(6)' },
+  { text: '경지 탭은 고급 기능이에요. 길드를 충분히 키웠다면 리빌딩으로 새 출발을 할 수 있어요. 누적 골드로 스킬포인트를 얻고, 경지 트리를 해금하면 길드 전체가 영구적으로 강해진답니다!', highlight: '#tab-bar .tab-btn:nth-child(7)' },
   { text: '이제 길드장님 혼자서도 잘 하실 수 있겠죠? 궁금한 게 있으면 언제든 클로에를 찾아주세요! 화이팅! 💪', highlight: null },
 ];
 
