@@ -26,6 +26,8 @@ const DEFAULT_STATE = {
   tutorialStep: 0,
   tutorialDone: false,
 
+  labQueue: null,       // {recipeId, name, icon, grade, expValue, startAt, finishAt, totalMs}
+
   lastSaveTime: 0,
   totalPlayTime: 0,
 };
@@ -545,4 +547,58 @@ function buyShopItem(itemId) {
 // ===== 현재 파견 중인 모험가 ID 집합 =====
 function getDispatchedAdvIds() {
   return new Set(State.dispatches.flatMap(d => d.team));
+}
+
+// ===== 연구소 =====
+function startCraft(recipeId) {
+  if (State.labQueue) { showToast('이미 제작 중입니다.', 'error'); return false; }
+  const recipe = LAB_RECIPES.find(r => r.id === recipeId);
+  if (!recipe) return false;
+  const labLv = getBuildingLevel('laboratory');
+  if (labLv < recipe.reqLabLv) { showToast(`연구소 레벨 ${recipe.reqLabLv} 이상 필요합니다.`, 'error'); return false; }
+  if (!spendGold(recipe.cost.gold)) { showToast('골드가 부족합니다.', 'error'); return false; }
+  if (!spendMaterial(recipe.cost.material)) {
+    addGold(recipe.cost.gold);
+    showToast('재료가 부족합니다.', 'error'); return false;
+  }
+  const speedMult = (100 + labLv * 10) / 100;
+  const totalMs = Math.floor(recipe.craftTime / speedMult) * 1000;
+  State.labQueue = {
+    recipeId,
+    name: recipe.name,
+    icon: recipe.icon,
+    grade: recipe.grade,
+    expValue: recipe.expValue,
+    startAt: Date.now(),
+    finishAt: Date.now() + totalMs,
+    totalMs,
+  };
+  saveState();
+  showToast(`${recipe.name} 제작 시작!`, 'success');
+  return true;
+}
+
+function cancelCraft() {
+  if (!State.labQueue) return false;
+  const recipe = LAB_RECIPES.find(r => r.id === State.labQueue.recipeId);
+  if (recipe) {
+    addGold(recipe.cost.gold);
+    addMaterial(recipe.cost.material);
+  }
+  State.labQueue = null;
+  saveState();
+  showToast('제작을 취소했습니다. 재료를 전액 환불받았습니다.', 'info');
+  return true;
+}
+
+function tickLab() {
+  if (!State.labQueue) return;
+  if (Date.now() >= State.labQueue.finishAt) {
+    const q = State.labQueue;
+    State.inventory.push({ type: 'exp_book', name: q.name, icon: q.icon, grade: q.grade, expValue: q.expValue });
+    State.labQueue = null;
+    saveState();
+    showToast(`${q.name} 제작 완료! 인벤토리에 추가됐습니다.`, 'success');
+    if (typeof renderLabTab === 'function' && getCurrentTab() === 'lab') renderLabTab();
+  }
 }

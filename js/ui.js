@@ -39,6 +39,7 @@ function renderTab(tabId) {
     case 'dispatch':    renderDispatchTab();    break;
     case 'recruit':     renderRecruitTab();     break;
     case 'shop':        renderShopTab();        break;
+    case 'lab':         renderLabTab();         break;
   }
 }
 
@@ -1017,4 +1018,86 @@ function endTutorial() {
   document.getElementById('tutorial-overlay').classList.add('hidden');
   State.tutorialDone = true;
   saveState();
+}
+
+// ===== 연구소 탭 =====
+function formatCraftTime(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  if (s < 60) return `${s}초`;
+  const m = Math.floor(s / 60), sec = s % 60;
+  if (m < 60) return sec > 0 ? `${m}분 ${sec}초` : `${m}분`;
+  const h = Math.floor(m / 60), min = m % 60;
+  return min > 0 ? `${h}시간 ${min}분` : `${h}시간`;
+}
+
+function renderLabTab() {
+  const el = document.getElementById('lab-content');
+  if (!el) return;
+
+  const labLv = getBuildingLevel('laboratory');
+  const q = State.labQueue;
+  const now = Date.now();
+
+  // 현재 제작 현황
+  let queueHtml;
+  if (q) {
+    const remaining = Math.max(0, q.finishAt - now);
+    const pct = Math.min(100, ((q.totalMs - remaining) / q.totalMs) * 100).toFixed(1);
+    const col = gradeColor(q.grade);
+    queueHtml = `
+      <div class="lab-queue-card active">
+        <div class="lab-queue-item">
+          <img src="${q.icon}" class="lab-queue-icon" onerror="this.style.display='none'" />
+          <div class="lab-queue-info">
+            <div class="lab-queue-name" style="color:${col}">${q.name}</div>
+            <div class="progress-bar-wrap" style="margin:6px 0">
+              <div class="progress-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="lab-queue-time">남은 시간: <strong>${formatCraftTime(remaining)}</strong></div>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="margin-top:10px;width:100%"
+          onclick="if(cancelCraft()) renderLabTab()">취소 (재료 전액 환불)</button>
+      </div>`;
+  } else {
+    queueHtml = `<div class="lab-queue-card empty">⚗️ 제작 슬롯이 비어 있습니다.</div>`;
+  }
+
+  // 레시피 목록
+  const recipesHtml = LAB_RECIPES.map(recipe => {
+    const labLvOk  = labLv >= recipe.reqLabLv;
+    const canAfford = State.gold >= recipe.cost.gold && State.materials >= recipe.cost.material;
+    const busy      = !!q;
+    const disabled  = busy || !labLvOk;
+    const speedMult = (100 + labLv * 10) / 100;
+    const actualMs  = Math.floor(recipe.craftTime / speedMult) * 1000;
+    const col       = gradeColor(recipe.grade);
+    const btnLabel  = busy ? '제작 중...' : !labLvOk ? `🔒 Lv.${recipe.reqLabLv} 필요` : '제작 시작';
+    const costStyle = canAfford ? '' : 'color:#e57373';
+
+    return `
+      <div class="lab-recipe-card${disabled ? ' disabled' : ''}">
+        <div class="lab-recipe-header">
+          <img src="${recipe.icon}" class="lab-recipe-icon" onerror="this.style.display='none'" />
+          <div>
+            <div class="lab-recipe-name" style="color:${col}">${recipe.name}</div>
+            <div class="lab-recipe-exp">EXP <strong>+${recipe.expValue.toLocaleString()}</strong></div>
+          </div>
+        </div>
+        <div class="lab-recipe-cost" style="${costStyle}">
+          💰 ${recipe.cost.gold.toLocaleString()} &nbsp;|&nbsp;
+          💎 ${recipe.cost.material} &nbsp;|&nbsp;
+          ⏱ ${formatCraftTime(actualMs)}
+        </div>
+        <button class="btn ${disabled ? 'btn-outline' : 'btn-primary'} btn-full"
+          onclick="if(startCraft('${recipe.id}')) renderLabTab()"
+          ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="lab-section-title">현재 제작</div>
+    ${queueHtml}
+    <div class="lab-section-title" style="margin-top:20px">경험치 책 제작</div>
+    <div class="lab-recipes-grid">${recipesHtml}</div>`;
 }

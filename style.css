@@ -956,6 +956,118 @@ body {
   margin-bottom: 8px;
 }
 
+/* ===== 연구소 탭 ===== */
+.lab-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--brown);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.lab-queue-card {
+  background: var(--panel-bg);
+  border-radius: var(--radius);
+  border: 2px solid var(--brown);
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+.lab-queue-card.empty {
+  text-align: center;
+  color: #888;
+  padding: 24px;
+  font-size: 0.9rem;
+}
+
+.lab-queue-card.active {
+  border-color: var(--gold-dark);
+}
+
+.lab-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.lab-queue-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lab-queue-info {
+  flex: 1;
+}
+
+.lab-queue-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.lab-queue-time {
+  font-size: 0.82rem;
+  color: #ccc;
+}
+
+.lab-recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.lab-recipe-card {
+  background: var(--panel-bg);
+  border-radius: var(--radius);
+  border: 2px solid var(--brown);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.lab-recipe-card:not(.disabled):hover {
+  border-color: var(--gold-dark);
+  transform: translateY(-2px);
+}
+
+.lab-recipe-card.disabled {
+  opacity: 0.6;
+}
+
+.lab-recipe-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lab-recipe-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lab-recipe-name {
+  font-weight: bold;
+  font-size: 0.88rem;
+}
+
+.lab-recipe-exp {
+  font-size: 0.78rem;
+  color: #aaa;
+}
+
+.lab-recipe-cost {
+  font-size: 0.78rem;
+  color: #ccc;
+}
+
 /* ===== 팝업 ===== */
 #overlay {
   position: fixed;

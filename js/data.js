@@ -96,7 +96,10 @@ const BUILDINGS = [
     name: '연구소',
     icon: '⚗️',
     desc: '경험치 책을 제작하고 재료를 합성합니다. 레벨이 높을수록 더 좋은 책과 빠른 제작이 가능합니다.',
-    effectLabel: (lv) => `제작 속도: ${100 + lv * 10}%, 최고 책 등급: ${'DCBAS'[Math.min(Math.floor(lv / 2), 4)]}`,
+    effectLabel: (lv) => {
+      const maxGrade = lv >= 8 ? '전설' : lv >= 6 ? '영웅' : lv >= 4 ? '희귀' : lv >= 2 ? '마법' : '일반';
+      return `제작 속도: ${100 + lv * 10}%, 최고 책: ${maxGrade}`;
+    },
     baseCost: { gold: 1200, material: 6 },
     costMult: 1.6,
   },
@@ -1188,6 +1191,60 @@ const SHOP_ITEMS = [
     type: 'equipment',
     slot: 'accessory',
     grade: '일반',
+  },
+];
+
+// 연구소 제작 레시피
+const LAB_RECIPES = [
+  {
+    id: 'book_일반',
+    name: '경험치 서 [일반]',
+    grade: '일반',
+    icon: 'assets/items/I_Book.png',
+    expValue: 150,
+    cost: { gold: 300, material: 3 },
+    craftTime: 60,
+    reqLabLv: 1,
+  },
+  {
+    id: 'book_마법',
+    name: '경험치 서 [마법]',
+    grade: '마법',
+    icon: 'assets/items/I_Book.png',
+    expValue: 600,
+    cost: { gold: 1000, material: 10 },
+    craftTime: 180,
+    reqLabLv: 2,
+  },
+  {
+    id: 'book_희귀',
+    name: '경험치 서 [희귀]',
+    grade: '희귀',
+    icon: 'assets/items/I_Book.png',
+    expValue: 2500,
+    cost: { gold: 4000, material: 30 },
+    craftTime: 480,
+    reqLabLv: 4,
+  },
+  {
+    id: 'book_영웅',
+    name: '경험치 서 [영웅]',
+    grade: '영웅',
+    icon: 'assets/items/I_Book.png',
+    expValue: 10000,
+    cost: { gold: 15000, material: 90 },
+    craftTime: 1200,
+    reqLabLv: 6,
+  },
+  {
+    id: 'book_전설',
+    name: '경험치 서 [전설]',
+    grade: '전설',
+    icon: 'assets/items/I_Book.png',
+    expValue: 40000,
+    cost: { gold: 60000, material: 280 },
+    craftTime: 3600,
+    reqLabLv: 8,
   },
 ];
 

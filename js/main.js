@@ -1,7 +1,8 @@
 // ===== main.js: 진입점 및 게임 루프 =====
 
 let lastTick = 0;
-let _dispatchRenderTimer = 0; // 파견 탭 렌더 쓰로틀 (초)
+let _dispatchRenderTimer = 0;
+let _labRenderTimer = 0;
 
 function gameLoop(timestamp) {
   const delta = (timestamp - lastTick) / 1000; // 초 단위
@@ -9,6 +10,7 @@ function gameLoop(timestamp) {
 
   if (delta > 0 && delta < 60) {
     tickDispatches(delta);
+    tickLab();
   }
 
   // 헤더 항상 갱신
@@ -17,11 +19,8 @@ function gameLoop(timestamp) {
   // 현재 탭 실시간 갱신이 필요한 것들
   const tab = getCurrentTab();
   if (tab === 'dispatch') {
-    // 1초에 1번만 전체 재렌더 — 매 프레임 DOM을 교체하면
-    // mousedown·mouseup 사이에 요소가 바뀌어 클릭 이벤트가 소실됨
     _dispatchRenderTimer -= delta;
     if (_dispatchRenderTimer <= 0) {
-      // 드롭다운(select)이 포커스 중이면 DOM 재구성 스킵 — 강제 닫힘 방지
       const focused = document.activeElement;
       const selectOpen = focused && focused.tagName === 'SELECT'
         && focused.closest('#dispatch-areas');
@@ -30,6 +29,12 @@ function gameLoop(timestamp) {
     }
   } else if (tab === 'recruit') {
     updateRecruitCountdown();
+  } else if (tab === 'lab') {
+    _labRenderTimer -= delta;
+    if (_labRenderTimer <= 0) {
+      renderLabTab();
+      _labRenderTimer = 1;
+    }
   }
 
   // 자동 서류 갱신 체크
