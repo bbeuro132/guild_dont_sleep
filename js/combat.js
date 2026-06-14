@@ -245,14 +245,17 @@ const SKILLS = {
       log(`✨ [수호 술식] ${u.name}: 아군 전체 보호막 ${amt} 부여!`);
     },
   },
-  cathedral_heal: {
-    name: '회복', type: 'cooldown', cooldown: 3,
+  cathedral_deny: {
+    name: '접근 거부', type: 'cooldown', cooldown: 3,
     exec(u, al, en, log) {
-      const alive = al.filter(a => a.isAlive());
-      const t = alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
-      if (!t) return;
-      const h = t.heal(Math.floor(u.atk * 1.5));
-      log(`💚 [회복] ${u.name}→${t.name}: <b class="log-heal">${h}</b> 회복!`);
+      const alive = en.filter(e => e.isAlive());
+      if (alive.length === 0) return;
+      alive.forEach(t => {
+        const d = magicDmg(u.atk, 0.4, false, u.critDmg);
+        t.takeDamage(d);
+        t.addStatus('atk_down', 2, 0.25);
+      });
+      log(`🚫 [접근 거부] ${u.name}: 적 전체 소량 피해 + 2턴간 공격력 25% 하락!`);
     },
   },
 
@@ -264,12 +267,17 @@ const SKILLS = {
       log(`✨✨ [수호 술식 2.0] ${u.name}: 아군 전체 보호막 ${amt} 부여!`);
     },
   },
-  scholar_mass_heal: {
-    name: '광역 회복', type: 'cooldown', cooldown: 3,
+  scholar_isolate: {
+    name: '시스템 격리', type: 'cooldown', cooldown: 3,
     exec(u, al, en, log) {
-      const h = Math.floor(u.atk * 1.0);
-      al.filter(a => a.isAlive()).forEach(a => a.heal(h));
-      log(`💚💚 [광역 회복] ${u.name}: 아군 전체 <b class="log-heal">${h}</b> 회복!`);
+      const alive = en.filter(e => e.isAlive());
+      if (alive.length === 0) return;
+      alive.forEach(t => {
+        const d = magicDmg(u.atk, 0.4, false, u.critDmg);
+        t.takeDamage(d);
+        t.addStatus('atk_down', 3, 0.35);
+      });
+      log(`🔒 [시스템 격리] ${u.name}: 적 전체 소량 피해 + 3턴간 공격력 35% 하락!`);
     },
   },
 
@@ -341,8 +349,8 @@ const JOB_SKILLS = {
   hunter:             ['hunter_mark', 'hunter_rapidfire'],
   bounty_hunter:      ['bounty_obsession', 'bounty_finisher'],
   mage:               ['mage_barrage'],
-  cathedral_sorcerer: ['cathedral_shield', 'cathedral_heal'],
-  cathedral_scholar:  ['scholar_shield2', 'scholar_mass_heal'],
+  cathedral_sorcerer: ['cathedral_shield', 'cathedral_deny'],
+  cathedral_scholar:  ['scholar_shield2', 'scholar_isolate'],
   ivory_sorcerer:     ['ivory_coordinate', 'ivory_lightning'],
   ivory_sage:         ['sage_collapse', 'sage_lightning_hell'],
 };
@@ -554,6 +562,13 @@ class CombatUnit {
 
     const crit = rollCrit(this);
 
+    // 공격력 하락 상태이상 처리
+    let effectiveAtk = this.atk;
+    if (this.hasStatus('atk_down')) {
+      const s = this.statusEffects.find(e => e.type === 'atk_down');
+      if (s) effectiveAtk = Math.floor(effectiveAtk * (1 - s.value));
+    }
+
     // 방어력 계산 (방어 무시 / 방어 감소 상태)
     let effectiveDef = target.def;
     if (target.hasStatus('def_break')) effectiveDef = Math.floor(effectiveDef * 0.6);
@@ -561,9 +576,9 @@ class CombatUnit {
 
     let dmg;
     if (!this.job) {
-      dmg = physDmg(this.atk, effectiveDef, 1.0, crit, this.critDmg);
+      dmg = physDmg(effectiveAtk, effectiveDef, 1.0, crit, this.critDmg);
     } else {
-      dmg = physDmg(this.atk, effectiveDef, 1.0, crit, this.critDmg);
+      dmg = physDmg(effectiveAtk, effectiveDef, 1.0, crit, this.critDmg);
       if (this.markBonus && target === this.markTarget) dmg = Math.floor(dmg * (1 + this.markBonus));
     }
 
