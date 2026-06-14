@@ -672,7 +672,7 @@ function generateEnemyGroup(area, progress) {
   const progressRatio = Math.min(1, progress / area.maxProgress);
   const isBoss   = Math.random() < (0.02 + progressRatio * 0.13);
   const s        = area.stage;
-  const progMult = 1 + (progress / area.maxProgress) * 1.0;
+  const progMult = 1 + (progress / area.maxProgress) * 0.5;
   const hpMult   = isBoss ? 3.0 : 1;
   const atkMult  = isBoss ? 1.5 : 1;
 
