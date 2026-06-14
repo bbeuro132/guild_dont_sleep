@@ -21,7 +21,8 @@ const DEFAULT_STATE = {
 
   applications: [],    // 현재 서류함 (최대 3장)
   lastRecruitTime: 0,  // 마지막 서류 갱신 시각 (ms)
-  recruitInterval: 5 * 60 * 1000, // 5분
+  recruitInterval: 15 * 60 * 1000, // 15분
+  recruitForceCount: 0, // 자동 갱신 이후 수동 갱신 횟수 (비용 계산용)
 
   tutorialStep: 0,
   tutorialDone: false,
@@ -62,6 +63,8 @@ function loadState() {
       const saved = JSON.parse(raw);
       State = Object.assign({}, DEFAULT_STATE, saved);
       migrateGrades(State);
+      // 자동 갱신 주기 5분 → 15분 마이그레이션
+      if (State.recruitInterval === 5 * 60 * 1000) State.recruitInterval = 15 * 60 * 1000;
       // 오프라인 누적 처리 — 결과를 init()에서 팝업으로 표시
       window._pendingOffline = processOfflineProgress();
       // 저장된 areaProgress 기반으로 지역 해금 복원 (토스트 없이)
@@ -252,20 +255,26 @@ function pickJob() {
 }
 
 // ===== 서류 갱신 =====
-function refreshApplications() {
+function refreshApplications(isAuto = false) {
   State.applications = [
     generateAdventurer(),
     generateAdventurer(),
     generateAdventurer(),
   ];
   State.lastRecruitTime = Date.now();
+  if (isAuto) State.recruitForceCount = 0;
+}
+
+function getForceRefreshCost() {
+  return Math.floor(500 * Math.pow(2, State.recruitForceCount ?? 0));
 }
 
 function forceRefreshApplications() {
-  const cost = 500;
+  const cost = getForceRefreshCost();
   if (!spendGold(cost)) { showToast('골드가 부족합니다.', 'error'); return false; }
-  refreshApplications();
-  showToast('서류가 갱신되었습니다.', 'success');
+  refreshApplications(false);
+  State.recruitForceCount = (State.recruitForceCount ?? 0) + 1;
+  showToast(`서류 갱신 완료 (${cost.toLocaleString()} 골드 소비)`, 'success');
   return true;
 }
 

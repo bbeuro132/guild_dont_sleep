@@ -660,6 +660,15 @@ function updateRecruitCountdown() {
   const mm = Math.floor(remaining / 60000);
   const ss = Math.floor((remaining % 60000) / 1000);
   el.textContent = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+
+  // 즉시 갱신 버튼 비용 실시간 반영
+  const btn = document.getElementById('btn-refresh-recruit');
+  if (btn) {
+    const cost = getForceRefreshCost();
+    const count = State.recruitForceCount ?? 0;
+    const label = count > 0 ? ` (${count}회 추가)` : '';
+    btn.textContent = `💰 즉시 갱신 (${cost.toLocaleString()} 골드${label})`;
+  }
 }
 
 // ===== 상점 탭 =====

@@ -46,7 +46,7 @@ function gameLoop(timestamp) {
 function checkAutoRecruitRefresh() {
   const elapsed = Date.now() - State.lastRecruitTime;
   if (elapsed >= State.recruitInterval) {
-    refreshApplications();
+    refreshApplications(true);   // isAuto=true → recruitForceCount 리셋
     if (getCurrentTab() === 'recruit') renderRecruitTab();
   }
 }
