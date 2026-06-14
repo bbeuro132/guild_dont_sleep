@@ -19,9 +19,11 @@
 
   /* 등급 색상 */
   --grade-normal: #9e9e9e;
+  --grade-magic: #388e3c;
   --grade-rare: #1976d2;
   --grade-hero: #7b1fa2;
   --grade-legend: #f57c00;
+  --grade-mythic: #e53935;
 }
 
 /* ===== 리셋 & 기본 ===== */
@@ -817,11 +819,12 @@ body {
   color: white;
 }
 
-.grade-D { background: var(--grade-normal); }
-.grade-C { background: var(--green-dark); }
-.grade-B { background: var(--blue); }
-.grade-A { background: var(--purple); }
-.grade-S { background: var(--orange); }
+.grade-일반 { background: var(--grade-normal); }
+.grade-마법 { background: var(--grade-magic); }
+.grade-희귀 { background: var(--grade-rare); }
+.grade-영웅 { background: var(--grade-hero); }
+.grade-전설 { background: var(--grade-legend); }
+.grade-신화 { background: var(--grade-mythic); }
 
 .app-stats {
   display: grid;

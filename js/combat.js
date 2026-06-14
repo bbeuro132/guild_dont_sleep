@@ -823,15 +823,23 @@ function tickDispatchCombat(dispatch, delta) {
       const SLOTS = ['weapon', 'armor', 'accessory'];
       const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
       const GRADE_POOLS = [
-        ['D','D','D','C'],      // stage 1
-        ['D','D','C','C'],      // stage 2
-        ['D','C','C','B'],      // stage 3
-        ['C','C','B','B'],      // stage 4
-        ['C','B','B','A'],      // stage 5
-        ['B','B','A','A'],      // stage 6
-        ['B','A','A','S'],      // stage 7
+        ['일반','일반','일반','마법'],   // stage 1-2
+        ['일반','일반','마법','마법'],   // stage 3-4
+        ['일반','마법','마법','희귀'],   // stage 5-6
+        ['마법','마법','희귀','희귀'],   // stage 7-8
+        ['마법','희귀','희귀','영웅'],   // stage 9-12
+        ['희귀','희귀','영웅','영웅'],   // stage 13-16
+        ['희귀','영웅','영웅','전설'],   // stage 17-20
+        ['영웅','영웅','전설','전설'],   // stage 21-25
+        ['영웅','전설','전설','신화'],   // stage 26-30
+        ['전설','전설','신화','신화'],   // stage 31-35
+        ['전설','신화','신화','신화'],   // stage 36-40
       ];
-      const pool = GRADE_POOLS[Math.min(area.stage - 1, 6)];
+      const stageIdx = area.stage <= 2 ? 0 : area.stage <= 4 ? 1 : area.stage <= 6 ? 2
+        : area.stage <= 8 ? 3 : area.stage <= 12 ? 4 : area.stage <= 16 ? 5
+        : area.stage <= 20 ? 6 : area.stage <= 25 ? 7 : area.stage <= 30 ? 8
+        : area.stage <= 35 ? 9 : 10;
+      const pool = GRADE_POOLS[stageIdx];
       const grade = pool[Math.floor(Math.random() * pool.length)];
       const eq = generateEquipment(slot, grade);
       State.inventory.push(eq);

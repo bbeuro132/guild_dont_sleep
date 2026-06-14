@@ -255,7 +255,7 @@ function formatEquipOptions(options) {
 }
 
 function gradeOptionColor(grade) {
-  return { C: '#388e3c', B: '#1565c0', A: '#6a1b9a', S: '#e65100' }[grade] || '#888';
+  return { '마법': '#388e3c', '희귀': '#1565c0', '영웅': '#6a1b9a', '전설': '#e65100', '신화': '#c62828' }[grade] || '#888';
 }
 
 function renderEquipSlot(adv, slot, label) {
@@ -303,7 +303,7 @@ function renderEquipSlot(adv, slot, label) {
 }
 
 function gradeColor(grade) {
-  return { D: '#9e9e9e', C: '#388e3c', B: '#1976d2', A: '#7b1fa2', S: '#f57c00' }[grade] || '#9e9e9e';
+  return { '일반': '#9e9e9e', '마법': '#388e3c', '희귀': '#1976d2', '영웅': '#7b1fa2', '전설': '#f57c00', '신화': '#e53935' }[grade] || '#9e9e9e';
 }
 
 function promoteAdventurer(advId, targetJob) {

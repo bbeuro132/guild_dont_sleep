@@ -42,12 +42,24 @@ function saveState() {
   }
 }
 
+function migrateGrades(state) {
+  const map = { D: '일반', C: '마법', B: '희귀', A: '영웅', S: '전설' };
+  const migrateEq = (eq) => { if (eq && map[eq.grade]) eq.grade = map[eq.grade]; };
+  for (const adv of (state.adventurers || [])) {
+    if (map[adv.grade]) adv.grade = map[adv.grade];
+    for (const slot of ['weapon', 'armor', 'accessory']) migrateEq(adv.equipment?.[slot]);
+  }
+  for (const item of (state.inventory || [])) migrateEq(item);
+  for (const app of (state.applications || [])) { if (app && map[app.grade]) app.grade = map[app.grade]; }
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem('guild_save');
     if (raw) {
       const saved = JSON.parse(raw);
       State = Object.assign({}, DEFAULT_STATE, saved);
+      migrateGrades(State);
       // 오프라인 누적 처리 — 결과를 init()에서 팝업으로 표시
       window._pendingOffline = processOfflineProgress();
       // 저장된 areaProgress 기반으로 지역 해금 복원 (토스트 없이)
@@ -211,12 +223,12 @@ function generateAdventurer(gradeOverride) {
 function getGradePool(appLevel, override) {
   if (override) return [override];
   const pools = [
-    ['D','D','D','D','C'],                         // lv 1
-    ['D','D','D','C','C'],                         // lv 2
-    ['D','D','C','C','B'],                         // lv 3-4
-    ['D','C','C','B','B'],                         // lv 5-6
-    ['C','C','B','B','A'],                         // lv 7-8
-    ['C','B','B','A','S'],                         // lv max
+    ['일반','일반','일반','일반','마법'],   // lv 1
+    ['일반','일반','일반','마법','마법'],   // lv 2
+    ['일반','일반','마법','마법','희귀'],   // lv 3-4
+    ['일반','마법','마법','희귀','희귀'],   // lv 5-6
+    ['마법','마법','희귀','희귀','영웅'],   // lv 7-8
+    ['마법','희귀','희귀','영웅','전설'],   // lv max
   ];
   const idx = Math.min(Math.floor((appLevel - 1) / 1.5), pools.length - 1);
   return pools[idx];
