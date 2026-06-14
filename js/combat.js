@@ -662,20 +662,22 @@ class CombatUnit {
 }
 
 // ===== 몬스터 그룹 생성 =====
+// 스탯은 stage 지수 스케일링: HP=s^2.2, ATK=s^1.1, DEF=s^1.2, SPD=s^0.5
+// 선형 stageMult 대신 제곱 공식을 써서 40단계 전체에 걸쳐 자연스러운 난이도 곡선 유지
 function generateEnemyGroup(area, progress) {
-  const isBoss  = Math.random() < 0.08;
-  const stageMult = [1, 1.8, 3.0, 3.2, 5.5, 9.0, 15.0][area.stage - 1];
-  const progMult  = 1 + (progress / area.maxProgress) * 1.5;
-  const bossMult  = isBoss ? 4.5 : 1;
+  const isBoss   = Math.random() < 0.08;
+  const s        = area.stage;
+  const progMult = 1 + (progress / area.maxProgress) * 1.5;
+  const bossMult = isBoss ? 3.0 : 1;
 
   const makeMonster = (m, isBoss) => {
-    const hp  = Math.floor(80  * stageMult * progMult * bossMult);
-    const atk = Math.floor(15  * stageMult * progMult * bossMult * 0.8);
-    const def = Math.floor(5   * stageMult * progMult);
-    const spd = Math.floor(8   * stageMult * 0.6 + 4);
+    const hp  = Math.floor(30  * Math.pow(s, 2.2) * progMult * bossMult);
+    const atk = Math.floor(3   * Math.pow(s, 1.1) * progMult * bossMult);
+    const def = Math.floor(1.5 * Math.pow(s, 1.2) * progMult);
+    const spd = Math.floor(7   * Math.pow(s, 0.5) + 4);
     return new CombatUnit({
       name: m.name, sprite: m.sprite,
-      isBoss, maxHp: hp, atk, def, spd, crit: isBoss ? 15 : 8, critDmg: isBoss ? 180 : 150,
+      isBoss, maxHp: hp, atk, def, spd, crit: isBoss ? 18 : 8, critDmg: isBoss ? 190 : 150,
     }, false);
   };
 
