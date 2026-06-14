@@ -702,7 +702,7 @@ function hasPrestigeEffect(key) {
 }
 
 function calcTotalEarnablePoints() {
-  return Math.floor(Math.sqrt((State.lifetimeGold || 0) / 10000));
+  return Math.floor(Math.sqrt((State.lifetimeGold || 0) / 25000));
 }
 
 function canRebuild() {

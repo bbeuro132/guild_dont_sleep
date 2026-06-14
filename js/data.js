@@ -1345,8 +1345,8 @@ const PRESTIGE_NODES = [
   },
   {
     id: 'survival_3', name: '사투의 경험', branch: 'survival', depth: 3, cost: 4, requires: 'survival_2',
-    desc: '전멸 시 진행도 완전 초기화 대신 -50 감소',
-    effect: { wipeProgressPenalty: 50 },
+    desc: '전멸 시 진행도 보존율 +25% (기본 50% → 75% 유지)',
+    effect: { wipeRetain: 25 },
   },
   {
     id: 'survival_4', name: '강인한 육체 Ⅱ', branch: 'survival', depth: 4, cost: 7, requires: 'survival_3',

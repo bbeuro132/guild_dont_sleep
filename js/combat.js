@@ -910,11 +910,10 @@ function tickDispatchCombat(dispatch, delta) {
   } else {
     // 전멸: 전원 HP 회복
     dispatch.partyHp = {};
-    // 기본: 진행도 50% 감소 / 사투의 경험 노드: 고정값 차감 (더 유리)
-    const wipePenalty = getPrestigeBonusTotal('wipeProgressPenalty');
-    dispatch.progress = wipePenalty > 0
-      ? Math.max(1, dispatch.progress - wipePenalty)
-      : Math.max(1, Math.floor(dispatch.progress * 0.5));
+    // 기본: 진행도 50% 보존 / 사투의 경험 노드: +25% 추가 보존 (항상 유리)
+    const wipeRetainBonus = getPrestigeBonusTotal('wipeRetain');
+    const retainRate = 0.5 + wipeRetainBonus / 100;
+    dispatch.progress = Math.max(1, Math.floor(dispatch.progress * retainRate));
   }
 }
 
