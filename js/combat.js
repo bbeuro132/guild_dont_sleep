@@ -712,12 +712,15 @@ class BattleEngine {
   run() {
     const MAX_TURNS = 80;
 
-    // battle_start 스킬 발동
-    [...this.allies, ...this.enemies].forEach(u => u.trySkill(
-      u.isAlly ? this.allies : this.enemies,
-      u.isAlly ? this.enemies : this.allies,
-      (t) => this.addLog(t)
-    ));
+    // 전투 시작: 쿨다운 초기화 후 battle_start 스킬 발동
+    [...this.allies, ...this.enemies].forEach(u => {
+      u.skillCooldowns = {};
+      u.trySkill(
+        u.isAlly ? this.allies : this.enemies,
+        u.isAlly ? this.enemies : this.allies,
+        (t) => this.addLog(t)
+      );
+    });
 
     while (this.turn < MAX_TURNS) {
       this.turn++;
@@ -829,8 +832,8 @@ function tickDispatchCombat(dispatch, delta) {
     dispatch.accumulated.gold     += killGold;
     dispatch.accumulated.material += killMat;
 
-    // 장비 드롭 (드롭률 하향 조정 #3)
-    const dropChance = 0.02 + area.stage * 0.005 + (isBossFight ? 0.08 : 0);
+    // 장비 드롭: 단계 무관 고정 확률, 등급 품질은 GRADE_POOLS가 담당
+    const dropChance = 0.03 + (isBossFight ? 0.10 : 0);
     if (Math.random() < dropChance) {
       const SLOTS = ['weapon', 'armor', 'accessory'];
       const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
@@ -893,14 +896,17 @@ class LiveBattle {
   }
 
   start() {
-    // battle_start 스킬 발동
+    // 전투 시작: 쿨다운 초기화 후 battle_start 스킬 발동
     if (!this._startDone) {
       this._startDone = true;
-      [...this.allies, ...this.enemies].forEach(u => u.trySkill(
-        u.isAlly ? this.allies : this.enemies,
-        u.isAlly ? this.enemies : this.allies,
-        (t) => this.addLog(t)
-      ));
+      [...this.allies, ...this.enemies].forEach(u => {
+        u.skillCooldowns = {};
+        u.trySkill(
+          u.isAlly ? this.allies : this.enemies,
+          u.isAlly ? this.enemies : this.allies,
+          (t) => this.addLog(t)
+        );
+      });
     }
     this.onUpdate(this);
     this.timer = setInterval(() => this.tick(), 1500);
