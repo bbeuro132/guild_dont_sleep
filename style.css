@@ -1256,6 +1256,25 @@ body {
   to { transform: translateX(0); opacity: 1; }
 }
 
+/* ===== 장비 옵션 뱃지 ===== */
+.equip-options-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.equip-option {
+  font-size: 0.58rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(25, 118, 210, 0.12);
+  color: #1565c0;
+  border: 1px solid rgba(25, 118, 210, 0.3);
+  white-space: nowrap;
+  font-weight: bold;
+}
+
 /* ===== 인벤토리 팝업 ===== */
 .inv-filter-tabs {
   display: flex;

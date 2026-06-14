@@ -279,15 +279,76 @@ const EQUIPMENT_TEMPLATES = {
   },
 };
 
+// ===== 장비 추가 옵션 풀 =====
+const GRADE_IDX = { D: 0, C: 1, B: 2, A: 3, S: 4 };
+const OPTION_COUNT = { D: 0, C: 1, B: 1, A: 2, S: 3 };
+
+const EQUIPMENT_OPTIONS = {
+  weapon: [
+    { id: 'w_crit_rate',    name: '치명타 확률',   type: 'stat',     stat: 'crit',            values: [3,4,6,9,13],      desc: v => `치명타 +${v}%` },
+    { id: 'w_crit_dmg',     name: '치명타 데미지', type: 'stat',     stat: 'critDmg',         values: [10,15,22,32,45],  desc: v => `치명타 배율 +${v}%` },
+    { id: 'w_atk_pct',      name: '공격력 강화',   type: 'stat_pct', stat: 'atk',             values: [5,7,10,15,22],    desc: v => `공격력 +${v}%` },
+    { id: 'w_armor_pierce', name: '방어력 무시',   type: 'battle',   effect: 'armorPierce',   values: [10,15,20,30,42],  desc: v => `방어 무시 ${v}%` },
+    { id: 'w_bleed',        name: '출혈',          type: 'battle',   effect: 'bleed',         values: [15,20,25,32,40],  desc: v => `출혈 부여 ${v}%` },
+    { id: 'w_first_crit',   name: '선제 치명타',   type: 'battle',   effect: 'firstStrikeCrit', values: [1,1,1,1,1],    desc: () => `첫 공격 치명타 확정` },
+    { id: 'w_double_atk',   name: '연속 공격',     type: 'battle',   effect: 'doubleAttack',  values: [10,12,16,22,30],  desc: v => `연속공격 ${v}%` },
+    { id: 'w_hp_scale',     name: '체력 비례 피해', type: 'battle',  effect: 'hpScaleDmg',    values: [3,4,6,9,13],      desc: v => `HP비례 추가피해 +${v}%` },
+    { id: 'w_def_break',    name: '방어 감소',     type: 'battle',   effect: 'defBreak',      values: [20,25,30,40,50],  desc: v => `방어 감소 ${v}%` },
+    { id: 'w_all_pct',      name: '전능력치 강화', type: 'stat_pct', stat: 'all',             values: [2,3,5,7,10],      desc: v => `전능력치 +${v}%` },
+  ],
+  armor: [
+    { id: 'a_dmg_reduce',  name: '피해 감소',    type: 'battle',   effect: 'damageReduction', values: [5,7,10,14,20],   desc: v => `피해 감소 ${v}%` },
+    { id: 'a_hp_pct',      name: '체력 강화',    type: 'stat_pct', stat: 'hp',                values: [8,12,17,24,35],  desc: v => `체력 +${v}%` },
+    { id: 'a_crit_resist', name: '치명타 저항',  type: 'battle',   effect: 'critResist',      values: [10,15,20,30,42], desc: v => `치명타 피해 감소 ${v}%` },
+    { id: 'a_def_pct',     name: '방어력 강화',  type: 'stat_pct', stat: 'def',               values: [8,12,17,24,35],  desc: v => `방어력 +${v}%` },
+    { id: 'a_shield',      name: '전투 보호막',  type: 'battle',   effect: 'startShield',     values: [30,50,80,130,200], desc: v => `전투보호막 ${v}` },
+    { id: 'a_spd',         name: '속도 강화',    type: 'stat',     stat: 'spd',               values: [2,4,6,9,13],     desc: v => `속도 +${v}` },
+    { id: 'a_low_hp',      name: '위기 방어',    type: 'battle',   effect: 'lowHpDmgReduce',  values: [10,15,20,28,38], desc: v => `HP 40% 이하 피해 감소 +${v}%` },
+    { id: 'a_def_to_hp',   name: '철벽 체력',    type: 'stat_scale', scale: 'def_to_hp',      values: [2,3,4,6,8],      desc: v => `방어력×${v} HP 추가` },
+    { id: 'a_evasion',     name: '회피율',       type: 'battle',   effect: 'evasion',         values: [5,7,10,14,20],   desc: v => `회피 ${v}%` },
+    { id: 'a_hp_to_def',   name: '체력 방어',    type: 'stat_scale', scale: 'hp_to_def',      values: [1,2,2,3,4],      desc: v => `HP/100×${v} 방어력` },
+  ],
+  accessory: [
+    { id: 'ac_spd',        name: '속도 강화',       type: 'stat',     stat: 'spd',             values: [3,5,7,10,15],    desc: v => `속도 +${v}` },
+    { id: 'ac_atk_pct',    name: '공격력 강화',     type: 'stat_pct', stat: 'atk',             values: [5,7,10,15,22],   desc: v => `공격력 +${v}%` },
+    { id: 'ac_def_pct',    name: '방어력 강화',     type: 'stat_pct', stat: 'def',             values: [5,7,10,15,22],   desc: v => `방어력 +${v}%` },
+    { id: 'ac_hp_pct',     name: '체력 강화',       type: 'stat_pct', stat: 'hp',              values: [5,7,10,15,22],   desc: v => `체력 +${v}%` },
+    { id: 'ac_crit',       name: '치명타 확률',     type: 'stat',     stat: 'crit',            values: [3,5,7,10,15],    desc: v => `치명타 +${v}%` },
+    { id: 'ac_dmg_reduce', name: '피해 감소',       type: 'battle',   effect: 'damageReduction', values: [3,5,7,10,15],  desc: v => `피해 감소 ${v}%` },
+    { id: 'ac_gold',       name: '재화 획득 증가',  type: 'dispatch', dispatchEffect: 'goldBonus', values: [5,8,12,18,25], desc: v => `골드 +${v}%` },
+    { id: 'ac_crit_dmg',   name: '치명타 데미지',   type: 'stat',     stat: 'critDmg',         values: [10,15,22,32,45], desc: v => `치명타 배율 +${v}%` },
+    { id: 'ac_heal',       name: '전투 후 회복',    type: 'battle',   effect: 'healAfterBattle', values: [5,8,10,15,20],  desc: v => `전투 후 HP ${v}% 회복` },
+    { id: 'ac_all',        name: '전능력치 강화',   type: 'stat_pct', stat: 'all',             values: [3,4,6,8,12],     desc: v => `전능력치 +${v}%` },
+  ],
+};
+
 function generateEquipment(slot, grade) {
-  const tmpl = EQUIPMENT_TEMPLATES[slot];
+  const tmpl  = EQUIPMENT_TEMPLATES[slot];
+  const gIdx  = GRADE_IDX[grade];
+  const count = OPTION_COUNT[grade];
+
+  // 랜덤 옵션 추출
+  const pool    = [...EQUIPMENT_OPTIONS[slot]].sort(() => Math.random() - 0.5);
+  const options = pool.slice(0, count).map(opt => ({
+    id:             opt.id,
+    name:           opt.name,
+    type:           opt.type,
+    stat:           opt.stat,
+    scale:          opt.scale,
+    effect:         opt.effect,
+    dispatchEffect: opt.dispatchEffect,
+    value:          opt.values[gIdx],
+    display:        opt.desc(opt.values[gIdx]),
+  }));
+
   return {
-    id:    `eq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    name:  tmpl.names[grade],
+    id:      `eq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    name:    tmpl.names[grade],
     slot,
     grade,
-    icon:  tmpl.icons[grade],
-    stats: { ...tmpl.stats[grade] },
+    icon:    tmpl.icons[grade],
+    stats:   { ...tmpl.stats[grade] },
+    options,
   };
 }
 

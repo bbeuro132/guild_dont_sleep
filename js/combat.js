@@ -381,21 +381,56 @@ class CombatUnit {
     }
 
     // 전투 상태
-    this.shield        = 0;
-    this.shieldReflect = 0;
+    this.shield          = 0;
+    this.shieldReflect   = 0;
     this.damageReduction = 0;
-    this.statusEffects = [];   // [{type, duration, value}]
-    this.skillCooldowns = {};  // {skillId: turns}
+    this.statusEffects   = [];
+    this.skillCooldowns  = {};
 
     // 스킬 플래그
-    this.taunting        = 0;
-    this.counterStance   = null;
-    this.guaranteedCrit  = 0;
+    this.taunting         = 0;
+    this.counterStance    = null;
+    this.guaranteedCrit   = 0;
     this.chainAssassinate = false;
-    this.markTarget      = null;
-    this.markBonus       = 0;
-    this.marked          = false;
+    this.markTarget       = null;
+    this.markBonus        = 0;
+    this.marked           = false;
     this._startSkillsDone = false;
+
+    // 장비 옵션 배틀 효과
+    this.armorPierce        = 0;
+    this.bleedChance        = 0;
+    this.doubleAttackChance = 0;
+    this.hpScaleDmg         = 0;
+    this.defBreakChance     = 0;
+    this.evasion            = 0;
+    this.critResist         = 0;
+    this.lowHpDmgReduce     = 0;
+    this.healAfterBattle    = 0;
+
+    if (isAlly && src.equipment) {
+      for (const slot of ['weapon', 'armor', 'accessory']) {
+        const eq = src.equipment[slot];
+        if (!eq || !eq.options) continue;
+        for (const opt of eq.options) {
+          if (opt.type !== 'battle') continue;
+          switch (opt.effect) {
+            case 'damageReduction':  this.damageReduction  = Math.min(0.75, this.damageReduction + opt.value / 100); break;
+            case 'startShield':      this.shield           += opt.value; break;
+            case 'firstStrikeCrit':  this.guaranteedCrit   += 1;         break;
+            case 'evasion':          this.evasion          += opt.value; break;
+            case 'armorPierce':      this.armorPierce      += opt.value; break;
+            case 'bleed':            this.bleedChance      += opt.value; break;
+            case 'doubleAttack':     this.doubleAttackChance += opt.value; break;
+            case 'healAfterBattle':  this.healAfterBattle  += opt.value; break;
+            case 'critResist':       this.critResist       += opt.value; break;
+            case 'hpScaleDmg':       this.hpScaleDmg       += opt.value; break;
+            case 'defBreak':         this.defBreakChance   += opt.value; break;
+            case 'lowHpDmgReduce':   this.lowHpDmgReduce   += opt.value; break;
+          }
+        }
+      }
+    }
   }
 
   isAlive() { return this.currentHp > 0; }
@@ -403,9 +438,19 @@ class CombatUnit {
   takeDamage(raw, opts = {}) {
     let dmg = Math.max(1, Math.floor(raw));
 
+    // 치명타 저항 (장비 옵션)
+    if (opts.isCrit && this.critResist > 0) {
+      dmg = Math.max(1, Math.floor(dmg * (1 - this.critResist / 100)));
+    }
+
     // 피해 경감
     if (!opts.ignoreReduction && this.damageReduction > 0) {
       dmg = Math.max(1, Math.floor(dmg * (1 - this.damageReduction)));
+    }
+
+    // 위기 방어 (장비 옵션 — HP 40% 이하 시 추가 경감)
+    if (this.lowHpDmgReduce > 0 && this.currentHp < this.maxHp * 0.4) {
+      dmg = Math.max(1, Math.floor(dmg * (1 - this.lowHpDmgReduce / 100)));
     }
 
     // 보호막
@@ -440,12 +485,14 @@ class CombatUnit {
 
   // 턴 시작: 상태이상 처리 및 쿨다운 감소
   tickStart(log) {
-    // 독 피해
+    // 상태이상 피해 (독 / 출혈)
     for (const s of this.statusEffects) {
-      if (s.type === 'poison' && s.duration > 0) {
+      if ((s.type === 'poison' || s.type === 'bleed') && s.duration > 0) {
         const dmg = Math.max(1, s.value);
         this.currentHp = Math.max(0, this.currentHp - dmg);
-        log(`☠️ ${this.name}: 독으로 <b class="log-damage">${dmg}</b> 피해!`);
+        const icon = s.type === 'bleed' ? '🩸' : '☠️';
+        const label = s.type === 'bleed' ? '출혈' : '독';
+        log(`${icon} ${this.name}: ${label}로 <b class="log-damage">${dmg}</b> 피해!`);
       }
       s.duration--;
     }
@@ -499,23 +546,58 @@ class CombatUnit {
       return;
     }
 
+    // 회피 (장비 옵션)
+    if (target.evasion > 0 && Math.random() * 100 < target.evasion) {
+      log(`💨 ${target.name}: 회피!`);
+      return;
+    }
+
     const crit = rollCrit(this);
+
+    // 방어력 계산 (방어 무시 / 방어 감소 상태)
+    let effectiveDef = target.def;
+    if (target.hasStatus('def_break')) effectiveDef = Math.floor(effectiveDef * 0.6);
+    if (this.armorPierce > 0 && Math.random() * 100 < this.armorPierce) effectiveDef = 0;
+
     let dmg;
     if (!this.job) {
-      // 몬스터: 물리
-      dmg = physDmg(this.atk, target.def, 1.0, crit, this.critDmg);
+      dmg = physDmg(this.atk, effectiveDef, 1.0, crit, this.critDmg);
     } else {
-      dmg = physDmg(this.atk, target.def, 1.0, crit, this.critDmg);
-      // 표식 보너스
+      dmg = physDmg(this.atk, effectiveDef, 1.0, crit, this.critDmg);
       if (this.markBonus && target === this.markTarget) dmg = Math.floor(dmg * (1 + this.markBonus));
     }
 
-    const r = target.takeDamage(dmg);
+    // HP 비례 추가 피해 (장비 옵션)
+    if (this.hpScaleDmg > 0) dmg += Math.floor(this.currentHp * this.hpScaleDmg / 100);
+
+    const r = target.takeDamage(dmg, { isCrit: crit });
     log(`${this.isAlly ? '⚔️' : '🐾'} ${this.name}→${target.name}: <b class="log-damage">${r.actual}</b>${crit ? ' 💥' : ''}${r.reflected > 0 ? ` <span class="log-skill">[보호막 반사 ${r.reflected}]</span>` : ''}`);
 
     // 보호막 반사 처리
     if (r.reflected > 0 && this.isAlive()) {
       this.currentHp = Math.max(0, this.currentHp - r.reflected);
+    }
+
+    // 명중 후 추가 효과 (장비 옵션)
+    if (r.actual > 0 && target.isAlive()) {
+      // 출혈
+      if (this.bleedChance > 0 && Math.random() * 100 < this.bleedChance) {
+        const bleedDmg = Math.max(1, Math.floor(this.atk * 0.2));
+        target.addStatus('bleed', 2, bleedDmg);
+        log(`🩸 ${target.name}: 출혈!`);
+      }
+      // 방어 감소
+      if (this.defBreakChance > 0 && Math.random() * 100 < this.defBreakChance) {
+        target.addStatus('def_break', 2, 0);
+        log(`💢 ${target.name}: 방어력 감소!`);
+      }
+      // 연속 공격
+      if (this.doubleAttackChance > 0 && Math.random() * 100 < this.doubleAttackChance) {
+        const d2 = physDmg(this.atk, target.def, 0.7, false, this.critDmg);
+        const r2 = target.takeDamage(d2);
+        log(`⚡ [연속 공격] ${this.name}→${target.name}: <b class="log-damage">${r2.actual}</b>`);
+        if (!target.isAlive()) log(`<span class="log-system">💀 ${target.name} 쓰러짐!</span>`);
+      }
     }
 
     // 연쇄 암살
@@ -723,9 +805,13 @@ function tickDispatchCombat(dispatch, delta) {
   dispatch.isBossEncounter = enemies.some(e => e.isBoss);
 
   if (result.win) {
-    // 아군 HP 저장
+    // 아군 HP 저장 (healAfterBattle 옵션 적용)
     for (const u of allies) {
-      dispatch.partyHp[u.id] = result.allyHpMap[u.id] ?? 0;
+      let hp = result.allyHpMap[u.id] ?? 0;
+      if (u.healAfterBattle > 0 && hp > 0) {
+        hp = Math.min(u.maxHp, hp + Math.floor(u.maxHp * u.healAfterBattle / 100));
+      }
+      dispatch.partyHp[u.id] = hp;
     }
     // 진행도 +1
     dispatch.progress = Math.min(dispatch.progress + 1, area.maxProgress);

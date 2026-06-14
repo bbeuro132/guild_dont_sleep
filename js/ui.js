@@ -247,16 +247,29 @@ function formatEquipStats(stats) {
   return Object.entries(stats).map(([k, v]) => `${labels[k] || k}+${v}`).join(' / ');
 }
 
+function formatEquipOptions(options) {
+  if (!options || options.length === 0) return '';
+  return options.map(opt =>
+    `<span class="equip-option">${opt.display || opt.name}</span>`
+  ).join('');
+}
+
+function gradeOptionColor(grade) {
+  return { C: '#388e3c', B: '#1565c0', A: '#6a1b9a', S: '#e65100' }[grade] || '#888';
+}
+
 function renderEquipSlot(adv, slot, label) {
   const item = adv.equipment[slot];
   const dispatched = getDispatchedAdvIds().has(adv.id);
 
   if (item) {
+    const optHtml = formatEquipOptions(item.options);
     return `<div class="equip-slot has-item">
       <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'">
       <div style="font-size:0.7rem;color:var(--brown-dark);font-weight:bold">${item.name}</div>
       <div style="font-size:0.65rem;color:${gradeColor(item.grade)};font-weight:bold">${item.grade}급</div>
       <div style="font-size:0.6rem;color:#888;line-height:1.4;margin:2px 0">${formatEquipStats(item.stats)}</div>
+      ${optHtml ? `<div class="equip-options-wrap">${optHtml}</div>` : ''}
       ${dispatched ? '' : `<button class="btn btn-outline" style="font-size:0.6rem;padding:2px 6px;margin-top:4px;width:100%"
         onclick="event.stopPropagation();unequipItem(${adv.id},'${slot}');renderAdventurerTab()">해제</button>`}
     </div>`;
@@ -865,6 +878,7 @@ function renderInventoryPopup(filter) {
           const advOpts = idleAdv.map(a =>
             `<option value="${a.id}">${a.name} (${JOBS[a.job].name})</option>`
           ).join('');
+          const optHtml = formatEquipOptions(item.options);
           return `
             <div class="inv-item-row">
               <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
@@ -874,6 +888,7 @@ function renderInventoryPopup(filter) {
                   <span style="color:${gradeColor(item.grade)};font-weight:bold;margin-left:4px">${item.grade}급</span>
                 </div>
                 <div class="inv-item-stats">${formatEquipStats(item.stats)}</div>
+                ${optHtml ? `<div class="equip-options-wrap" style="margin-top:3px">${optHtml}</div>` : ''}
                 <div class="inv-item-slot-tag">${slotLabel(item.slot)}</div>
               </div>
               <div class="inv-item-action">

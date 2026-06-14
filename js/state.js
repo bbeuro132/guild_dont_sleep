@@ -335,14 +335,32 @@ function recallDispatch(areaId) {
   return true;
 }
 
+// 파견 팀의 골드 보너스 합산 (악세서리 옵션 ac_gold)
+function getTeamGoldBonus(dispatch) {
+  let bonus = 0;
+  for (const advId of dispatch.team) {
+    const adv = State.adventurers.find(a => a.id === advId);
+    if (!adv) continue;
+    for (const slot of ['weapon', 'armor', 'accessory']) {
+      const eq = adv.equipment[slot];
+      if (!eq || !eq.options) continue;
+      for (const opt of eq.options) {
+        if (opt.type === 'dispatch' && opt.dispatchEffect === 'goldBonus') bonus += opt.value;
+      }
+    }
+  }
+  return bonus / 100;
+}
+
 // ===== 파견 누적 업데이트 (틱마다 호출) =====
 function tickDispatches(deltaSeconds) {
   for (const dispatch of State.dispatches) {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
 
-    // 재화 누적
-    dispatch.accumulated.gold     += area.goldPerSec * deltaSeconds;
+    // 재화 누적 (골드 보너스 옵션 반영)
+    const goldMult = 1 + getTeamGoldBonus(dispatch);
+    dispatch.accumulated.gold     += area.goldPerSec * deltaSeconds * goldMult;
     dispatch.accumulated.material += area.materialPerMin * (deltaSeconds / 60);
 
     // 전투 로직 (combat.js)
@@ -395,13 +413,37 @@ function getEffectiveStats(adv) {
       s[trait.stat] = Math.floor(s[trait.stat] * (1 + trait.mult));
     }
   }
-  // 장비 보정 (평탄 수치)
+  // 장비 보정 (기본 스탯)
   if (adv.equipment) {
     for (const slot of ['weapon', 'armor', 'accessory']) {
       const item = adv.equipment[slot];
       if (!item || !item.stats) continue;
       for (const [key, val] of Object.entries(item.stats)) {
         s[key] = (s[key] || 0) + val;
+      }
+    }
+  }
+  // 장비 옵션 보정 (stat / stat_pct / stat_scale)
+  if (adv.equipment) {
+    for (const slot of ['weapon', 'armor', 'accessory']) {
+      const item = adv.equipment[slot];
+      if (!item || !item.options) continue;
+      for (const opt of item.options) {
+        if (opt.type === 'stat') {
+          s[opt.stat] = (s[opt.stat] || 0) + opt.value;
+        } else if (opt.type === 'stat_pct') {
+          if (opt.stat === 'all') {
+            for (const k of Object.keys(s)) s[k] = Math.floor(s[k] * (1 + opt.value / 100));
+          } else {
+            s[opt.stat] = Math.floor((s[opt.stat] || 0) * (1 + opt.value / 100));
+          }
+        } else if (opt.type === 'stat_scale') {
+          if (opt.scale === 'def_to_hp') {
+            s.hp = (s.hp || 0) + Math.floor(s.def * opt.value);
+          } else if (opt.scale === 'hp_to_def') {
+            s.def = (s.def || 0) + Math.floor(s.hp / 100 * opt.value);
+          }
+        }
       }
     }
   }
