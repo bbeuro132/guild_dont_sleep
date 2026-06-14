@@ -1350,9 +1350,38 @@ function renderLabTab() {
       </div>`;
   }).join('');
 
+  // 영구 단련 섹션
+  const permHtml = PERMANENT_TRAINING.map(tr => {
+    const lv   = (State.permanentTraining || {})[tr.id] || 0;
+    const cost = getPermanentTrainingCost(tr.id);
+    const can  = State.gold >= cost;
+    return `
+      <div class="lab-recipe-card">
+        <div class="lab-recipe-header">
+          <span style="font-size:28px;line-height:1">${tr.icon}</span>
+          <div style="margin-left:10px">
+            <div class="lab-recipe-name">${tr.name}</div>
+            <div class="lab-recipe-exp">현재 <strong>Lv.${lv}</strong> &nbsp;(${tr.desc} × ${lv})</div>
+          </div>
+        </div>
+        <div class="lab-recipe-cost" style="${can ? '' : 'color:#e57373'}">
+          💰 ${cost.toLocaleString()} G
+        </div>
+        <button class="btn ${can ? 'btn-primary' : 'btn-outline'} btn-full"
+          onclick="if(buyPermanentTraining('${tr.id}')) renderLabTab()"
+          ${can ? '' : 'disabled'}>
+          ${can ? '단련하기' : '골드 부족'}
+        </button>
+      </div>`;
+  }).join('');
+
   el.innerHTML = `
     <div class="lab-section-title">현재 제작</div>
     ${queueHtml}
     <div class="lab-section-title" style="margin-top:20px">경험치 책 제작</div>
-    <div class="lab-recipes-grid">${recipesHtml}</div>`;
+    <div class="lab-recipes-grid">${recipesHtml}</div>
+    <div class="lab-section-title" style="margin-top:20px">영구 단련
+      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">리빌딩 후에도 유지됩니다</span>
+    </div>
+    <div class="lab-recipes-grid">${permHtml}</div>`;
 }

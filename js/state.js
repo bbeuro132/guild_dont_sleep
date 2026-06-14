@@ -38,6 +38,7 @@ const DEFAULT_STATE = {
   totalPrestigeEarned: 0,  // 지금까지 받은 총 스킬포인트 (중복 방지용)
   prestigeNodes: [],        // 개방한 노드 ID 목록 (취소 불가)
   rebuildCount: 0,          // 총 리빌딩 횟수
+  permanentTraining: { hp: 0, atk: 0, def: 0 }, // 영구 단련 레벨 (리빌딩 후에도 유지)
 };
 
 let State = null;
@@ -499,6 +500,19 @@ function getEffectiveStats(adv) {
   const defBonus = getPrestigeBonusTotal('defBonus');
   if (hpBonus  > 0) s.hp  = Math.floor(s.hp  * (1 + hpBonus  / 100));
   if (defBonus > 0) s.def = Math.floor(s.def * (1 + defBonus / 100));
+  // 리빌딩 횟수 자동 보너스 (매 리빌딩 +3%)
+  const rc = State.rebuildCount || 0;
+  if (rc > 0) {
+    const rebuildMult = 1 + rc * 0.03;
+    s.hp  = Math.floor(s.hp  * rebuildMult);
+    s.atk = Math.floor(s.atk * rebuildMult);
+    s.def = Math.floor(s.def * rebuildMult);
+  }
+  // 영구 단련 보정 (연구소 구매, 리빌딩 후에도 유지)
+  const pt = State.permanentTraining || {};
+  if (pt.hp  > 0) s.hp  = Math.floor(s.hp  * (1 + pt.hp  / 100));
+  if (pt.atk > 0) s.atk = Math.floor(s.atk * (1 + pt.atk / 100));
+  if (pt.def > 0) s.def = Math.floor(s.def * (1 + pt.def / 100));
   return s;
 }
 
@@ -720,6 +734,7 @@ function doRebuild() {
     prestigeNodes:        [...(State.prestigeNodes    || [])],
     rebuildCount:         (State.rebuildCount         || 0) + 1,
     tutorialDone:         true,
+    permanentTraining:    { ...(State.permanentTraining || { hp: 0, atk: 0, def: 0 }) },
   };
 
   State = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), keepData);
@@ -745,5 +760,28 @@ function spendPrestigeNode(nodeId) {
   State.prestigeNodes  = [...(State.prestigeNodes || []), nodeId];
   saveState();
   showToast(`[${node.name}] 개방!`, 'success');
+  return true;
+}
+
+// ===== 영구 단련 =====
+function getPermanentTrainingCost(statId) {
+  const tr = PERMANENT_TRAINING.find(t => t.id === statId);
+  if (!tr) return Infinity;
+  const lv = (State.permanentTraining || {})[statId] || 0;
+  return Math.floor(tr.baseCost * Math.pow(tr.costMult, lv));
+}
+
+function buyPermanentTraining(statId) {
+  const tr = PERMANENT_TRAINING.find(t => t.id === statId);
+  if (!tr) return false;
+  const cost = getPermanentTrainingCost(statId);
+  if ((State.gold || 0) < cost) {
+    showToast('골드가 부족합니다.', 'error'); return false;
+  }
+  State.gold -= cost;
+  if (!State.permanentTraining) State.permanentTraining = { hp: 0, atk: 0, def: 0 };
+  State.permanentTraining[statId] = (State.permanentTraining[statId] || 0) + 1;
+  saveState();
+  showToast(`[${tr.name}] Lv.${State.permanentTraining[statId]} 달성!`, 'success');
   return true;
 }

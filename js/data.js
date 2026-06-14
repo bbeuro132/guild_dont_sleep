@@ -1440,6 +1440,13 @@ const GRADE_STAT_MULT = {
   '전설': 2.1,
 };
 
+// 영구 단련 정의 (연구소, 리빌딩 후에도 유지)
+const PERMANENT_TRAINING = [
+  { id: 'hp',  name: '강인한 체력', icon: '❤️', stat: 'hp',  desc: '최대 HP +1%',  baseCost: 300000, costMult: 1.35 },
+  { id: 'atk', name: '전투 훈련',   icon: '⚔️', stat: 'atk', desc: '공격력 +1%',   baseCost: 400000, costMult: 1.35 },
+  { id: 'def', name: '방어 수련',   icon: '🛡️', stat: 'def', desc: '방어력 +1%',   baseCost: 350000, costMult: 1.35 },
+];
+
 // 경험치 테이블 (레벨당 필요 경험치)
 function expRequired(level) {
   return Math.floor(100 * Math.pow(1.3, level - 1));
