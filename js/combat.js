@@ -845,11 +845,13 @@ function tickDispatchCombat(dispatch, delta) {
       }
       dispatch.partyHp[u.id] = hp;
     }
-    // 진행도 +1
-    dispatch.progress = Math.min(dispatch.progress + 1, area.maxProgress);
+    // 진행도 +1 (+ 프레스티지 모험 가지 보너스)
+    const isBossFight = enemies.some(e => e.isBoss);
+    let progGain = 1 + getPrestigeBonusTotal('bonusProgress');
+    if (isBossFight) progGain += getPrestigeBonusTotal('bossProgress');
+    dispatch.progress = Math.min(dispatch.progress + progGain, area.maxProgress);
 
     // 몬스터 처치 즉시 골드 보너스 (#9)
-    const isBossFight = enemies.some(e => e.isBoss);
     const killGold = Math.floor(enemies.length * area.stage * 1.5 * (isBossFight ? 2 : 1));
     const killMat  = isBossFight ? area.stage * 0.2 : area.stage * 0.04;
     dispatch.accumulated.gold     += killGold;
@@ -906,9 +908,13 @@ function tickDispatchCombat(dispatch, delta) {
       showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
     }
   } else {
-    // 전멸: 전원 HP 회복, 진행도 1 리셋
+    // 전멸: 전원 HP 회복
     dispatch.partyHp = {};
-    dispatch.progress = 1;
+    // 사투의 경험 노드: 진행도 완전 초기화 대신 -50
+    const wipePenalty = getPrestigeBonusTotal('wipeProgressPenalty');
+    dispatch.progress = wipePenalty > 0
+      ? Math.max(1, dispatch.progress - wipePenalty)
+      : 1;
   }
 }
 

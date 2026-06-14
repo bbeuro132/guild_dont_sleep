@@ -31,6 +31,13 @@ const DEFAULT_STATE = {
 
   lastSaveTime: 0,
   totalPlayTime: 0,
+
+  // ===== 리빌딩(프레스티지) =====
+  lifetimeGold: 0,         // 누적 획득 골드 (리빌딩 후에도 유지)
+  prestigePoints: 0,       // 현재 사용 가능한 스킬포인트
+  totalPrestigeEarned: 0,  // 지금까지 받은 총 스킬포인트 (중복 방지용)
+  prestigeNodes: [],        // 개방한 노드 ID 목록 (취소 불가)
+  rebuildCount: 0,          // 총 리빌딩 횟수
 };
 
 let State = null;
@@ -148,7 +155,9 @@ function processOfflineProgress() {
 
 // ===== 재화 조작 =====
 function addGold(amount) {
-  State.gold = Math.max(0, State.gold + Math.floor(amount));
+  const positive = Math.floor(amount);
+  State.gold = Math.max(0, State.gold + positive);
+  if (positive > 0) State.lifetimeGold = (State.lifetimeGold || 0) + positive;
 }
 
 function spendGold(amount) {
@@ -318,12 +327,16 @@ function startDispatch(areaId, teamIds) {
     }
   }
 
+  const startProg = Math.min(
+    getPrestigeBonusTotal('startProgress'),
+    Math.floor(area.maxProgress * 0.4)   // 최대 40%까지만 선두 진입
+  );
   const dispatch = {
     areaId,
     team: teamIds,
     startTime: Date.now(),
     accumulated: { gold: 0, material: 0, items: [] },
-    progress: 0,
+    progress: startProg,
     partyHp: {},
     combatCooldown: 2,
     lastBattleLog: [],
@@ -391,10 +404,11 @@ function tickDispatches(deltaSeconds) {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
 
-    // 재화 누적 (골드 보너스 옵션 반영)
-    const goldMult = 1 + getTeamGoldBonus(dispatch);
+    // 재화 누적 (장비 옵션 + 프레스티지 성장 가지 반영)
+    const goldMult    = (1 + getTeamGoldBonus(dispatch)) * (1 + getPrestigeBonusTotal('goldBonus') / 100);
+    const materialMult = 1 + getPrestigeBonusTotal('materialBonus') / 100;
     dispatch.accumulated.gold     += area.goldPerSec * deltaSeconds * goldMult;
-    dispatch.accumulated.material += area.materialPerMin * (deltaSeconds / 60);
+    dispatch.accumulated.material += area.materialPerMin * (deltaSeconds / 60) * materialMult;
 
     // 전투 로직 (combat.js)
     initDispatchCombat(dispatch);
@@ -480,6 +494,11 @@ function getEffectiveStats(adv) {
       }
     }
   }
+  // 프레스티지 생존 가지 보정
+  const hpBonus  = getPrestigeBonusTotal('hpBonus');
+  const defBonus = getPrestigeBonusTotal('defBonus');
+  if (hpBonus  > 0) s.hp  = Math.floor(s.hp  * (1 + hpBonus  / 100));
+  if (defBonus > 0) s.def = Math.floor(s.def * (1 + defBonus / 100));
   return s;
 }
 
@@ -487,7 +506,8 @@ function getEffectiveStats(adv) {
 function giveExp(advId, amount) {
   const adv = State.adventurers.find(a => a.id === advId);
   if (!adv) return;
-  adv.exp += amount;
+  const expMult = 1 + getPrestigeBonusTotal('expBonus') / 100;
+  adv.exp += Math.floor(amount * expMult);
   let needed = expRequired(adv.level);
   while (adv.exp >= needed) {
     adv.exp -= needed;
@@ -660,4 +680,70 @@ function tickLab() {
     showToast(`${q.name} 제작 완료! 인벤토리에 추가됐습니다.`, 'success');
     if (typeof renderLabTab === 'function' && getCurrentTab() === 'lab') renderLabTab();
   }
+}
+
+// ===== 프레스티지(리빌딩) =====
+
+function getPrestigeBonusTotal(key) {
+  let total = 0;
+  for (const nodeId of (State.prestigeNodes || [])) {
+    const node = PRESTIGE_NODES.find(n => n.id === nodeId);
+    if (node?.effect?.[key]) total += node.effect[key];
+  }
+  return total;
+}
+
+function hasPrestigeEffect(key) {
+  for (const nodeId of (State.prestigeNodes || [])) {
+    const node = PRESTIGE_NODES.find(n => n.id === nodeId);
+    if (node?.effect?.[key]) return true;
+  }
+  return false;
+}
+
+function calcTotalEarnablePoints() {
+  return Math.floor(Math.sqrt((State.lifetimeGold || 0) / 10000));
+}
+
+function canRebuild() {
+  return REBUILD_CONDITIONS.every(c => c.check());
+}
+
+function doRebuild() {
+  const totalEarnable = calcTotalEarnablePoints();
+  const newPoints = Math.max(0, totalEarnable - (State.totalPrestigeEarned || 0));
+
+  const keepData = {
+    lifetimeGold:         State.lifetimeGold         || 0,
+    prestigePoints:       (State.prestigePoints       || 0) + newPoints,
+    totalPrestigeEarned:  totalEarnable,
+    prestigeNodes:        [...(State.prestigeNodes    || [])],
+    rebuildCount:         (State.rebuildCount         || 0) + 1,
+    tutorialDone:         true,
+  };
+
+  State = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), keepData);
+  saveState();
+  showToast(`리빌딩 완료! 스킬포인트 +${newPoints} 획득`, 'success');
+  if (typeof renderTab === 'function') renderTab(getCurrentTab());
+  if (typeof renderHeader === 'function') renderHeader();
+}
+
+function spendPrestigeNode(nodeId) {
+  const node = PRESTIGE_NODES.find(n => n.id === nodeId);
+  if (!node) return false;
+  if ((State.prestigeNodes || []).includes(nodeId)) {
+    showToast('이미 개방된 노드입니다.', 'error'); return false;
+  }
+  if (node.requires && !(State.prestigeNodes || []).includes(node.requires)) {
+    showToast('이전 노드를 먼저 개방해야 합니다.', 'error'); return false;
+  }
+  if ((State.prestigePoints || 0) < node.cost) {
+    showToast(`스킬포인트가 부족합니다. (필요: ${node.cost})`, 'error'); return false;
+  }
+  State.prestigePoints -= node.cost;
+  State.prestigeNodes  = [...(State.prestigeNodes || []), nodeId];
+  saveState();
+  showToast(`[${node.name}] 개방!`, 'success');
+  return true;
 }

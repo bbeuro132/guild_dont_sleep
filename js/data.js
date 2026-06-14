@@ -1266,6 +1266,102 @@ const SHOP_ITEMS = [
   },
 ];
 
+// ===== 리빌딩(프레스티지) 시스템 =====
+
+// 리빌딩 조건 (all must be true)
+const REBUILD_CONDITIONS = [
+  { label: '베른 근교 숲 (1단계) 진행도 200 달성',   check: () => (State.areaProgress['forest']   || 0) >= 200 },
+  { label: '베른 석재 광산 (2단계) 진행도 200 달성',  check: () => (State.areaProgress['mine']     || 0) >= 200 },
+  { label: '베른 금광산 (3단계) 진행도 200 달성',     check: () => (State.areaProgress['mountain'] || 0) >= 200 },
+  { label: '베른 변경 평원 (4단계) 진행도 200 달성',  check: () => (State.areaProgress['coast']    || 0) >= 200 },
+  { label: '베른 국경 관문 (5단계) 진행도 200 달성',  check: () => (State.areaProgress['etheria']  || 0) >= 200 },
+  { label: '지휘 본부 Lv.5 이상',                    check: () => (State.buildings?.headquarters  || 1) >= 5  },
+];
+
+// 프레스티지 트리 노드 정의
+const PRESTIGE_NODES = [
+  // ── 중심 ──
+  {
+    id: 'genesis', name: '경지 개방 Ⅰ', branch: 'center', depth: 0, cost: 1, requires: null,
+    desc: '위대한 모험가의 경지에 접어들다. 3차 전직 해금. 모든 가지 개방.',
+    effect: { tier3unlock: true },
+  },
+  // ── 성장 가지 ──
+  {
+    id: 'growth_1', name: '수련의 기록 Ⅰ', branch: 'growth', depth: 1, cost: 1, requires: 'genesis',
+    desc: '경험치 획득량 +25%',
+    effect: { expBonus: 25 },
+  },
+  {
+    id: 'growth_2', name: '수련의 기록 Ⅱ', branch: 'growth', depth: 2, cost: 2, requires: 'growth_1',
+    desc: '경험치 획득량 추가 +35%',
+    effect: { expBonus: 35 },
+  },
+  {
+    id: 'growth_3', name: '길드의 번영', branch: 'growth', depth: 3, cost: 4, requires: 'growth_2',
+    desc: '골드·재료 획득량 +25%',
+    effect: { goldBonus: 25, materialBonus: 25 },
+  },
+  {
+    id: 'growth_4', name: '황금 길드', branch: 'growth', depth: 4, cost: 7, requires: 'growth_3',
+    desc: '골드·재료 획득량 추가 +35%',
+    effect: { goldBonus: 35, materialBonus: 35 },
+  },
+  // ── 모험 가지 ──
+  {
+    id: 'venture_1', name: '선발대의 흔적', branch: 'venture', depth: 1, cost: 1, requires: 'genesis',
+    desc: '파견 시작 시 진행도 +20',
+    effect: { startProgress: 20 },
+  },
+  {
+    id: 'venture_2', name: '지형 숙달', branch: 'venture', depth: 2, cost: 2, requires: 'venture_1',
+    desc: '파견 시작 시 진행도 추가 +30',
+    effect: { startProgress: 30 },
+  },
+  {
+    id: 'venture_3', name: '베테랑의 감각', branch: 'venture', depth: 3, cost: 4, requires: 'venture_2',
+    desc: '전투 승리 시 진행도 +1 추가',
+    effect: { bonusProgress: 1 },
+  },
+  {
+    id: 'venture_4', name: '전장의 영웅', branch: 'venture', depth: 4, cost: 7, requires: 'venture_3',
+    desc: '보스 처치 시 진행도 추가 +3',
+    effect: { bossProgress: 3 },
+  },
+  // ── 생존 가지 ──
+  {
+    id: 'survival_1', name: '강인한 육체 Ⅰ', branch: 'survival', depth: 1, cost: 1, requires: 'genesis',
+    desc: '모험가 최대 HP +20%',
+    effect: { hpBonus: 20 },
+  },
+  {
+    id: 'survival_2', name: '단련된 방어', branch: 'survival', depth: 2, cost: 2, requires: 'survival_1',
+    desc: '모험가 방어력 +20%',
+    effect: { defBonus: 20 },
+  },
+  {
+    id: 'survival_3', name: '사투의 경험', branch: 'survival', depth: 3, cost: 4, requires: 'survival_2',
+    desc: '전멸 시 진행도 완전 초기화 대신 -50 감소',
+    effect: { wipeProgressPenalty: 50 },
+  },
+  {
+    id: 'survival_4', name: '강인한 육체 Ⅱ', branch: 'survival', depth: 4, cost: 7, requires: 'survival_3',
+    desc: '모험가 최대 HP 추가 +30%, 방어력 추가 +15%',
+    effect: { hpBonus: 30, defBonus: 15 },
+  },
+  // ── 경지 가지 ──
+  {
+    id: 'realm_2', name: '경지 개방 Ⅱ', branch: 'realm', depth: 1, cost: 5, requires: 'genesis',
+    desc: '더 높은 경지에 이르다. 4차 전직 해금.',
+    effect: { tier4unlock: true },
+  },
+  {
+    id: 'realm_3', name: '경지 개방 Ⅲ', branch: 'realm', depth: 2, cost: 12, requires: 'realm_2',
+    desc: '경지의 극점에 서다. 5차 전직 해금.',
+    effect: { tier5unlock: true },
+  },
+];
+
 // 연구소 제작 레시피
 const LAB_RECIPES = [
   {

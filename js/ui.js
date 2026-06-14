@@ -40,6 +40,7 @@ function renderTab(tabId) {
     case 'recruit':     renderRecruitTab();     break;
     case 'shop':        renderShopTab();        break;
     case 'lab':         renderLabTab();         break;
+    case 'prestige':    renderPrestigeTab();    break;
   }
 }
 
@@ -322,6 +323,10 @@ function promoteAdventurer(advId, targetJob) {
   if (!adv) return;
   const jobInfo = JOBS[adv.job];
   const tier = jobInfo.tier;
+  if (JOBS[targetJob]?.tier === 3 && !hasPrestigeEffect('tier3unlock')) {
+    showToast('3차 전직은 경지 개방 Ⅰ이 필요합니다. (경지 탭 → 리빌딩 후 개방)', 'error');
+    return;
+  }
   const costKey = tier === 1 ? 'tier2' : 'tier3';
   const cost = PROMOTION_COST[costKey];
   if (adv.level < cost.level) { showToast(`레벨 ${cost.level} 이상 필요합니다.`, 'error'); return; }
@@ -1142,6 +1147,142 @@ function formatCraftTime(ms) {
   if (m < 60) return sec > 0 ? `${m}분 ${sec}초` : `${m}분`;
   const h = Math.floor(m / 60), min = m % 60;
   return min > 0 ? `${h}시간 ${min}분` : `${h}시간`;
+}
+
+// ===== 경지 탭 =====
+function renderPrestigeTab() {
+  const el = document.getElementById('prestige-content');
+  if (!el) return;
+
+  const pts       = State.prestigePoints || 0;
+  const earned    = State.totalPrestigeEarned || 0;
+  const lifetime  = State.lifetimeGold || 0;
+  const totalCan  = calcTotalEarnablePoints();
+  const pending   = Math.max(0, totalCan - earned);   // 지금 리빌딩 시 획득 포인트
+  const rebuilds  = State.rebuildCount || 0;
+  const allMet    = canRebuild();
+
+  // ── 리빌딩 패널 ──
+  const condHtml = REBUILD_CONDITIONS.map(c => {
+    const ok = c.check();
+    return `<div class="rebuild-cond ${ok ? 'ok' : 'nok'}">
+      <span>${ok ? '✅' : '❌'}</span> ${c.label}
+    </div>`;
+  }).join('');
+
+  const rebuildBtn = `
+    <button class="btn ${allMet ? 'btn-danger' : 'btn-outline'} btn-full"
+      onclick="openRebuildDialog()" style="margin-top:14px">
+      ${allMet ? '🔄 리빌딩 실행' : '🔒 조건 미달성'}
+    </button>`;
+
+  // ── 트리 브랜치 렌더 ──
+  const BRANCH_META = {
+    growth:   { label: '🌱 성장 가지',   color: '#4caf50' },
+    venture:  { label: '🗺️ 모험 가지',   color: '#1976d2' },
+    survival: { label: '🛡️ 생존 가지',   color: '#f57c00' },
+    realm:    { label: '⭐ 경지 가지',   color: '#7b1fa2' },
+  };
+
+  const unlocked = new Set(State.prestigeNodes || []);
+
+  function nodeCard(node) {
+    const isUnlocked  = unlocked.has(node.id);
+    const reqOk       = !node.requires || unlocked.has(node.requires);
+    const canAfford   = pts >= node.cost;
+    const canBuy      = reqOk && !isUnlocked && canAfford;
+    const locked      = !reqOk;
+
+    let cls = 'prestige-node';
+    if (isUnlocked) cls += ' node-done';
+    else if (locked) cls += ' node-locked';
+    else if (canAfford) cls += ' node-ready';
+    else cls += ' node-poor';
+
+    const btn = isUnlocked
+      ? `<span class="node-status">✓ 개방됨</span>`
+      : locked
+        ? `<span class="node-status locked-txt">🔒 이전 노드 필요</span>`
+        : `<button class="btn btn-sm ${canBuy ? 'btn-primary' : 'btn-outline'}"
+            ${canBuy ? '' : 'disabled'}
+            onclick="if(spendPrestigeNode('${node.id}')) renderPrestigeTab()">
+            ${node.cost}pt 개방
+           </button>`;
+
+    return `<div class="${cls}">
+      <div class="node-name">${node.name}</div>
+      <div class="node-desc">${node.desc}</div>
+      ${btn}
+    </div>`;
+  }
+
+  // 중심 노드
+  const genesisNode = PRESTIGE_NODES.find(n => n.id === 'genesis');
+  const genesisHtml = nodeCard(genesisNode);
+
+  // 브랜치별
+  const branchesHtml = Object.entries(BRANCH_META).map(([branch, meta]) => {
+    const nodes = PRESTIGE_NODES.filter(n => n.branch === branch).sort((a, b) => a.depth - b.depth);
+    if (!nodes.length) return '';
+    return `<div class="prestige-branch">
+      <div class="branch-title" style="color:${meta.color}">${meta.label}</div>
+      ${nodes.map(nodeCard).join('')}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="prestige-header">
+      <div class="prestige-stat-row">
+        <div class="prestige-stat"><span class="pstat-label">보유 스킬포인트</span><span class="pstat-val gold-text">${pts}pt</span></div>
+        <div class="prestige-stat"><span class="pstat-label">리빌딩 횟수</span><span class="pstat-val">${rebuilds}회</span></div>
+        <div class="prestige-stat"><span class="pstat-label">누적 골드</span><span class="pstat-val">${lifetime.toLocaleString()}G</span></div>
+        <div class="prestige-stat"><span class="pstat-label">다음 리빌딩 획득</span><span class="pstat-val ${pending > 0 ? 'gold-text' : ''}">+${pending}pt</span></div>
+      </div>
+    </div>
+
+    <div class="rebuild-panel">
+      <div class="rebuild-panel-title">🔄 리빌딩 조건</div>
+      <div class="rebuild-cond-list">${condHtml}</div>
+      ${rebuildBtn}
+    </div>
+
+    <div class="prestige-tree-title">경지 트리</div>
+    <div class="prestige-center-wrap">${genesisHtml}</div>
+    <div class="prestige-branches">${branchesHtml}</div>`;
+}
+
+function openRebuildDialog() {
+  const popup = document.getElementById('rebuild-popup');
+  const allMet = canRebuild();
+  const pending = Math.max(0, calcTotalEarnablePoints() - (State.totalPrestigeEarned || 0));
+
+  const condHtml = REBUILD_CONDITIONS.map(c => {
+    const ok = c.check();
+    return `<div class="rebuild-cond ${ok ? 'ok' : 'nok'}"><span>${ok ? '✅' : '❌'}</span> ${c.label}</div>`;
+  }).join('');
+
+  const bodyEl = document.getElementById('rebuild-popup-body');
+  if (allMet) {
+    bodyEl.innerHTML = `
+      <p class="rebuild-chloe-speech">길드장님, 지금까지 정말 고생 많으셨어요. 베른 전역을 평정하셨으니, 이제 새 출발을 하실 수 있어요. 리빌딩을 하시면 처음부터 다시 시작하지만… 길드장님이 쌓아온 경험만큼은 절대 사라지지 않아요!</p>
+      <div class="rebuild-cond-list">${condHtml}</div>
+      <div class="rebuild-gain-box">이번 리빌딩 획득: <b class="gold-text">+${pending}pt</b></div>
+      <div style="color:#c62828;font-size:0.82rem;margin-top:8px">⚠️ 모험가·장비·건물·골드가 모두 초기화됩니다. 스킬포인트와 경지 트리는 유지됩니다.</div>
+      <button class="btn btn-danger btn-full" style="margin-top:14px" onclick="confirmRebuild()">🔄 리빌딩 실행</button>`;
+  } else {
+    bodyEl.innerHTML = `
+      <p class="rebuild-chloe-speech">아직 조건이 충족되지 않았어요, 길드장님. 베른 전역을 완전히 평정하고, 길드도 좀 더 키워주세요!</p>
+      <div class="rebuild-cond-list">${condHtml}</div>`;
+  }
+
+  popup.classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function confirmRebuild() {
+  closePopup('rebuild-popup');
+  doRebuild();
+  switchTab('prestige');
 }
 
 function renderLabTab() {

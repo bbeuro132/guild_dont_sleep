@@ -58,6 +58,10 @@
     <span class="tab-icon">⚗️</span>
     <span class="tab-label">연구소</span>
   </button>
+  <button class="tab-btn" data-tab="prestige">
+    <span class="tab-icon">⭐</span>
+    <span class="tab-label">경지</span>
+  </button>
 </nav>
 
 <!-- 탭 콘텐츠 -->
@@ -110,6 +114,12 @@
       </button>
     </div>
     <div id="application-cards"></div>
+  </section>
+
+  <!-- 경지 탭 -->
+  <section id="tab-prestige" class="tab-panel">
+    <h2 class="panel-title">⭐ 경지</h2>
+    <div id="prestige-content"></div>
   </section>
 
   <!-- 연구소 탭 -->
@@ -170,6 +180,19 @@
     <button class="popup-close" id="btn-close-inventory">✕</button>
     <h3 class="popup-title">🎒 인벤토리</h3>
     <div id="inventory-content"></div>
+  </div>
+</div>
+
+<!-- 리빌딩 팝업 -->
+<div id="rebuild-popup" class="popup hidden">
+  <div class="popup-inner">
+    <button class="popup-close" id="btn-close-rebuild">✕</button>
+    <div id="rebuild-popup-header">
+      <img src="assets/characters/클로에_스탠딩.png" alt="클로에" id="rebuild-chloe-img"
+           onerror="this.style.display='none'" />
+      <h3 class="popup-title">🔄 리빌딩</h3>
+    </div>
+    <div id="rebuild-popup-body"></div>
   </div>
 </div>
 
