@@ -85,10 +85,14 @@ function bindEvents() {
     closePopup('battle-popup');
   });
 
+  // 인벤토리 팝업 닫기
+  document.getElementById('btn-close-inventory').addEventListener('click', () => closePopup('inventory-popup'));
+
   // 오버레이 클릭 시 팝업 닫기
   document.getElementById('overlay').addEventListener('click', () => {
     closePopup('settlement-popup');
     closePopup('battle-popup');
+    closePopup('inventory-popup');
     if (window._currentBattle) window._currentBattle.stop();
   });
 

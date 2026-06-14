@@ -72,6 +72,8 @@
   <section id="tab-adventurer" class="tab-panel">
     <h2 class="panel-title">🗡️ 모험가 목록
       <span class="count-badge" id="adv-count">0 / 0</span>
+      <button class="btn btn-outline" style="font-size:0.72rem;padding:4px 10px;margin-left:auto"
+        onclick="openInventoryPopup()">🎒 인벤토리 <span id="inv-count-badge"></span></button>
     </h2>
     <div id="adv-detail-panel" class="detail-panel hidden"></div>
     <div id="adventurer-list"></div>
@@ -147,6 +149,15 @@
     </div>
     <div id="settlement-result"></div>
     <button class="btn btn-gold btn-full" id="btn-confirm-settlement">✅ 수령하기</button>
+  </div>
+</div>
+
+<!-- 인벤토리 팝업 -->
+<div id="inventory-popup" class="popup hidden">
+  <div class="popup-inner">
+    <button class="popup-close" id="btn-close-inventory">✕</button>
+    <h3 class="popup-title">🎒 인벤토리</h3>
+    <div id="inventory-content"></div>
   </div>
 </div>
 

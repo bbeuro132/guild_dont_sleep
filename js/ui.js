@@ -89,6 +89,7 @@ let selectedAdvId = null;
 function renderAdventurerTab() {
   const maxAdv = getBuildingLevel('lounge') + 2;
   document.getElementById('adv-count').textContent = `${State.adventurers.length} / ${maxAdv}`;
+  updateInvBadge();
 
   const list = document.getElementById('adventurer-list');
   list.innerHTML = '';
@@ -829,6 +830,126 @@ function showOfflinePopup(result) {
 
   popup.classList.remove('hidden');
   document.getElementById('overlay').classList.remove('hidden');
+}
+
+// ===== 인벤토리 팝업 =====
+let _invFilter = 'all';
+
+function openInventoryPopup() {
+  _invFilter = 'all';
+  renderInventoryPopup();
+  openPopup('inventory-popup');
+}
+
+function renderInventoryPopup(filter) {
+  if (filter) _invFilter = filter;
+  const items = State.inventory;
+  const eqCount   = items.filter(i => i.slot).length;
+  const bookCount = items.filter(i => i.type === 'exp_book').length;
+
+  const filtered = _invFilter === 'equipment' ? items.filter(i => i.slot)
+    : _invFilter === 'exp_book'               ? items.filter(i => i.type === 'exp_book')
+    : items;
+
+  const dispatched = getDispatchedAdvIds();
+  const idleAdv = State.adventurers.filter(a => !dispatched.has(a.id));
+
+  const itemsHtml = filtered.length === 0
+    ? `<div class="empty-state" style="padding:24px 0">
+        <div class="empty-icon">📦</div>
+        <p>아이템이 없습니다.</p>
+       </div>`
+    : filtered.map(item => {
+        const realIdx = items.indexOf(item);
+        if (item.slot) {
+          const advOpts = idleAdv.map(a =>
+            `<option value="${a.id}">${a.name} (${JOBS[a.job].name})</option>`
+          ).join('');
+          return `
+            <div class="inv-item-row">
+              <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
+              <div class="inv-item-info">
+                <div class="inv-item-name">
+                  ${item.name}
+                  <span style="color:${gradeColor(item.grade)};font-weight:bold;margin-left:4px">${item.grade}급</span>
+                </div>
+                <div class="inv-item-stats">${formatEquipStats(item.stats)}</div>
+                <div class="inv-item-slot-tag">${slotLabel(item.slot)}</div>
+              </div>
+              <div class="inv-item-action">
+                ${idleAdv.length > 0 ? `
+                  <select id="inv-sel-${realIdx}" class="inv-adv-select">
+                    <option value="">모험가 선택</option>
+                    ${advOpts}
+                  </select>
+                  <button class="btn btn-primary inv-action-btn"
+                    onclick="equipFromInventory(${realIdx}, document.getElementById('inv-sel-${realIdx}').value)">
+                    장착
+                  </button>
+                ` : `<span class="inv-no-action">대기 중<br>모험가 없음</span>`}
+              </div>
+            </div>`;
+        } else {
+          const advOpts = State.adventurers.map(a =>
+            `<option value="${a.id}">${a.name} Lv.${a.level}</option>`
+          ).join('');
+          return `
+            <div class="inv-item-row">
+              <img src="${item.icon}" alt="${item.name}" class="inv-item-icon" onerror="this.style.display='none'">
+              <div class="inv-item-info">
+                <div class="inv-item-name">${item.name}</div>
+                <div class="inv-item-stats" style="color:var(--green-dark)">경험치 +${item.expValue}</div>
+              </div>
+              <div class="inv-item-action">
+                ${State.adventurers.length > 0 ? `
+                  <select id="inv-sel-${realIdx}" class="inv-adv-select">
+                    <option value="">모험가 선택</option>
+                    ${advOpts}
+                  </select>
+                  <button class="btn btn-gold inv-action-btn"
+                    onclick="useBookFromInventory(${realIdx}, document.getElementById('inv-sel-${realIdx}').value)">
+                    사용
+                  </button>
+                ` : `<span class="inv-no-action">모험가 없음</span>`}
+              </div>
+            </div>`;
+        }
+      }).join('');
+
+  document.getElementById('inventory-content').innerHTML = `
+    <div class="inv-filter-tabs">
+      <button class="inv-filter-btn${_invFilter==='all'?' active':''}"
+        onclick="renderInventoryPopup('all')">전체 (${items.length})</button>
+      <button class="inv-filter-btn${_invFilter==='equipment'?' active':''}"
+        onclick="renderInventoryPopup('equipment')">장비 (${eqCount})</button>
+      <button class="inv-filter-btn${_invFilter==='exp_book'?' active':''}"
+        onclick="renderInventoryPopup('exp_book')">경험치 서 (${bookCount})</button>
+    </div>
+    <div class="inv-items-list">${itemsHtml}</div>
+  `;
+}
+
+function slotLabel(slot) {
+  return { weapon: '⚔️ 무기', armor: '🛡️ 방어구', accessory: '💍 악세서리' }[slot] || slot;
+}
+
+function equipFromInventory(inventoryIdx, advIdStr) {
+  if (!advIdStr) { showToast('모험가를 선택하세요.', 'error'); return; }
+  equipItem(parseInt(advIdStr), inventoryIdx);
+  updateInvBadge();
+  renderInventoryPopup();
+}
+
+function useBookFromInventory(inventoryIdx, advIdStr) {
+  if (!advIdStr) { showToast('모험가를 선택하세요.', 'error'); return; }
+  useExpBook(parseInt(advIdStr), inventoryIdx);
+  updateInvBadge();
+  renderInventoryPopup();
+}
+
+function updateInvBadge() {
+  const badge = document.getElementById('inv-count-badge');
+  if (badge) badge.textContent = State.inventory.length > 0 ? `(${State.inventory.length})` : '';
 }
 
 // ===== 튜토리얼 =====
