@@ -19,7 +19,7 @@ function weightedPick(units) {
 
 // 물리 데미지 (방어력 반영)
 function physDmg(atk, def, mult, isCrit, critDmgPct) {
-  let d = Math.max(1, atk * mult - def * 0.5);
+  let d = Math.max(1, atk * mult * (100 / (100 + def)));
   if (isCrit) d *= critDmgPct / 100;
   return Math.max(1, Math.floor(d * (0.9 + Math.random() * 0.2)));
 }
