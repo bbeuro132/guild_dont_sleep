@@ -955,6 +955,7 @@ function showOfflinePopup(result) {
         <span style="color:var(--blue);font-weight:bold">💎 재료 ${a.mat}개</span>
         <span class="offline-progress">진행도 ${a.progressFrom}→${a.progressTo}/${a.maxProgress}</span>
       </div>
+      ${a.totalBattles != null ? `<div style="font-size:0.72rem;color:#888;margin-top:2px">⚔️ ${a.totalBattles}전 ${a.wins}승 (승률 ${a.winRate}%)</div>` : ''}
       ${itemsHtml}
     </div>`;
   }).join('');

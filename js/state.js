@@ -95,6 +95,39 @@ function resetState() {
   window.location.reload();
 }
 
+// ===== 오프라인 승률 추정 (파티 전투력 vs 구역 난이도) =====
+function estimateOfflineWinRate(dispatch, area) {
+  const team = dispatch.team
+    .map(id => State.adventurers.find(a => a.id === id))
+    .filter(Boolean);
+  if (team.length === 0) return 0;
+
+  // 파티 전투력: 각 모험가의 atk + def×0.5 + hp×0.05 합산
+  const partyPower = team.reduce((sum, adv) => {
+    const s = getEffectiveStats(adv);
+    return sum + s.atk + s.def * 0.5 + s.hp * 0.05;
+  }, 0);
+
+  // 현재 진행도 기준 몬스터 전투력 (평균 2마리 가정)
+  const st = area.stage;
+  const pm = 1 + (dispatch.progress / area.maxProgress) * 0.5;
+  const eAtk = 8  * Math.pow(st, 0.65) * pm;
+  const eDef = 2  * Math.pow(st, 0.8)  * pm;
+  const eHp  = 80 * Math.pow(st, 1.15) * pm;
+  const enemyPower = (eAtk + eDef * 0.5 + eHp * 0.05) * 2;
+
+  const ratio = partyPower / Math.max(1, enemyPower);
+
+  if (ratio >= 4)   return 0.97;
+  if (ratio >= 3)   return 0.92;
+  if (ratio >= 2)   return 0.82;
+  if (ratio >= 1.5) return 0.70;
+  if (ratio >= 1.0) return 0.55;
+  if (ratio >= 0.7) return 0.38;
+  if (ratio >= 0.5) return 0.22;
+  return 0.10;
+}
+
 // ===== 오프라인 진행 계산 =====
 function processOfflineProgress() {
   if (!State.lastSaveTime) return null;
@@ -110,13 +143,19 @@ function processOfflineProgress() {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
 
+    // 패시브 수입 (시간 비례)
     const gold = area.goldPerSec * elapsed;
     const mat  = area.materialPerMin * (elapsed / 60);
 
-    // 오프라인 처치 보너스 (전투 1회당 4초, 평균 2명 처치 기준)
-    const battles    = Math.floor(elapsed / 4);
-    const killGold   = battles * area.stage * 2 * 1.5;
-    const killMat    = battles * area.stage * 0.04;
+    // 파티 전투력 기반 전투 결과 추정
+    const totalBattles = Math.floor(elapsed / COMBAT_INTERVAL);
+    const winRate      = estimateOfflineWinRate(dispatch, area);
+    const wins         = Math.floor(totalBattles * winRate);
+    const bossBattles  = Math.floor(wins * 0.05); // 승리 중 ~5%가 보스
+    const normWins     = wins - bossBattles;
+
+    const killGold = wins * area.stage * 2 * 1.5;
+    const killMat  = wins * area.stage * 0.04;
 
     totalGold += gold + killGold;
     totalMat  += mat  + killMat;
@@ -124,11 +163,8 @@ function processOfflineProgress() {
     dispatch.accumulated.gold     += gold + killGold;
     dispatch.accumulated.material += mat  + killMat;
 
-    // 오프라인 장비 드롭 (온라인 드롭률 동일 적용, 보스 비율 ~3.5% 가정)
-    const fightBattles = Math.floor(battles * 0.7); // 탐색 30% 제외
-    const bossBattles  = Math.floor(fightBattles * 0.05);
-    const normBattles  = fightBattles - bossBattles;
-    const expectedDrops = normBattles * EQUIP_DROP_CHANCE + bossBattles * EQUIP_BOSS_DROP_CHANCE;
+    // 장비 드롭 (승리 횟수 기준)
+    const expectedDrops = normWins * EQUIP_DROP_CHANCE + bossBattles * EQUIP_BOSS_DROP_CHANCE;
     const dropCount = Math.floor(expectedDrops) + (Math.random() < (expectedDrops % 1) ? 1 : 0);
 
     const droppedItems = [];
@@ -148,12 +184,10 @@ function processOfflineProgress() {
       }
     }
 
-    // 진행도 누적 (대략 4초당 1진행도)
-    const progressGain = Math.floor(elapsed / 4);
+    // 진행도: 승리 횟수 = 진행도 상승 (온라인과 동일 기준)
     const prevProgress = Math.floor(dispatch.progress);
-    dispatch.progress += progressGain;
+    dispatch.progress = Math.min(dispatch.progress + wins, area.maxProgress);
     if (dispatch.progress >= area.maxProgress) {
-      dispatch.progress = area.maxProgress;
       State.areaProgress[area.id] = area.maxProgress;
     }
 
@@ -165,6 +199,9 @@ function processOfflineProgress() {
       progressFrom: prevProgress,
       progressTo:   Math.floor(dispatch.progress),
       maxProgress:  area.maxProgress,
+      winRate:      Math.round(winRate * 100),
+      wins,
+      totalBattles,
       items: droppedItems,
     });
   }
