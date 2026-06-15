@@ -325,7 +325,7 @@ function promoteAdventurer(advId, targetJob) {
   const jobInfo = JOBS[adv.job];
   const tier = jobInfo.tier;
   if (JOBS[targetJob]?.tier === 3 && !hasPrestigeEffect('tier3unlock')) {
-    showToast('3차 전직은 경지 개방 Ⅰ이 필요합니다. (경지 탭 → 리빌딩 후 개방)', 'error');
+    showToast('3차 전직은 경지 개방 Ⅱ가 필요합니다. (경지 탭 → 경지 가지 노드 개방)', 'error');
     return;
   }
   const costKey = tier === 1 ? 'tier2' : 'tier3';
