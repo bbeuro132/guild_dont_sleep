@@ -238,6 +238,23 @@ function renderAdvDetail(advId) {
         <div style="display:flex;gap:6px;flex-wrap:wrap">${btnHtml}</div>
       </div>`;
     })()}
+    <div style="margin-bottom:10px">
+      <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">스킬</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${(JOB_SKILLS[adv.job] || []).map(sid => {
+          const sk = SKILLS[sid];
+          if (!sk) return '';
+          const cdLabel = `쿨다운 ${sk.cooldown}턴`;
+          return `<div style="background:var(--bg-light,#fdf6ec);border:1px solid var(--brown-light,#e0c89a);border-radius:8px;padding:7px 10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+              <span style="font-size:0.82rem;font-weight:bold;color:var(--brown-dark)">${sk.name}</span>
+              <span style="font-size:0.7rem;color:#aaa">${cdLabel}</span>
+            </div>
+            <div style="font-size:0.75rem;color:#666;line-height:1.4">${sk.desc || ''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
     ${promoTargets.length > 0 ? `
     <div>
       <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">

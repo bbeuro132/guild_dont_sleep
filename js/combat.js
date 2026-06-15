@@ -41,7 +41,7 @@ const SKILLS = {
 
   /* ---------- 전사 계열 ---------- */
   warrior_smash: {
-    name: '강타', type: 'cooldown', cooldown: 4,
+    name: '강타', type: 'cooldown', cooldown: 4, desc: '적 1명에게 물리 피해 (ATK×1.9). 50% 확률로 치명타 확정.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -53,14 +53,14 @@ const SKILLS = {
   },
 
   knight_provoke: {
-    name: '도발 태세', type: 'cooldown', cooldown: 3,
+    name: '도발 태세', type: 'cooldown', cooldown: 3, desc: '4턴간 적이 자신을 우선 공격하도록 도발.',
     exec(u, al, en, log) {
       u.taunting = 4;
       log(`🛡️ [도발 태세] ${u.name}: 4턴간 도발!`);
     },
   },
   knight_shield_bash: {
-    name: '방패 강타', type: 'cooldown', cooldown: 2,
+    name: '방패 강타', type: 'cooldown', cooldown: 2, desc: '적 1명에게 물리 피해 (ATK×1.2) + 기절 1턴. (보스 기절 면역)',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -73,7 +73,7 @@ const SKILLS = {
   },
 
   guardian_fortress: {
-    name: '성벽', type: 'cooldown', cooldown: 4,
+    name: '성벽', type: 'cooldown', cooldown: 4, desc: '6턴간 도발 + 아군 전체 피해 경감 20%.',
     exec(u, al, en, log) {
       u.taunting = 6;
       al.filter(a => a !== u && a.isAlive()).forEach(a => { a.damageReduction = Math.min(0.5, (a.damageReduction || 0) + 0.2); });
@@ -81,7 +81,7 @@ const SKILLS = {
     },
   },
   guardian_judgment: {
-    name: '심판의 일격', type: 'cooldown', cooldown: 2,
+    name: '심판의 일격', type: 'cooldown', cooldown: 2, desc: '적 1명에게 물리 피해 (ATK×1.7) + 기절 2턴. (보스 기절 면역)',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -94,7 +94,7 @@ const SKILLS = {
   },
 
   gladiator_counter: {
-    name: '반격 태세', type: 'cooldown', cooldown: 3,
+    name: '반격 태세', type: 'cooldown', cooldown: 3, desc: '5턴간 피해 경감 20% + 피격 시 반격.',
     exec(u, al, en, log) {
       u.counterStance = { turns: 5, reduction: 0.2 };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
@@ -102,7 +102,7 @@ const SKILLS = {
     },
   },
   gladiator_whirlwind: {
-    name: '회오리', type: 'cooldown', cooldown: 3,
+    name: '회오리', type: 'cooldown', cooldown: 3, desc: '적 전체에게 물리 피해 (ATK×0.85).',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       let total = 0;
@@ -112,7 +112,7 @@ const SKILLS = {
   },
 
   champion_boiling: {
-    name: '끓어오르는 피', type: 'cooldown', cooldown: 4,
+    name: '끓어오르는 피', type: 'cooldown', cooldown: 4, desc: '피해 경감 20% + 아군이 피격될 때마다 반격 (전투 내내 지속).',
     exec(u, al, en, log) {
       u.counterStance = { turns: 999, reduction: 0.2, teamCounter: true };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
@@ -120,7 +120,7 @@ const SKILLS = {
     },
   },
   champion_storm: {
-    name: '폭풍', type: 'cooldown', cooldown: 3,
+    name: '폭풍', type: 'cooldown', cooldown: 3, desc: '적 전체에게 물리 피해 (ATK×1.5).',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       let total = 0;
@@ -131,7 +131,7 @@ const SKILLS = {
 
   /* ---------- 도적 계열 ---------- */
   rogue_ambush: {
-    name: '기습', type: 'cooldown', cooldown: 4,
+    name: '기습', type: 'cooldown', cooldown: 4, desc: '적 1명에게 물리 피해 (ATK×1.9). 치명타 확정.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -142,14 +142,14 @@ const SKILLS = {
   },
 
   assassin_vital: {
-    name: '급소 노리기', type: 'cooldown', cooldown: 3,
+    name: '급소 노리기', type: 'cooldown', cooldown: 3, desc: '다음 공격이 치명타 확정.',
     exec(u, al, en, log) {
       u.guaranteedCrit = (u.guaranteedCrit || 0) + 1;
       log(`🎯 [급소 노리기] ${u.name}: 다음 공격 치명타 확정!`);
     },
   },
   assassin_poison: {
-    name: '독침', type: 'cooldown', cooldown: 4,
+    name: '독침', type: 'cooldown', cooldown: 4, desc: '적 1명에게 3턴간 독 (ATK×0.3/턴).',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -160,7 +160,7 @@ const SKILLS = {
   },
 
   ninja_mass_assassinate: {
-    name: '대규모 암살', type: 'cooldown', cooldown: 3,
+    name: '대규모 암살', type: 'cooldown', cooldown: 3, desc: '치명타 확정 + 다음 공격이 연쇄 암살 (적 전체 공격).',
     exec(u, al, en, log) {
       u.guaranteedCrit = (u.guaranteedCrit || 0) + 1;
       u.chainAssassinate = true;
@@ -168,7 +168,7 @@ const SKILLS = {
     },
   },
   ninja_poison_fog: {
-    name: '독안개', type: 'cooldown', cooldown: 4,
+    name: '독안개', type: 'cooldown', cooldown: 4, desc: '적 전체에게 3턴 독 (ATK×0.25/턴) + 명중률 감소 1턴.',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       const tickDmg = Math.max(1, Math.floor(u.atk * 0.25));
@@ -178,7 +178,7 @@ const SKILLS = {
   },
 
   hunter_mark: {
-    name: '표식', type: 'cooldown', cooldown: 3,
+    name: '표식', type: 'cooldown', cooldown: 3, desc: '적 1명에게 표식 부착. 표식 대상에게 연사 피해 집중.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -188,7 +188,7 @@ const SKILLS = {
     },
   },
   hunter_rapidfire: {
-    name: '연사', type: 'cooldown', cooldown: 3,
+    name: '연사', type: 'cooldown', cooldown: 3, desc: '표식 대상(없으면 랜덤)에게 2~3회 물리 공격 (ATK×0.75/회).',
     exec(u, al, en, log) {
       let t = (u.markTarget && u.markTarget.isAlive()) ? u.markTarget : pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -204,7 +204,7 @@ const SKILLS = {
   },
 
   bounty_obsession: {
-    name: '집착', type: 'cooldown', cooldown: 4,
+    name: '집착', type: 'cooldown', cooldown: 4, desc: '적 1명을 집착 표적으로 지정. 해당 대상에게 피해 +30%.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -213,7 +213,7 @@ const SKILLS = {
     },
   },
   bounty_finisher: {
-    name: '확인 사살', type: 'cooldown', cooldown: 3,
+    name: '확인 사살', type: 'cooldown', cooldown: 3, desc: '집착 표적(없으면 랜덤)에게 3연타 물리 공격 (ATK×1.0/회, 집착 보너스 포함).',
     exec(u, al, en, log) {
       let t = (u.markTarget && u.markTarget.isAlive()) ? u.markTarget : pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -226,7 +226,7 @@ const SKILLS = {
 
   /* ---------- 마법사 계열 ---------- */
   mage_barrage: {
-    name: '마력 난사', type: 'cooldown', cooldown: 4,
+    name: '마력 난사', type: 'cooldown', cooldown: 4, desc: '적 1명에게 마법 피해 (ATK×1.9). 방어 무시.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -238,7 +238,7 @@ const SKILLS = {
   },
 
   cathedral_shield: {
-    name: '수호 술식', type: 'cooldown', cooldown: 4,
+    name: '수호 술식', type: 'cooldown', cooldown: 4, desc: '아군 전체에게 보호막 부여 (ATK×2). 보호막 파괴 시 공격자에게 50% 피해 반사.',
     exec(u, al, en, log) {
       const amt = Math.floor(u.atk * 2);
       al.filter(a => a.isAlive()).forEach(a => { a.shield = (a.shield || 0) + amt; a.shieldReflect = 0.5; });
@@ -246,7 +246,7 @@ const SKILLS = {
     },
   },
   cathedral_deny: {
-    name: '접근 거부', type: 'cooldown', cooldown: 3,
+    name: '접근 거부', type: 'cooldown', cooldown: 3, desc: '적 전체에게 마법 피해 (ATK×0.4) + 2턴간 공격력 25% 하락.',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       if (alive.length === 0) return;
@@ -260,7 +260,7 @@ const SKILLS = {
   },
 
   scholar_shield2: {
-    name: '수호 술식 2.0', type: 'cooldown', cooldown: 4,
+    name: '수호 술식 2.0', type: 'cooldown', cooldown: 4, desc: '아군 전체에게 강화 보호막 부여 (ATK×3.5). 보호막 파괴 시 50% 피해 반사.',
     exec(u, al, en, log) {
       const amt = Math.floor(u.atk * 3.5);
       al.filter(a => a.isAlive()).forEach(a => { a.shield = (a.shield || 0) + amt; a.shieldReflect = 0.5; });
@@ -268,7 +268,7 @@ const SKILLS = {
     },
   },
   scholar_isolate: {
-    name: '시스템 격리', type: 'cooldown', cooldown: 3,
+    name: '시스템 격리', type: 'cooldown', cooldown: 3, desc: '적 전체에게 마법 피해 (ATK×0.4) + 3턴간 공격력 35% 하락.',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       if (alive.length === 0) return;
@@ -282,7 +282,7 @@ const SKILLS = {
   },
 
   ivory_coordinate: {
-    name: '좌표 타격', type: 'cooldown', cooldown: 3,
+    name: '좌표 타격', type: 'cooldown', cooldown: 3, desc: '적 1명에게 마법 피해 (ATK×2.2). 방어력·회피 완전 무시.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -293,7 +293,7 @@ const SKILLS = {
     },
   },
   ivory_lightning: {
-    name: '연발 번개', type: 'cooldown', cooldown: 3,
+    name: '연발 번개', type: 'cooldown', cooldown: 3, desc: '적 전체 랜덤 대상에게 3~4회 마법 공격 (ATK×0.7/회).',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       const hits = 3 + Math.floor(Math.random() * 2);
@@ -309,7 +309,7 @@ const SKILLS = {
   },
 
   sage_collapse: {
-    name: '좌표 붕괴', type: 'cooldown', cooldown: 3,
+    name: '좌표 붕괴', type: 'cooldown', cooldown: 3, desc: '적 1명에게 마법 피해 (ATK×2.8). 보호막·방어·회피 모두 무시.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -320,7 +320,7 @@ const SKILLS = {
     },
   },
   sage_lightning_hell: {
-    name: '번개 지옥', type: 'cooldown', cooldown: 3,
+    name: '번개 지옥', type: 'cooldown', cooldown: 3, desc: '적 전체 랜덤 대상에게 5~7회 마법 공격 (ATK×0.85/회).',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       const hits = 5 + Math.floor(Math.random() * 3);
@@ -338,7 +338,7 @@ const SKILLS = {
 
   /* ---------- 치유사 계열 ---------- */
   healer_first_aid: {
-    name: '응급 처치', type: 'cooldown', cooldown: 4,
+    name: '응급 처치', type: 'cooldown', cooldown: 4, desc: 'HP 비율이 가장 낮은 아군을 대량 회복 (ATK×3.0).',
     exec(u, al, en, log) {
       const alive = al.filter(a => a.isAlive());
       const t = alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
@@ -349,14 +349,14 @@ const SKILLS = {
   },
 
   cleric_light_veil: {
-    name: '빛의 장막', type: 'cooldown', cooldown: 3,
+    name: '빛의 장막', type: 'cooldown', cooldown: 3, desc: '자신의 피격 가중치를 50%로 감소 (적이 덜 노림).',
     exec(u, al, en, log) {
       u.lightVeil = 1;
       log(`🌟 [빛의 장막] ${u.name}: 피격 확률 감소!`);
     },
   },
   cleric_warm_light: {
-    name: '따스한 빛', type: 'cooldown', cooldown: 3,
+    name: '따스한 빛', type: 'cooldown', cooldown: 3, desc: '아군 전체를 소량 회복 (ATK×0.8).',
     exec(u, al, en, log) {
       const h = Math.floor(u.atk * 0.8);
       al.filter(a => a.isAlive()).forEach(a => a.heal(h));
@@ -365,14 +365,14 @@ const SKILLS = {
   },
 
   priest_blessing: {
-    name: '빛의 축복', type: 'cooldown', cooldown: 4,
+    name: '빛의 축복', type: 'cooldown', cooldown: 4, desc: '자신의 피격 가중치를 25%로 대폭 감소 (적이 거의 안 노림).',
     exec(u, al, en, log) {
       u.lightVeil = 2;
       log(`✨ [빛의 축복] ${u.name}: 피격 확률 크게 감소!`);
     },
   },
   priest_embrace: {
-    name: '포옹하는 빛', type: 'cooldown', cooldown: 5,
+    name: '포옹하는 빛', type: 'cooldown', cooldown: 5, desc: '다음 3번의 기본 공격이 아군 전체 회복 (ATK×0.6)으로 전환.',
     exec(u, al, en, log) {
       u.embraceAoe = 3;
       log(`💖 [포옹하는 빛] ${u.name}: 3번의 기본 공격이 전체 회복으로 변경!`);
@@ -380,7 +380,7 @@ const SKILLS = {
   },
 
   dragon_priest_punish: {
-    name: '처벌', type: 'cooldown', cooldown: 3,
+    name: '처벌', type: 'cooldown', cooldown: 3, desc: '적 1명에게 마법 피해 (ATK×1.8).',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -391,7 +391,7 @@ const SKILLS = {
     },
   },
   dragon_priest_sermon: {
-    name: '설교', type: 'cooldown', cooldown: 3,
+    name: '설교', type: 'cooldown', cooldown: 3, desc: '적 전체에게 마법 피해 (ATK×0.6).',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       let total = 0;
@@ -401,7 +401,7 @@ const SKILLS = {
   },
 
   inquisitor_conviction: {
-    name: '단죄', type: 'cooldown', cooldown: 3,
+    name: '단죄', type: 'cooldown', cooldown: 3, desc: '적 1명에게 마법 피해 (ATK×2.2) + 피해량의 40%를 가장 HP 낮은 아군 회복.',
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -415,7 +415,7 @@ const SKILLS = {
     },
   },
   inquisitor_oration: {
-    name: '웅변', type: 'cooldown', cooldown: 3,
+    name: '웅변', type: 'cooldown', cooldown: 3, desc: '적 전체에게 마법 피해 (ATK×0.6) + 1턴간 명중률 감소.',
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       let total = 0;
