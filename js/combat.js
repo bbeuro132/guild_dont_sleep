@@ -775,7 +775,7 @@ class CombatUnit {
     if (this.hasStatus('stun')) return false;
     const skillIds = JOB_SKILLS[this.job] || [];
 
-    // battle_start 스킬 (최초 1회)
+    // battle_start 스킬 (최초 1회) — 발동 후 이 턴은 종료 (cooldown 스킬 발동 안 함)
     if (!this._startSkillsDone) {
       this._startSkillsDone = true;
       for (const sid of skillIds) {
@@ -784,6 +784,7 @@ class CombatUnit {
           sk.exec(this, allies, enemies, log);
         }
       }
+      return false;
     }
 
     // cooldown 스킬
