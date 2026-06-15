@@ -1157,9 +1157,25 @@ function useBookFromInventory(inventoryIdx, advIdStr) {
 
 function useBookByName(bookName, advIdStr) {
   if (!advIdStr) { showToast('모험가를 선택하세요.', 'error'); return; }
-  const idx = State.inventory.findIndex(i => i.type === 'exp_book' && i.name === bookName);
-  if (idx === -1) { showToast('해당 경험치 서를 찾을 수 없습니다.', 'error'); return; }
-  useExpBook(parseInt(advIdStr), idx);
+  const advId = parseInt(advIdStr);
+  const adv = State.adventurers.find(a => a.id === advId);
+  if (!adv) { showToast('모험가를 선택하세요.', 'error'); return; }
+
+  // 같은 이름의 책 전부 수거
+  let totalExp = 0;
+  let count = 0;
+  State.inventory = State.inventory.filter(i => {
+    if (i.type === 'exp_book' && i.name === bookName) {
+      totalExp += i.expValue;
+      count++;
+      return false;
+    }
+    return true;
+  });
+
+  if (count === 0) { showToast('해당 경험치 서를 찾을 수 없습니다.', 'error'); return; }
+  giveExp(advId, totalExp);
+  showToast(`${adv.name}에게 ${bookName} ×${count} 사용 (총 경험치 +${totalExp.toLocaleString()})`, 'success');
   updateInvBadge();
   renderInventoryPopup();
 }
