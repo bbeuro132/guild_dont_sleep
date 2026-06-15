@@ -430,6 +430,38 @@ const SKILLS = {
       log(`📣 [웅변] ${u.name}: 적 전체 총 <b class="log-damage">${total}</b> 피해 + 1턴 명중률 하락!`);
     },
   },
+
+  /* ---------- 몬스터 전용 ---------- */
+  monster_strike: {
+    name: '야수의 일격', type: 'cooldown', cooldown: 3, desc: '적 1명에게 ATK×1.5 물리 피해.',
+    exec(u, al, en, log) {
+      const t = weightedPick(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const d = physDmg(u.atk, t.def, 1.5, false, u.critDmg);
+      const r = t.takeDamage(d);
+      log(`🐾 [야수의 일격] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b>`);
+    },
+  },
+  boss_heavy: {
+    name: '보스 강타', type: 'cooldown', cooldown: 3, desc: '적 1명에게 ATK×2.2 물리 피해.',
+    exec(u, al, en, log) {
+      const t = weightedPick(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const crit = rollCrit(u);
+      const d = physDmg(u.atk, t.def, 2.2, crit, u.critDmg);
+      const r = t.takeDamage(d);
+      log(`💢 [보스 강타] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b>${crit ? ' 💥치명타' : ''}`);
+    },
+  },
+  boss_sweep: {
+    name: '휩쓸기', type: 'cooldown', cooldown: 5, desc: '아군 전체에게 ATK×0.9 물리 피해.',
+    exec(u, al, en, log) {
+      const alive = en.filter(e => e.isAlive());
+      let total = 0;
+      alive.forEach(t => { total += t.takeDamage(physDmg(u.atk, t.def, 0.9, false, u.critDmg)).actual; });
+      log(`🌊 [휩쓸기] ${u.name}: 전체에게 총 <b class="log-damage">${total}</b> 피해!`);
+    },
+  },
 };
 
 // 치유사 계열 직업 집합
@@ -457,6 +489,8 @@ const JOB_SKILLS = {
   priest:             ['priest_blessing', 'priest_embrace'],
   dragon_priest:      ['dragon_priest_punish', 'dragon_priest_sermon'],
   inquisitor:         ['inquisitor_conviction', 'inquisitor_oration'],
+  monster_normal:     ['monster_strike'],
+  monster_boss:       ['boss_heavy', 'boss_sweep'],
 };
 
 // ===== CombatUnit 클래스 =====
@@ -480,7 +514,7 @@ class CombatUnit {
     } else {
       this.id      = 'm_' + Math.random().toString(36).slice(2, 7);
       this.name    = src.name;
-      this.job     = null;
+      this.job     = src.isBoss ? 'monster_boss' : 'monster_normal';
       this.isBoss  = src.isBoss || false;
       this.sprite  = src.sprite;
       this.atk     = src.atk;
@@ -890,7 +924,7 @@ class BattleEngine {
         if (!unit.isAlive()) continue;
 
         // 스킬 우선, 없으면 일반 공격
-        const usedSkill = unit.isAlly ? unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t)) : false;
+        const usedSkill = unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t));
         if (!usedSkill) {
           unit.normalAttack(oppTeam, myTeam, (t) => this.addLog(t));
         }
@@ -1137,9 +1171,7 @@ class LiveBattle {
     }
 
     // 스킬 우선, 없으면 일반 공격
-    const usedSkill = unit.isAlly
-      ? unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t))
-      : false;
+    const usedSkill = unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t));
     if (!usedSkill) {
       unit.normalAttack(oppTeam, myTeam, (t) => this.addLog(t));
     }

@@ -454,8 +454,8 @@ function recallDispatch(areaId) {
   return true;
 }
 
-// 파견 팀의 골드 보너스 합산 (악세서리 옵션 ac_gold)
-function getTeamGoldBonus(dispatch) {
+// 파견 팀의 dispatch 효과 합산 헬퍼
+function getTeamDispatchBonus(dispatch, effectId) {
   let bonus = 0;
   for (const advId of dispatch.team) {
     const adv = State.adventurers.find(a => a.id === advId);
@@ -464,12 +464,15 @@ function getTeamGoldBonus(dispatch) {
       const eq = adv.equipment[slot];
       if (!eq || !eq.options) continue;
       for (const opt of eq.options) {
-        if (opt.type === 'dispatch' && opt.dispatchEffect === 'goldBonus') bonus += opt.value;
+        if (opt.type === 'dispatch' && opt.dispatchEffect === effectId) bonus += opt.value;
       }
     }
   }
   return bonus / 100;
 }
+
+function getTeamGoldBonus(dispatch)     { return getTeamDispatchBonus(dispatch, 'goldBonus'); }
+function getTeamMaterialBonus(dispatch) { return getTeamDispatchBonus(dispatch, 'materialBonus'); }
 
 // ===== 파견 누적 업데이트 (틱마다 호출) =====
 function tickDispatches(deltaSeconds) {
@@ -479,7 +482,7 @@ function tickDispatches(deltaSeconds) {
 
     // 재화 누적 (장비 옵션 + 프레스티지 성장 가지 반영)
     const goldMult    = (1 + getTeamGoldBonus(dispatch)) * (1 + getPrestigeBonusTotal('goldBonus') / 100);
-    const materialMult = 1 + getPrestigeBonusTotal('materialBonus') / 100;
+    const materialMult = (1 + getTeamMaterialBonus(dispatch)) * (1 + getPrestigeBonusTotal('materialBonus') / 100);
     dispatch.accumulated.gold     += area.goldPerSec * deltaSeconds * goldMult;
     dispatch.accumulated.material += area.materialPerMin * (deltaSeconds / 60) * materialMult;
 
