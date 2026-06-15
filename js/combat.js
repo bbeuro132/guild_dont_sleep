@@ -180,6 +180,8 @@ const SKILLS = {
   hunter_mark: {
     name: '표식', type: 'cooldown', cooldown: 3, desc: '적 1명에게 표식 부착. 표식 대상에게 연사 피해 집중.',
     exec(u, al, en, log) {
+      if (u.markTarget && u.markTarget.isAlive()) return; // 기존 표식 유효 → 재적용 안 함
+      if (u.markTarget) u.markTarget.marked = false;
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
       u.markTarget = t;
@@ -206,6 +208,8 @@ const SKILLS = {
   bounty_obsession: {
     name: '집착', type: 'cooldown', cooldown: 4, desc: '적 1명을 집착 표적으로 지정. 해당 대상에게 피해 +30%.',
     exec(u, al, en, log) {
+      if (u.markTarget && u.markTarget.isAlive()) return; // 기존 집착 표적 유효 → 재적용 안 함
+      if (u.markTarget) { u.markTarget.marked = false; }
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
       u.markTarget = t; u.markBonus = 0.3; t.marked = true;
@@ -654,19 +658,29 @@ class CombatUnit {
       return;
     }
 
-    // 사냥꾼 계열: 표식 대상 우선
+    // 사냥꾼: 표식 대상만 공격. 표식 없거나 대상 사망 시 이번 턴에 새 표식 부여 후 공격 안 함
+    const isHunterJob = this.job === 'hunter' || this.job === 'bounty_hunter';
+    if (isHunterJob) {
+      if (!this.markTarget || !this.markTarget.isAlive()) {
+        if (this.markTarget) { this.markTarget.marked = false; }
+        const alive = enemies.filter(e => e.isAlive());
+        if (alive.length === 0) return;
+        const newT = pickRandom(alive);
+        this.markTarget = newT;
+        newT.marked = true;
+        const icon = this.job === 'bounty_hunter' ? '👁️' : '🏹';
+        log(`${icon} ${this.name}: ${newT.name}에게 표식 부착!`);
+        return; // 표식 부여 턴은 공격 없음
+      }
+    }
+
     let target;
-    if (this.markTarget && this.markTarget.isAlive()) {
-      target = this.markTarget;
+    if (isHunterJob) {
+      target = this.markTarget; // 표식 대상만 공격
     } else {
       const alive = enemies.filter(e => e.isAlive());
       if (alive.length === 0) return;
       target = weightedPick(alive);
-      // 표식 대상이 죽으면 다음 표식
-      if (this.markTarget && !this.markTarget.isAlive() && (JOB_SKILLS[this.job] || []).some(s => s.includes('mark') || s.includes('obsession'))) {
-        this.markTarget = pickRandom(alive);
-        if (this.markTarget) { this.markTarget.marked = true; target = this.markTarget; }
-      }
     }
 
     if (!target || !target.isAlive()) return;
