@@ -124,6 +124,30 @@ function processOfflineProgress() {
     dispatch.accumulated.gold     += gold + killGold;
     dispatch.accumulated.material += mat  + killMat;
 
+    // 오프라인 장비 드롭 (온라인 드롭률 동일 적용, 보스 비율 ~3.5% 가정)
+    const fightBattles = Math.floor(battles * 0.7); // 탐색 30% 제외
+    const bossBattles  = Math.floor(fightBattles * 0.05);
+    const normBattles  = fightBattles - bossBattles;
+    const expectedDrops = normBattles * EQUIP_DROP_CHANCE + bossBattles * EQUIP_BOSS_DROP_CHANCE;
+    const dropCount = Math.floor(expectedDrops) + (Math.random() < (expectedDrops % 1) ? 1 : 0);
+
+    const droppedItems = [];
+    const pool = EQUIP_GRADE_POOLS[getEquipGradePoolIdx(area.stage)];
+    for (let i = 0; i < dropCount; i++) {
+      const slot  = EQUIP_SLOTS[Math.floor(Math.random() * EQUIP_SLOTS.length)];
+      const grade = pool[Math.floor(Math.random() * pool.length)];
+      const eq    = generateEquipment(slot, grade);
+      if (State.inventory.length < getInventoryCapacity()) {
+        State.inventory.push(eq);
+        droppedItems.push(eq);
+      } else {
+        const sellGold = EQUIP_SELL_GOLD[grade] || 50;
+        totalGold += sellGold;
+        dispatch.accumulated.gold += sellGold;
+        droppedItems.push({ ...eq, autoSold: true, sellGold });
+      }
+    }
+
     // 진행도 누적 (대략 4초당 1진행도)
     const progressGain = Math.floor(elapsed / 4);
     const prevProgress = Math.floor(dispatch.progress);
@@ -141,6 +165,7 @@ function processOfflineProgress() {
       progressFrom: prevProgress,
       progressTo:   Math.floor(dispatch.progress),
       maxProgress:  area.maxProgress,
+      items: droppedItems,
     });
   }
 

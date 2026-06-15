@@ -931,7 +931,23 @@ function showOfflinePopup(result) {
   const s = result.elapsed % 60;
   const timeStr = h > 0 ? `${h}시간 ${m}분` : m > 0 ? `${m}분 ${s}초` : `${s}초`;
 
-  const areaHtml = result.areas.map(a => `
+  // 전체 드롭 장비 집계
+  const allItems = result.areas.flatMap(a => a.items || []);
+  const totalItems = allItems.length;
+
+  const areaHtml = result.areas.map(a => {
+    const itemsHtml = (a.items && a.items.length > 0)
+      ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">` +
+        a.items.map(eq => {
+          const gradeColor = { '일반':'#888','마법':'#4a9eff','희귀':'#a855f7','영웅':'#f97316','전설':'#eab308','신화':'#e11d48' }[eq.grade] || '#888';
+          const soldBadge = eq.autoSold
+            ? `<span style="font-size:0.65rem;color:#f97316"> (자동판매 +${eq.sellGold}G)</span>`
+            : '';
+          return `<span style="font-size:0.72rem;padding:2px 5px;border-radius:4px;background:#f5f5f5;border:1px solid ${gradeColor};color:${gradeColor}">${eq.name}${soldBadge}</span>`;
+        }).join('') +
+        `</div>`
+      : '';
+    return `
     <div class="offline-area-row">
       <div class="offline-area-name">${a.icon} ${a.name}</div>
       <div class="offline-area-gains">
@@ -939,7 +955,9 @@ function showOfflinePopup(result) {
         <span style="color:var(--blue);font-weight:bold">💎 재료 ${a.mat}개</span>
         <span class="offline-progress">진행도 ${a.progressFrom}→${a.progressTo}/${a.maxProgress}</span>
       </div>
-    </div>`).join('');
+      ${itemsHtml}
+    </div>`;
+  }).join('');
 
   let popup = document.getElementById('offline-popup');
   if (!popup) {
@@ -968,6 +986,7 @@ function showOfflinePopup(result) {
           <span style="color:var(--gold-dark);font-weight:bold">💰 ${result.totalGold.toLocaleString()} G</span>
           <span style="color:#555"> &nbsp;·&nbsp; </span>
           <span style="color:var(--blue);font-weight:bold">💎 ${result.totalMat}개</span>
+          ${totalItems > 0 ? `<span style="color:#555"> &nbsp;·&nbsp; </span><span style="color:#a855f7;font-weight:bold">⚔️ 장비 ${totalItems}개</span>` : ''}
         </span>
       </div>
       <p style="font-size:0.75rem;color:#888;margin:10px 0 14px;text-align:center">
