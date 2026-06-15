@@ -730,18 +730,74 @@ function openBattlePopup(areaId) {
   if (!area) return;
   if (window._currentBattle) window._currentBattle.stop();
 
-  // 전투 1회를 시작하는 내부 함수 — 승패 후 2초 뒤 자동으로 재호출됨
-  function startBattle(allies) {
-    const dispatch = State.dispatches.find(d => d.areaId === areaId);
-    if (!dispatch) return; // 파견이 정산되면 중단
+  const dispatch = State.dispatches.find(d => d.areaId === areaId);
+  if (!dispatch) return;
 
-    const enemies = generateEnemyGroup(area, Math.floor(dispatch.progress));
+  // 백그라운드 전투 일시정지
+  dispatch.viewerActive = true;
+  window._battleAreaId = areaId;
+
+  // 팝업 닫기 공통 처리 — HP 동기화 후 백그라운드 재개
+  function closeBattleViewer() {
+    const d = State.dispatches.find(d => d.areaId === areaId);
+    if (d) {
+      // 현재 진행 중인 전투의 HP를 dispatch에 반영
+      if (window._currentBattle) {
+        window._currentBattle.allies.forEach(u => {
+          d.partyHp[u.id] = Math.max(0, u.currentHp);
+        });
+      }
+      d.viewerActive = false;
+      d.combatCooldown = COMBAT_INTERVAL; // 다음 백그라운드 전투를 즉시 시작하지 않도록 쿨다운 리셋
+    }
+    window._currentBattle?.stop();
+    window._currentBattle = null;
+    window._battleAreaId = null;
+    closePopup('battle-popup');
+  }
+
+  // 전투 1회를 시작하는 내부 함수 — 승패 후 결과를 dispatch에 반영하고 2초 뒤 재호출
+  function startBattle(allies) {
+    const d = State.dispatches.find(dd => dd.areaId === areaId);
+    if (!d) { closeBattleViewer(); return; }
+
+    const enemies = generateEnemyGroup(area, Math.floor(d.progress));
     renderBattleUI(allies, enemies);
 
     const battle = new LiveBattle(
       allies, enemies,
       (b) => updateBattleUI(b),
       (win) => {
+        // 전투 결과를 dispatch에 동기화
+        const d2 = State.dispatches.find(dd => dd.areaId === areaId);
+        if (d2) {
+          if (win) {
+            battle.allies.forEach(u => {
+              let hp = Math.max(0, u.currentHp);
+              if (u.healAfterBattle > 0 && hp > 0) hp = Math.min(u.maxHp, hp + Math.floor(u.maxHp * u.healAfterBattle / 100));
+              d2.partyHp[u.id] = hp;
+            });
+            const isBoss = battle.enemies.some(e => e.isBoss);
+            let progGain = 1 + getPrestigeBonusTotal('bonusProgress');
+            if (isBoss) progGain += getPrestigeBonusTotal('bossProgress');
+            d2.progress = Math.min(d2.progress + progGain, area.maxProgress);
+            const killGold = Math.floor(battle.enemies.length * area.stage * 1.5 * (isBoss ? 2 : 1));
+            const killMat  = isBoss ? area.stage * 0.2 : area.stage * 0.04;
+            d2.accumulated.gold     += killGold;
+            d2.accumulated.material += killMat;
+            if (d2.progress >= area.maxProgress) {
+              d2.progress = 1;
+              State.areaProgress[area.id] = area.maxProgress;
+              checkAreaUnlocks();
+              showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
+            }
+          } else {
+            d2.partyHp = {};
+            const retainRate = 0.5 + getPrestigeBonusTotal('wipeRetain') / 100;
+            d2.progress = Math.max(1, Math.floor(d2.progress * retainRate));
+          }
+        }
+
         // 팝업이 닫혔으면 중단
         const popup = document.getElementById('battle-popup');
         if (!popup || popup.classList.contains('hidden')) return;
@@ -751,11 +807,10 @@ function openBattlePopup(areaId) {
           const popup2 = document.getElementById('battle-popup');
           if (!popup2 || popup2.classList.contains('hidden')) return;
 
-          const d = State.dispatches.find(d => d.areaId === areaId);
-          if (!d) return;
+          const d3 = State.dispatches.find(dd => dd.areaId === areaId);
+          if (!d3) return;
 
-          // 승리: 현재 HP 이어받기 / 패배: 풀 HP 회복
-          const nextAllies = d.team
+          const nextAllies = d3.team
             .map(id => State.adventurers.find(a => a.id === id))
             .filter(Boolean)
             .map(adv => {
@@ -772,9 +827,6 @@ function openBattlePopup(areaId) {
     battle.start();
   }
 
-  const dispatch = State.dispatches.find(d => d.areaId === areaId);
-  if (!dispatch) return;
-
   // 파티 CombatUnit 생성 (저장된 HP 반영)
   const allies = dispatch.team
     .map(id => State.adventurers.find(a => a.id === id))
@@ -787,10 +839,7 @@ function openBattlePopup(areaId) {
   openPopup('battle-popup');
   startBattle(allies);
 
-  document.getElementById('btn-close-battle').onclick = () => {
-    window._currentBattle?.stop();
-    closePopup('battle-popup');
-  };
+  document.getElementById('btn-close-battle').onclick = closeBattleViewer;
 }
 
 function renderBattleUI(allies, enemies) {

@@ -926,6 +926,7 @@ function initDispatchCombat(dispatch) {
 }
 
 function tickDispatchCombat(dispatch, delta) {
+  if (dispatch.viewerActive) return; // 관람 팝업이 열려있으면 백그라운드 전투 스킵
   dispatch.combatCooldown -= delta;
   if (dispatch.combatCooldown > 0) return;
   dispatch.combatCooldown = COMBAT_INTERVAL;

@@ -85,10 +85,7 @@ function bindEvents() {
 
   // 정산 팝업 닫기
   document.getElementById('btn-close-settlement').addEventListener('click', () => closePopup('settlement-popup'));
-  document.getElementById('btn-close-battle').addEventListener('click', () => {
-    if (window._currentBattle) window._currentBattle.stop();
-    closePopup('battle-popup');
-  });
+  // btn-close-battle은 openBattlePopup()에서 onclick으로 설정 (closeBattleViewer)
 
   // 인벤토리 팝업 닫기
   document.getElementById('btn-close-inventory').addEventListener('click', () => closePopup('inventory-popup'));
@@ -102,7 +99,21 @@ function bindEvents() {
     closePopup('battle-popup');
     closePopup('inventory-popup');
     closePopup('rebuild-popup');
-    if (window._currentBattle) window._currentBattle.stop();
+    // 전투 관람 팝업 닫힐 때 viewerActive 해제 및 HP 동기화
+    if (window._battleAreaId) {
+      const d = State.dispatches.find(dd => dd.areaId === window._battleAreaId);
+      if (d) {
+        if (window._currentBattle) {
+          window._currentBattle.allies.forEach(u => {
+            d.partyHp[u.id] = Math.max(0, u.currentHp);
+          });
+        }
+        d.viewerActive = false;
+        d.combatCooldown = COMBAT_INTERVAL;
+      }
+      window._battleAreaId = null;
+    }
+    if (window._currentBattle) { window._currentBattle.stop(); window._currentBattle = null; }
   });
 
   // 튜토리얼 다음 버튼
