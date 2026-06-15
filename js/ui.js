@@ -1267,8 +1267,14 @@ function renderPrestigeTab() {
   // ── 리빌딩 패널 ──
   const condHtml = REBUILD_CONDITIONS.map(c => {
     const ok = c.check();
+    const p  = c.progress();
+    const pct = Math.min(100, Math.floor(p.cur / p.max * 100));
     return `<div class="rebuild-cond ${ok ? 'ok' : 'nok'}">
-      <span>${ok ? '✅' : '❌'}</span> ${c.label}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span>${ok ? '✅' : '❌'} ${c.label}</span>
+        <span style="font-size:0.78rem;color:${ok ? '#388e3c' : '#888'}">${p.cur}/${p.max}</span>
+      </div>
+      ${!ok ? `<div style="height:4px;background:#eee;border-radius:2px;margin-top:3px"><div style="height:4px;background:#f59e0b;border-radius:2px;width:${pct}%"></div></div>` : ''}
     </div>`;
   }).join('');
 
@@ -1360,7 +1366,15 @@ function openRebuildDialog() {
 
   const condHtml = REBUILD_CONDITIONS.map(c => {
     const ok = c.check();
-    return `<div class="rebuild-cond ${ok ? 'ok' : 'nok'}"><span>${ok ? '✅' : '❌'}</span> ${c.label}</div>`;
+    const p  = c.progress();
+    const pct = Math.min(100, Math.floor(p.cur / p.max * 100));
+    return `<div class="rebuild-cond ${ok ? 'ok' : 'nok'}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span>${ok ? '✅' : '❌'} ${c.label}</span>
+        <span style="font-size:0.78rem;color:${ok ? '#388e3c' : '#888'}">${p.cur}/${p.max}</span>
+      </div>
+      ${!ok ? `<div style="height:4px;background:#eee;border-radius:2px;margin-top:3px"><div style="height:4px;background:#f59e0b;border-radius:2px;width:${pct}%"></div></div>` : ''}
+    </div>`;
   }).join('');
 
   const bodyEl = document.getElementById('rebuild-popup-body');

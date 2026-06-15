@@ -598,15 +598,30 @@ function giveExp(advId, amount) {
   const expMult = 1 + getPrestigeBonusTotal('expBonus') / 100;
   adv.exp += Math.floor(amount * expMult);
   let needed = expRequired(adv.level);
+  const oldMaxHp = getEffectiveStats(adv).hp;
+  let didLevelUp = false;
   while (adv.exp >= needed) {
     adv.exp -= needed;
     adv.level++;
     needed = expRequired(adv.level);
-    // 레벨업 스탯 성장
     for (const k of Object.keys(adv.baseStats)) {
       if (k !== 'crit' && k !== 'critDmg') adv.baseStats[k] = Math.floor(adv.baseStats[k] * 1.05);
     }
     showToast(`${adv.name} 레벨 업! (Lv.${adv.level})`, 'success');
+    didLevelUp = true;
+  }
+
+  // 파견 중 레벨업: partyHp를 새 최대 HP에 비례해 갱신
+  if (didLevelUp) {
+    const newMaxHp = getEffectiveStats(adv).hp;
+    if (newMaxHp > oldMaxHp) {
+      const ratio = newMaxHp / oldMaxHp;
+      for (const dispatch of State.dispatches) {
+        if (dispatch.team.includes(advId) && dispatch.partyHp[advId] != null) {
+          dispatch.partyHp[advId] = Math.min(newMaxHp, Math.floor(dispatch.partyHp[advId] * ratio));
+        }
+      }
+    }
   }
 }
 

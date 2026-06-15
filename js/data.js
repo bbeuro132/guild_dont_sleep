@@ -1264,12 +1264,36 @@ const SHOP_ITEMS = [
 
 // 리빌딩 조건 (all must be true)
 const REBUILD_CONDITIONS = [
-  { label: '베른 근교 숲 (1단계) 진행도 200 달성',   check: () => (State.areaProgress['forest']   || 0) >= 200 },
-  { label: '베른 석재 광산 (2단계) 진행도 200 달성',  check: () => (State.areaProgress['mine']     || 0) >= 200 },
-  { label: '베른 금광산 (3단계) 진행도 200 달성',     check: () => (State.areaProgress['mountain'] || 0) >= 200 },
-  { label: '베른 변경 평원 (4단계) 진행도 200 달성',  check: () => (State.areaProgress['coast']    || 0) >= 200 },
-  { label: '베른 국경 관문 (5단계) 진행도 200 달성',  check: () => (State.areaProgress['etheria']  || 0) >= 200 },
-  { label: '지휘 본부 Lv.5 이상',                    check: () => (State.buildings?.headquarters  || 1) >= 5  },
+  {
+    label: '베른 근교 숲 (1단계) 진행도 200 달성',
+    check: () => (State.areaProgress['forest']   || 0) >= 200,
+    progress: () => { const v = State.areaProgress['forest'] || 0; return { cur: Math.min(v, 200), max: 200 }; },
+  },
+  {
+    label: '베른 석재 광산 (2단계) 진행도 200 달성',
+    check: () => (State.areaProgress['mine']     || 0) >= 200,
+    progress: () => { const v = State.areaProgress['mine'] || 0; return { cur: Math.min(v, 200), max: 200 }; },
+  },
+  {
+    label: '베른 금광산 (3단계) 진행도 200 달성',
+    check: () => (State.areaProgress['mountain'] || 0) >= 200,
+    progress: () => { const v = State.areaProgress['mountain'] || 0; return { cur: Math.min(v, 200), max: 200 }; },
+  },
+  {
+    label: '베른 변경 평원 (4단계) 진행도 200 달성',
+    check: () => (State.areaProgress['coast']    || 0) >= 200,
+    progress: () => { const v = State.areaProgress['coast'] || 0; return { cur: Math.min(v, 200), max: 200 }; },
+  },
+  {
+    label: '베른 국경 관문 (5단계) 진행도 200 달성',
+    check: () => (State.areaProgress['etheria']  || 0) >= 200,
+    progress: () => { const v = State.areaProgress['etheria'] || 0; return { cur: Math.min(v, 200), max: 200 }; },
+  },
+  {
+    label: '지휘 본부 Lv.5 이상',
+    check: () => (State.buildings?.headquarters  || 1) >= 5,
+    progress: () => ({ cur: State.buildings?.headquarters || 1, max: 5 }),
+  },
 ];
 
 // 프레스티지 트리 노드 정의
