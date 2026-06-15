@@ -1196,7 +1196,7 @@ const SHOP_ITEMS = [
   },
   {
     id: 'material_d',
-    name: '재료 (일반)',
+    name: '재료',
     icon: 'assets/items/I_Crystal01.png',
     desc: '건물 업그레이드 및 제작에 사용',
     price: 100,

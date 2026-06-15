@@ -321,6 +321,8 @@ function getInventoryCapacity() {
 function startDispatch(areaId, teamIds) {
   if (teamIds.length === 0) { showToast('팀원을 1명 이상 선택하세요.', 'error'); return false; }
   if (teamIds.length > 3)   { showToast('팀원은 최대 3명입니다.', 'error'); return false; }
+  const area = AREAS.find(a => a.id === areaId);
+  if (!area) { showToast('알 수 없는 지역입니다.', 'error'); return false; }
   if (State.dispatches.length >= getMaxDispatchSlots()) {
     showToast('파견 슬롯이 부족합니다. 지휘 본부를 업그레이드하세요.', 'error'); return false;
   }
@@ -338,7 +340,7 @@ function startDispatch(areaId, teamIds) {
 
   const startProg = Math.min(
     getPrestigeBonusTotal('startProgress'),
-    Math.floor(area.maxProgress * 0.4)   // 최대 40%까지만 선두 진입
+    Math.floor(area.maxProgress * 0.4)
   );
   const dispatch = {
     areaId,
