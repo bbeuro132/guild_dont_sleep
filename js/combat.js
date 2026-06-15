@@ -431,19 +431,62 @@ const SKILLS = {
     },
   },
 
-  /* ---------- 몬스터 전용 ---------- */
-  monster_strike: {
-    name: '야수의 일격', type: 'cooldown', cooldown: 3, desc: '적 1명에게 ATK×1.5 물리 피해.',
+  /* ---------- 몬스터 전용 (쿨다운 5턴 고정) ---------- */
+
+  // 짐승류: 야수의 일격 — 강한 단일 물리 피해
+  monster_beast_strike: {
+    name: '야수의 일격', type: 'cooldown', cooldown: 5,
     exec(u, al, en, log) {
       const t = weightedPick(en.filter(e => e.isAlive()));
       if (!t) return;
-      const d = physDmg(u.atk, t.def, 1.5, false, u.critDmg);
+      const d = physDmg(u.atk, t.def, 1.8, false, u.critDmg);
       const r = t.takeDamage(d);
       log(`🐾 [야수의 일격] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b>`);
     },
   },
+
+  // 충류: 독침 — 독 상태이상 부여
+  monster_insect_poison: {
+    name: '독침', type: 'cooldown', cooldown: 5,
+    exec(u, al, en, log) {
+      const t = pickRandom(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const tickDmg = Math.max(1, Math.floor(u.atk * 0.35));
+      t.addStatus('poison', 3, tickDmg);
+      log(`🕷️ [독침] ${u.name}→${t.name}: 3턴 독 (턴당 <b class="log-damage">${tickDmg}</b>)!`);
+    },
+  },
+
+  // 인간형: 연속 공격 — 2연타
+  monster_humanoid_combo: {
+    name: '연속 공격', type: 'cooldown', cooldown: 5,
+    exec(u, al, en, log) {
+      let total = 0;
+      for (let i = 0; i < 2; i++) {
+        const t = weightedPick(en.filter(e => e.isAlive()));
+        if (!t) break;
+        const d = physDmg(u.atk, t.def, 0.9, false, u.critDmg);
+        total += t.takeDamage(d).actual;
+      }
+      log(`⚔️ [연속 공격] ${u.name}: 2연타 총 <b class="log-damage">${total}</b>!`);
+    },
+  },
+
+  // 마물: 마력 폭발 — 마법 피해 (방어 무시)
+  monster_magical_blast: {
+    name: '마력 폭발', type: 'cooldown', cooldown: 5,
+    exec(u, al, en, log) {
+      const t = pickRandom(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const d = magicDmg(u.atk, 1.5, false, u.critDmg);
+      const r = t.takeDamage(d);
+      log(`✨ [마력 폭발] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b> 마법 피해!`);
+    },
+  },
+
+  // 보스 전용
   boss_heavy: {
-    name: '보스 강타', type: 'cooldown', cooldown: 3, desc: '적 1명에게 ATK×2.2 물리 피해.',
+    name: '보스 강타', type: 'cooldown', cooldown: 5,
     exec(u, al, en, log) {
       const t = weightedPick(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -454,7 +497,7 @@ const SKILLS = {
     },
   },
   boss_sweep: {
-    name: '휩쓸기', type: 'cooldown', cooldown: 5, desc: '아군 전체에게 ATK×0.9 물리 피해.',
+    name: '휩쓸기', type: 'cooldown', cooldown: 5,
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       let total = 0;
@@ -489,9 +532,31 @@ const JOB_SKILLS = {
   priest:             ['priest_blessing', 'priest_embrace'],
   dragon_priest:      ['dragon_priest_punish', 'dragon_priest_sermon'],
   inquisitor:         ['inquisitor_conviction', 'inquisitor_oration'],
-  monster_normal:     ['monster_strike'],
+  monster_beast:      ['monster_beast_strike'],
+  monster_insect:     ['monster_insect_poison'],
+  monster_humanoid:   ['monster_humanoid_combo'],
+  monster_magical:    ['monster_magical_blast'],
   monster_boss:       ['boss_heavy', 'boss_sweep'],
 };
+
+// 몬스터 이름/스프라이트 경로로 분류 결정
+function classifyMonster(name, sprite) {
+  // 충류: 이름 기반 (공통적으로 bugs/vermin에 해당하는 한국어 키워드)
+  const insectKeys = ['딱정벌레', '지네', '지렁이', '두꺼비', '전갈', '거미', '거머리', '크라켄'];
+  if (insectKeys.some(k => name.includes(k))) return 'monster_insect';
+
+  // 짐승류: /animals/ 경로 (충류 제외 나머지 동물)
+  if (sprite && sprite.includes('/animals/')) return 'monster_beast';
+
+  // 인간형: 사람/지성체 계열 스프라이트
+  const humanoidSprites = ['human', 'goblin', 'hobgoblin', 'orc', 'kobold',
+    'merfolk', 'mermaid', 'centaur', 'troll', 'hell_knight',
+    'vault_guard', 'wizard', 'siren', 'deep_troll'];
+  if (humanoidSprites.some(k => sprite && sprite.includes(k))) return 'monster_humanoid';
+
+  // 나머지: 마물 (드래곤, 악마, 정령, 환수 등)
+  return 'monster_magical';
+}
 
 // ===== CombatUnit 클래스 =====
 class CombatUnit {
@@ -514,7 +579,7 @@ class CombatUnit {
     } else {
       this.id      = 'm_' + Math.random().toString(36).slice(2, 7);
       this.name    = src.name;
-      this.job     = src.isBoss ? 'monster_boss' : 'monster_normal';
+      this.job     = src.isBoss ? 'monster_boss' : classifyMonster(src.name, src.sprite);
       this.isBoss  = src.isBoss || false;
       this.sprite  = src.sprite;
       this.atk     = src.atk;
