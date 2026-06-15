@@ -53,7 +53,7 @@ const SKILLS = {
   },
 
   knight_provoke: {
-    name: '도발 태세', type: 'battle_start',
+    name: '도발 태세', type: 'cooldown', cooldown: 3,
     exec(u, al, en, log) {
       u.taunting = 4;
       log(`🛡️ [도발 태세] ${u.name}: 4턴간 도발!`);
@@ -73,7 +73,7 @@ const SKILLS = {
   },
 
   guardian_fortress: {
-    name: '성벽', type: 'battle_start',
+    name: '성벽', type: 'cooldown', cooldown: 4,
     exec(u, al, en, log) {
       u.taunting = 6;
       al.filter(a => a !== u && a.isAlive()).forEach(a => { a.damageReduction = Math.min(0.5, (a.damageReduction || 0) + 0.2); });
@@ -94,7 +94,7 @@ const SKILLS = {
   },
 
   gladiator_counter: {
-    name: '반격 태세', type: 'battle_start',
+    name: '반격 태세', type: 'cooldown', cooldown: 3,
     exec(u, al, en, log) {
       u.counterStance = { turns: 5, reduction: 0.2 };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
@@ -112,7 +112,7 @@ const SKILLS = {
   },
 
   champion_boiling: {
-    name: '끓어오르는 피', type: 'battle_start',
+    name: '끓어오르는 피', type: 'cooldown', cooldown: 4,
     exec(u, al, en, log) {
       u.counterStance = { turns: 999, reduction: 0.2, teamCounter: true };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
@@ -178,7 +178,7 @@ const SKILLS = {
   },
 
   hunter_mark: {
-    name: '표식', type: 'battle_start',
+    name: '표식', type: 'cooldown', cooldown: 3,
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -204,7 +204,7 @@ const SKILLS = {
   },
 
   bounty_obsession: {
-    name: '집착', type: 'battle_start',
+    name: '집착', type: 'cooldown', cooldown: 4,
     exec(u, al, en, log) {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
@@ -238,7 +238,7 @@ const SKILLS = {
   },
 
   cathedral_shield: {
-    name: '수호 술식', type: 'battle_start',
+    name: '수호 술식', type: 'cooldown', cooldown: 4,
     exec(u, al, en, log) {
       const amt = Math.floor(u.atk * 2);
       al.filter(a => a.isAlive()).forEach(a => { a.shield = (a.shield || 0) + amt; a.shieldReflect = 0.5; });
@@ -260,7 +260,7 @@ const SKILLS = {
   },
 
   scholar_shield2: {
-    name: '수호 술식 2.0', type: 'battle_start',
+    name: '수호 술식 2.0', type: 'cooldown', cooldown: 4,
     exec(u, al, en, log) {
       const amt = Math.floor(u.atk * 3.5);
       al.filter(a => a.isAlive()).forEach(a => { a.shield = (a.shield || 0) + amt; a.shieldReflect = 0.5; });
@@ -349,7 +349,7 @@ const SKILLS = {
   },
 
   cleric_light_veil: {
-    name: '빛의 장막', type: 'battle_start',
+    name: '빛의 장막', type: 'cooldown', cooldown: 3,
     exec(u, al, en, log) {
       u.lightVeil = 1;
       log(`🌟 [빛의 장막] ${u.name}: 피격 확률 감소!`);
@@ -365,7 +365,7 @@ const SKILLS = {
   },
 
   priest_blessing: {
-    name: '빛의 축복', type: 'battle_start',
+    name: '빛의 축복', type: 'cooldown', cooldown: 4,
     exec(u, al, en, log) {
       u.lightVeil = 2;
       log(`✨ [빛의 축복] ${u.name}: 피격 확률 크게 감소!`);
@@ -770,31 +770,18 @@ class CombatUnit {
     if (!this.isAlive()) log(`<span class="log-system">💀 ${this.name} 쓰러짐!</span>`);
   }
 
-  // 스킬 사용 시도
+  // 스킬 사용 시도 — 쿨다운이 0인 첫 번째 cooldown 스킬 발동
   trySkill(allies, enemies, log) {
     if (this.hasStatus('stun')) return false;
     const skillIds = JOB_SKILLS[this.job] || [];
 
-    // battle_start 스킬 (최초 1회) — 발동 후 이 턴은 종료 (cooldown 스킬 발동 안 함)
-    if (!this._startSkillsDone) {
-      this._startSkillsDone = true;
-      for (const sid of skillIds) {
-        const sk = SKILLS[sid];
-        if (sk && sk.type === 'battle_start') {
-          sk.exec(this, allies, enemies, log);
-        }
-      }
-      return false;
-    }
-
-    // cooldown 스킬
     for (const sid of skillIds) {
       const sk = SKILLS[sid];
       if (!sk || sk.type !== 'cooldown') continue;
       if ((this.skillCooldowns[sid] || 0) > 0) continue;
       sk.exec(this, allies, enemies, log);
       this.skillCooldowns[sid] = sk.cooldown;
-      return true; // 스킬 1개만 사용
+      return true;
     }
     return false;
   }
@@ -853,14 +840,13 @@ class BattleEngine {
   run() {
     const MAX_TURNS = 80;
 
-    // 전투 시작: 쿨다운 초기화 후 battle_start 스킬 발동
+    // 전투 시작: 모든 스킬 쿨다운을 최대값으로 초기화 (즉발 방지)
     [...this.allies, ...this.enemies].forEach(u => {
       u.skillCooldowns = {};
-      u.trySkill(
-        u.isAlly ? this.allies : this.enemies,
-        u.isAlly ? this.enemies : this.allies,
-        (t) => this.addLog(t)
-      );
+      (JOB_SKILLS[u.job] || []).forEach(sid => {
+        const sk = SKILLS[sid];
+        if (sk && sk.cooldown > 0) u.skillCooldowns[sid] = sk.cooldown;
+      });
     });
 
     while (this.turn < MAX_TURNS) {
@@ -1076,16 +1062,15 @@ class LiveBattle {
   }
 
   start() {
-    // 전투 시작: 쿨다운 초기화 후 battle_start 스킬 발동
+    // 전투 시작: 모든 스킬 쿨다운을 최대값으로 초기화 (즉발 방지)
     if (!this._startDone) {
       this._startDone = true;
       [...this.allies, ...this.enemies].forEach(u => {
         u.skillCooldowns = {};
-        u.trySkill(
-          u.isAlly ? this.allies : this.enemies,
-          u.isAlly ? this.enemies : this.allies,
-          (t) => this.addLog(t)
-        );
+        (JOB_SKILLS[u.job] || []).forEach(sid => {
+          const sk = SKILLS[sid];
+          if (sk && sk.cooldown > 0) u.skillCooldowns[sid] = sk.cooldown;
+        });
       });
     }
     this.onUpdate(this);
