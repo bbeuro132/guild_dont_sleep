@@ -785,12 +785,7 @@ function openBattlePopup(areaId) {
             const killMat  = isBoss ? area.stage * 0.2 : area.stage * 0.04;
             d2.accumulated.gold     += killGold;
             d2.accumulated.material += killMat;
-            if (d2.progress >= area.maxProgress) {
-              d2.progress = 1;
-              State.areaProgress[area.id] = area.maxProgress;
-              checkAreaUnlocks();
-              showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
-            }
+            handleProgressMax(d2, area);
           } else {
             d2.partyHp = {};
             const retainRate = 0.5 + getPrestigeBonusTotal('wipeRetain') / 100;

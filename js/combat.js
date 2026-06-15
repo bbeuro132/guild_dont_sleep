@@ -807,6 +807,16 @@ class CombatUnit {
 // ATK = 8  × s^0.65 × progMult × atkMult  (1단계 ATK≈8, 40단계≈66)
 // DEF = 2  × s^0.8  × progMult            (1단계 DEF≈2, 40단계≈35)
 // 보스: HP ×3.0 / ATK ×1.5 (더 단단하지만 공격력은 소폭 증가)
+// 최대 진행도 도달 처리 — 세 곳(탐색/전투/팝업 관람)에서 공용
+function handleProgressMax(dispatch, area) {
+  if (dispatch.progress < area.maxProgress) return false;
+  dispatch.progress = 1;
+  State.areaProgress[area.id] = area.maxProgress;
+  checkAreaUnlocks();
+  showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
+  return true;
+}
+
 function generateEnemyGroup(area, progress) {
   // 진행도 비율에 따라 보스 등장 확률 점진 증가: 2%(시작) → 15%(최대)
   const progressRatio = Math.min(1, progress / area.maxProgress);
@@ -918,6 +928,31 @@ class BattleEngine {
 
 const COMBAT_INTERVAL = 6; // 6초마다 전투 1회
 
+// 단계별 장비 등급 풀 (온라인/오프라인 공용)
+const EQUIP_GRADE_POOLS = [
+  ['일반','일반','일반','마법'],   // stage 1-2
+  ['일반','일반','마법','마법'],   // stage 3-4
+  ['일반','마법','마법','희귀'],   // stage 5-6
+  ['마법','마법','희귀','희귀'],   // stage 7-8
+  ['마법','희귀','희귀','영웅'],   // stage 9-12
+  ['희귀','희귀','영웅','영웅'],   // stage 13-16
+  ['희귀','영웅','영웅','전설'],   // stage 17-20
+  ['영웅','영웅','전설','전설'],   // stage 21-25
+  ['영웅','전설','전설','신화'],   // stage 26-30
+  ['전설','전설','신화','신화'],   // stage 31-35
+  ['전설','신화','신화','신화'],   // stage 36-40
+];
+function getEquipGradePoolIdx(stage) {
+  return stage <= 2 ? 0 : stage <= 4 ? 1 : stage <= 6 ? 2
+    : stage <= 8 ? 3 : stage <= 12 ? 4 : stage <= 16 ? 5
+    : stage <= 20 ? 6 : stage <= 25 ? 7 : stage <= 30 ? 8
+    : stage <= 35 ? 9 : 10;
+}
+const EQUIP_DROP_CHANCE      = 0.01; // 일반 전투 드롭률
+const EQUIP_BOSS_DROP_CHANCE = 0.05; // 보스 전투 드롭률
+const EQUIP_SLOTS = ['weapon', 'armor', 'accessory'];
+const EQUIP_SELL_GOLD = { '일반': 50, '마법': 100, '희귀': 200, '영웅': 500, '전설': 1000, '신화': 2000 };
+
 function initDispatchCombat(dispatch) {
   if (!dispatch.partyHp)       dispatch.partyHp = {};
   if (!dispatch.combatCooldown) dispatch.combatCooldown = 2; // 파견 직후 2초 후 첫 전투
@@ -952,12 +987,7 @@ function tickDispatchCombat(dispatch, delta) {
     dispatch.lastBattleLog = ['<span class="log-system">🌿 탐색: 이번 구역은 조용했다. 파티 HP +12% 회복</span>'];
     dispatch.isBossEncounter = false;
 
-    if (dispatch.progress >= area.maxProgress) {
-      dispatch.progress = 1;
-      State.areaProgress[area.id] = area.maxProgress;
-      checkAreaUnlocks();
-      showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
-    }
+    handleProgressMax(dispatch, area);
     return;
   }
 
@@ -997,39 +1027,20 @@ function tickDispatchCombat(dispatch, delta) {
     dispatch.accumulated.gold     += killGold;
     dispatch.accumulated.material += killMat;
 
-    // 장비 드롭: 단계 무관 고정 확률, 등급 품질은 GRADE_POOLS가 담당
-    const dropChance = 0.03 + (isBossFight ? 0.10 : 0);
+    // 장비 드롭
+    const dropChance = isBossFight ? EQUIP_BOSS_DROP_CHANCE : EQUIP_DROP_CHANCE;
     if (Math.random() < dropChance) {
-      const SLOTS = ['weapon', 'armor', 'accessory'];
-      const slot = SLOTS[Math.floor(Math.random() * SLOTS.length)];
-      const GRADE_POOLS = [
-        ['일반','일반','일반','마법'],   // stage 1-2
-        ['일반','일반','마법','마법'],   // stage 3-4
-        ['일반','마법','마법','희귀'],   // stage 5-6
-        ['마법','마법','희귀','희귀'],   // stage 7-8
-        ['마법','희귀','희귀','영웅'],   // stage 9-12
-        ['희귀','희귀','영웅','영웅'],   // stage 13-16
-        ['희귀','영웅','영웅','전설'],   // stage 17-20
-        ['영웅','영웅','전설','전설'],   // stage 21-25
-        ['영웅','전설','전설','신화'],   // stage 26-30
-        ['전설','전설','신화','신화'],   // stage 31-35
-        ['전설','신화','신화','신화'],   // stage 36-40
-      ];
-      const stageIdx = area.stage <= 2 ? 0 : area.stage <= 4 ? 1 : area.stage <= 6 ? 2
-        : area.stage <= 8 ? 3 : area.stage <= 12 ? 4 : area.stage <= 16 ? 5
-        : area.stage <= 20 ? 6 : area.stage <= 25 ? 7 : area.stage <= 30 ? 8
-        : area.stage <= 35 ? 9 : 10;
-      const pool = GRADE_POOLS[stageIdx];
+      const slot  = EQUIP_SLOTS[Math.floor(Math.random() * EQUIP_SLOTS.length)];
+      const pool  = EQUIP_GRADE_POOLS[getEquipGradePoolIdx(area.stage)];
       const grade = pool[Math.floor(Math.random() * pool.length)];
-      const eq = generateEquipment(slot, grade);
+      const eq    = generateEquipment(slot, grade);
       if (State.inventory.length < getInventoryCapacity()) {
         State.inventory.push(eq);
         showToast(`⚔️ 장비 획득: ${eq.name} (${eq.grade}급)`, 'success');
       } else {
-        // 창고 가득 - 자동 골드 전환
-        const autoSellGold = SELL_PRICES?.[grade] || 80;
-        addGold(autoSellGold);
-        showToast(`📦 창고 가득! ${eq.name} 자동 판매 (+${autoSellGold.toLocaleString()}G)`, 'info');
+        const sellGold = EQUIP_SELL_GOLD[grade] || 50;
+        addGold(sellGold);
+        showToast(`📦 창고 가득! ${eq.name} 자동 판매 (+${sellGold.toLocaleString()}G)`, 'info');
       }
     }
 
@@ -1040,13 +1051,7 @@ function tickDispatchCombat(dispatch, delta) {
     }
 
     // 최대 진행도 도달 시 재시작
-    if (dispatch.progress >= area.maxProgress) {
-      dispatch.progress = 1;
-      // 최대 도달 기록
-      State.areaProgress[area.id] = area.maxProgress;
-      checkAreaUnlocks();
-      showToast(`${area.name} 최대 진행도 달성! 처음부터 재시작`, 'success');
-    }
+    handleProgressMax(dispatch, area);
   } else {
     // 전멸: 전원 HP 회복
     dispatch.partyHp = {};
