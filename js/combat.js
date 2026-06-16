@@ -172,15 +172,16 @@ const SKILLS = {
       const d = physDmg(u.atk, t.def, 1.9, true, u.critDmg);
       const r = t.takeDamage(d);
       log(`🌑 [대규모 암살] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b> 💥치명타!`);
-      if (!t.isAlive()) {
-        log(`💀 ${t.name} 쓰러짐!`);
+      let last = t, lastR = r;
+      while (!last.isAlive()) {
+        log(`💀 ${last.name} 쓰러짐!`);
         const next = pickRandom(en.filter(e => e.isAlive()));
-        if (next) {
-          const d2 = physDmg(u.atk, next.def, 1.9, true, u.critDmg);
-          const r2 = next.takeDamage(d2);
-          log(`🌑 [연쇄 암살] ${u.name}→${next.name}: <b class="log-damage">${r2.actual}</b> 💥`);
-          if (!next.isAlive()) log(`💀 ${next.name} 쓰러짐!`);
-        }
+        if (!next) break;
+        const d2 = physDmg(u.atk, next.def, 1.9, true, u.critDmg);
+        const r2 = next.takeDamage(d2);
+        log(`🌑 [연쇄 암살] ${u.name}→${next.name}: <b class="log-damage">${r2.actual}</b> 💥`);
+        last = next;
+        lastR = r2;
       }
     },
   },
