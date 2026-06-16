@@ -53,10 +53,11 @@ const SKILLS = {
   },
 
   knight_provoke: {
-    name: '도발 태세', type: 'cooldown', cooldown: 3, desc: '4턴간 적이 자신을 우선 공격하도록 도발.',
+    name: '도발 태세', type: 'cooldown', cooldown: 3, durationBonus: 4,
+    desc: '4턴간 공격받을 확률 대폭 상승. 지속 시간 종료 후 쿨타임 시작.',
     exec(u, al, en, log) {
       u.taunting = 4;
-      log(`🛡️ [도발 태세] ${u.name}: 4턴간 도발!`);
+      log(`🛡️ [도발 태세] ${u.name}: 4턴간 피격 확률 대폭 상승!`);
     },
   },
   knight_shield_bash: {
@@ -73,11 +74,12 @@ const SKILLS = {
   },
 
   guardian_fortress: {
-    name: '성벽', type: 'cooldown', cooldown: 4, desc: '6턴간 도발 + 아군 전체 피해 경감 20%.',
+    name: '성벽', type: 'cooldown', cooldown: 4, durationBonus: 6,
+    desc: '6턴간 공격받을 확률 대폭 상승 + 아군 전체 피해 경감 20%. 지속 시간 종료 후 쿨타임 시작.',
     exec(u, al, en, log) {
       u.taunting = 6;
       al.filter(a => a !== u && a.isAlive()).forEach(a => { a.damageReduction = Math.min(0.5, (a.damageReduction || 0) + 0.2); });
-      log(`🏯 [성벽] ${u.name}: 6턴 도발 + 아군 피해 경감 20%!`);
+      log(`🏯 [성벽] ${u.name}: 6턴 피격 확률 대폭 상승 + 아군 피해 경감 20%!`);
     },
   },
   guardian_judgment: {
@@ -112,11 +114,14 @@ const SKILLS = {
   },
 
   champion_boiling: {
-    name: '끓어오르는 피', type: 'cooldown', cooldown: 4, desc: '피해 경감 20% + 아군이 피격될 때마다 반격 (전투 내내 지속).',
+    name: '끓어오르는 피', type: 'cooldown', cooldown: 4,
+    desc: '4~5턴간 피해 경감 20% + 아군 피격 시마다 반격. 지속 시간 종료 후 쿨타임 시작.',
     exec(u, al, en, log) {
-      u.counterStance = { turns: 999, reduction: 0.2, teamCounter: true };
+      const dur = 4 + Math.floor(Math.random() * 2);
+      u.counterStance = { turns: dur, reduction: 0.2, teamCounter: true };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
-      log(`🔥 [끓어오르는 피] ${u.name}: 아군 피격 시 반격 (전투 지속)!`);
+      u._pendingDurationBonus = dur;
+      log(`🔥 [끓어오르는 피] ${u.name}: ${dur}턴간 피해 경감 + 아군 피격 시 반격!`);
     },
   },
   champion_storm: {
@@ -160,11 +165,23 @@ const SKILLS = {
   },
 
   ninja_mass_assassinate: {
-    name: '대규모 암살', type: 'cooldown', cooldown: 3, desc: '치명타 확정 + 다음 공격이 연쇄 암살 (적 전체 공격).',
+    name: '대규모 암살', type: 'cooldown', cooldown: 3, desc: '치명타 확정 단일 공격. 대상 사망 시 무작위 적에게 연쇄 시전.',
     exec(u, al, en, log) {
-      u.guaranteedCrit = (u.guaranteedCrit || 0) + 1;
-      u.chainAssassinate = true;
-      log(`🌑 [대규모 암살] ${u.name}: 치명타 확정 + 연쇄 암살 준비!`);
+      const t = pickRandom(en.filter(e => e.isAlive()));
+      if (!t) return;
+      const d = physDmg(u.atk, t.def, 1.9, true, u.critDmg);
+      const r = t.takeDamage(d);
+      log(`🌑 [대규모 암살] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b> 💥치명타!`);
+      if (!t.isAlive()) {
+        log(`💀 ${t.name} 쓰러짐!`);
+        const next = pickRandom(en.filter(e => e.isAlive()));
+        if (next) {
+          const d2 = physDmg(u.atk, next.def, 1.9, true, u.critDmg);
+          const r2 = next.takeDamage(d2);
+          log(`🌑 [연쇄 암살] ${u.name}→${next.name}: <b class="log-damage">${r2.actual}</b> 💥`);
+          if (!next.isAlive()) log(`💀 ${next.name} 쓰러짐!`);
+        }
+      }
     },
   },
   ninja_poison_fog: {
@@ -371,10 +388,11 @@ const SKILLS = {
     exec(u) { u.lightVeil = 2; },
   },
   priest_embrace: {
-    name: '포옹하는 빛', type: 'cooldown', cooldown: 5, desc: '다음 3번의 기본 공격이 아군 전체 회복 (ATK×0.6)으로 전환.',
+    name: '포옹하는 빛', type: 'cooldown', cooldown: 5, delayedCooldown: true,
+    desc: '3턴간 기본 공격이 아군 전체 회복 (ATK×0.6)으로 전환. 3턴 소모 후 쿨타임 시작.',
     exec(u, al, en, log) {
       u.embraceAoe = 3;
-      log(`💖 [포옹하는 빛] ${u.name}: 3번의 기본 공격이 전체 회복으로 변경!`);
+      log(`💖 [포옹하는 빛] ${u.name}: 3턴의 기본 공격이 전체 회복으로 변경!`);
     },
   },
 
@@ -597,7 +615,6 @@ class CombatUnit {
     this.taunting         = 0;
     this.counterStance    = null;
     this.guaranteedCrit   = 0;
-    this.chainAssassinate = false;
     this.markTarget       = null;
     this.markBonus        = 0;
     this.marked           = false;
@@ -741,7 +758,10 @@ class CombatUnit {
         const h = Math.floor(this.atk * 0.6);
         alive.forEach(a => a.heal(h));
         this.embraceAoe--;
-        log(`💖 ${this.name}: 아군 전체 <b class="log-heal">${h}</b> 회복!`);
+        if (this.embraceAoe === 0) {
+          this.skillCooldowns['priest_embrace'] = SKILLS['priest_embrace'].cooldown;
+        }
+        log(`💖 ${this.name}: 아군 전체 <b class="log-heal">${h}</b> 회복! (포옹하는 빛 남은 횟수: ${this.embraceAoe})`);
       } else {
         const t = alive.sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
         if (t) {
@@ -846,17 +866,6 @@ class CombatUnit {
       }
     }
 
-    // 연쇄 암살
-    if (this.chainAssassinate && !target.isAlive()) {
-      this.chainAssassinate = false;
-      const next = pickRandom(enemies.filter(e => e.isAlive()));
-      if (next) {
-        const cd = physDmg(this.atk, next.def, 1.2, true, this.critDmg);
-        const cr = next.takeDamage(cd);
-        log(`🌑 [연쇄 암살] ${this.name}→${next.name}: <b class="log-damage">${cr.actual}</b> 💥`);
-      }
-    }
-
     // 반격 태세 처리 (피격 시)
     if (r.actual > 0 && target.counterStance && target.counterStance.turns > 0 && target.isAlive()) {
       const cd = physDmg(target.atk, this.def, 0.6, false, target.critDmg);
@@ -888,7 +897,12 @@ class CombatUnit {
       if (!sk || sk.type !== 'cooldown') continue;
       if ((this.skillCooldowns[sid] || 0) > 0) continue;
       sk.exec(this, allies, enemies, log);
-      this.skillCooldowns[sid] = sk.cooldown;
+      if (!sk.delayedCooldown) {
+        // durationBonus: exec에서 _pendingDurationBonus를 설정한 경우 쿨다운에 합산
+        const extra = this._pendingDurationBonus != null ? this._pendingDurationBonus : (sk.durationBonus || 0);
+        delete this._pendingDurationBonus;
+        this.skillCooldowns[sid] = sk.cooldown + extra;
+      }
       return true;
     }
     return false;
