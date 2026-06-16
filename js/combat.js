@@ -321,6 +321,7 @@ const SKILLS = {
       const d = magicDmg(u.atk, 2.8, crit, u.critDmg);
       t.currentHp = Math.max(0, t.currentHp - d); // 회피 불가, shield 무시
       log(`💥 [좌표 붕괴] ${u.name}→${t.name}: <b class="log-damage">${d}</b> (모든 방어 무시)${crit ? ' 💥' : ''}`);
+      if (!t.isAlive()) log(`💀 ${t.name} 쓰러짐!`);
     },
   },
   sage_lightning_hell: {

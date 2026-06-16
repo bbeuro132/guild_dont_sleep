@@ -730,6 +730,12 @@ function openBattlePopup(areaId) {
   if (!area) return;
   if (window._currentBattle) window._currentBattle.stop();
 
+  // 이전 팝업이 다른 지역을 보고 있었다면 viewerActive 해제
+  if (window._battleAreaId && window._battleAreaId !== areaId) {
+    const prev = State.dispatches.find(d => d.areaId === window._battleAreaId);
+    if (prev) prev.viewerActive = false;
+  }
+
   const dispatch = State.dispatches.find(d => d.areaId === areaId);
   if (!dispatch) return;
 
