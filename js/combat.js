@@ -115,9 +115,9 @@ const SKILLS = {
 
   champion_boiling: {
     name: '끓어오르는 피', type: 'cooldown', cooldown: 3,
-    desc: '4~5턴간 피해 경감 20% + 아군 피격 시마다 반격. (지속 4~5턴 + 쿨타임 3턴)',
+    desc: '4턴간 피해 경감 20% + 아군 피격 시마다 반격. (지속 4턴 + 쿨타임 3턴)',
     exec(u, al, en, log) {
-      const dur = 4 + Math.floor(Math.random() * 2);
+      const dur = 4;
       u._pendingDurationBonus = dur;
       u.counterStance = { turns: dur, reduction: 0.2, teamCounter: true };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
