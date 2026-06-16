@@ -244,7 +244,7 @@ function renderAdvDetail(advId) {
         ${(JOB_SKILLS[adv.job] || []).map(sid => {
           const sk = SKILLS[sid];
           if (!sk) return '';
-          const cdLabel = `쿨다운 ${sk.cooldown}턴`;
+          const cdLabel = sk.type === 'passive' ? '패시브' : `쿨다운 ${sk.cooldown}턴`;
           return `<div style="background:var(--bg-light,#fdf6ec);border:1px solid var(--brown-light,#e0c89a);border-radius:8px;padding:7px 10px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
               <span style="font-size:0.82rem;font-weight:bold;color:var(--brown-dark)">${sk.name}</span>

@@ -354,11 +354,8 @@ const SKILLS = {
   },
 
   cleric_light_veil: {
-    name: '빛의 장막', type: 'cooldown', cooldown: 3, desc: '자신의 피격 가중치를 50%로 감소 (적이 덜 노림).',
-    exec(u, al, en, log) {
-      u.lightVeil = 1;
-      log(`🌟 [빛의 장막] ${u.name}: 피격 확률 감소!`);
-    },
+    name: '빛의 장막', type: 'passive', desc: '전투 내내 피격 가중치 50%로 감소 (적이 덜 노림).',
+    exec(u) { u.lightVeil = 1; },
   },
   cleric_warm_light: {
     name: '따스한 빛', type: 'cooldown', cooldown: 3, desc: '아군 전체를 소량 회복 (ATK×0.8).',
@@ -370,11 +367,8 @@ const SKILLS = {
   },
 
   priest_blessing: {
-    name: '빛의 축복', type: 'cooldown', cooldown: 4, desc: '자신의 피격 가중치를 25%로 대폭 감소 (적이 거의 안 노림).',
-    exec(u, al, en, log) {
-      u.lightVeil = 2;
-      log(`✨ [빛의 축복] ${u.name}: 피격 확률 크게 감소!`);
-    },
+    name: '빛의 축복', type: 'passive', desc: '전투 내내 피격 가중치 25%로 대폭 감소 (적이 거의 안 노림).',
+    exec(u) { u.lightVeil = 2; },
   },
   priest_embrace: {
     name: '포옹하는 빛', type: 'cooldown', cooldown: 5, desc: '다음 3번의 기본 공격이 아군 전체 회복 (ATK×0.6)으로 전환.',
@@ -964,12 +958,14 @@ class BattleEngine {
   run() {
     const MAX_TURNS = 80;
 
-    // 전투 시작: 모든 스킬 쿨다운을 최대값으로 초기화 (즉발 방지)
+    // 전투 시작: 패시브 즉시 적용, 쿨다운 스킬은 최대값으로 초기화 (즉발 방지)
     [...this.allies, ...this.enemies].forEach(u => {
       u.skillCooldowns = {};
       (JOB_SKILLS[u.job] || []).forEach(sid => {
         const sk = SKILLS[sid];
-        if (sk && sk.cooldown > 0) u.skillCooldowns[sid] = sk.cooldown;
+        if (!sk) return;
+        if (sk.type === 'passive') { sk.exec(u); }
+        else if (sk.cooldown > 0) { u.skillCooldowns[sid] = sk.cooldown; }
       });
     });
 
@@ -1182,14 +1178,16 @@ class LiveBattle {
   }
 
   start() {
-    // 전투 시작: 모든 스킬 쿨다운을 최대값으로 초기화 (즉발 방지)
+    // 전투 시작: 패시브 즉시 적용, 쿨다운 스킬은 최대값으로 초기화 (즉발 방지)
     if (!this._startDone) {
       this._startDone = true;
       [...this.allies, ...this.enemies].forEach(u => {
         u.skillCooldowns = {};
         (JOB_SKILLS[u.job] || []).forEach(sid => {
           const sk = SKILLS[sid];
-          if (sk && sk.cooldown > 0) u.skillCooldowns[sid] = sk.cooldown;
+          if (!sk) return;
+          if (sk.type === 'passive') { sk.exec(u); }
+          else if (sk.cooldown > 0) { u.skillCooldowns[sid] = sk.cooldown; }
         });
       });
     }
