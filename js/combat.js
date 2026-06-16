@@ -53,8 +53,8 @@ const SKILLS = {
   },
 
   knight_provoke: {
-    name: '도발 태세', type: 'cooldown', cooldown: 3, durationBonus: 4,
-    desc: '4턴간 공격받을 확률 대폭 상승. 지속 시간 종료 후 쿨타임 시작.',
+    name: '도발 태세', type: 'cooldown', cooldown: 3,
+    desc: '4턴간 공격받을 확률 대폭 상승.',
     exec(u, al, en, log) {
       u.taunting = 4;
       log(`🛡️ [도발 태세] ${u.name}: 4턴간 피격 확률 대폭 상승!`);
@@ -74,8 +74,8 @@ const SKILLS = {
   },
 
   guardian_fortress: {
-    name: '성벽', type: 'cooldown', cooldown: 4, durationBonus: 6,
-    desc: '6턴간 공격받을 확률 대폭 상승 + 아군 전체 피해 경감 20%. 지속 시간 종료 후 쿨타임 시작.',
+    name: '성벽', type: 'cooldown', cooldown: 3,
+    desc: '6턴간 공격받을 확률 대폭 상승 + 아군 전체 피해 경감 20%.',
     exec(u, al, en, log) {
       u.taunting = 6;
       al.filter(a => a !== u && a.isAlive()).forEach(a => { a.damageReduction = Math.min(0.5, (a.damageReduction || 0) + 0.2); });
@@ -114,13 +114,12 @@ const SKILLS = {
   },
 
   champion_boiling: {
-    name: '끓어오르는 피', type: 'cooldown', cooldown: 4,
-    desc: '4~5턴간 피해 경감 20% + 아군 피격 시마다 반격. 지속 시간 종료 후 쿨타임 시작.',
+    name: '끓어오르는 피', type: 'cooldown', cooldown: 3,
+    desc: '4~5턴간 피해 경감 20% + 아군 피격 시마다 반격.',
     exec(u, al, en, log) {
       const dur = 4 + Math.floor(Math.random() * 2);
       u.counterStance = { turns: dur, reduction: 0.2, teamCounter: true };
       u.damageReduction = Math.min(0.5, (u.damageReduction || 0) + 0.2);
-      u._pendingDurationBonus = dur;
       log(`🔥 [끓어오르는 피] ${u.name}: ${dur}턴간 피해 경감 + 아군 피격 시 반격!`);
     },
   },
