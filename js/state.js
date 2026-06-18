@@ -10,7 +10,7 @@ const DEFAULT_STATE = {
     lounge: 1,
     application: 1,
     warehouse: 1,
-    laboratory: 1,
+    workshop: 1,
   },
 
   adventurers: [],     // 보유 모험가 목록
@@ -76,6 +76,11 @@ function loadState() {
       // 재료 단일값 → 등급별 오브젝트 마이그레이션
       if (typeof State.materials === 'number') {
         State.materials = { common: State.materials, advanced: 0, rare: 0, legendary: 0 };
+      }
+      // laboratory → workshop 건물 ID 마이그레이션
+      if (State.buildings.laboratory !== undefined && State.buildings.workshop === undefined) {
+        State.buildings.workshop = State.buildings.laboratory;
+        delete State.buildings.laboratory;
       }
       // 파견 accumulated 구조 마이그레이션
       for (const d of (State.dispatches || [])) {
@@ -760,8 +765,8 @@ function startCraft(recipeId) {
   if (State.labQueue) { showToast('이미 제작 중입니다.', 'error'); return false; }
   const recipe = LAB_RECIPES.find(r => r.id === recipeId);
   if (!recipe) return false;
-  const labLv = getBuildingLevel('laboratory');
-  if (labLv < recipe.reqLabLv) { showToast(`연구소 레벨 ${recipe.reqLabLv} 이상 필요합니다.`, 'error'); return false; }
+  const labLv = getBuildingLevel('workshop');
+  if (labLv < recipe.reqLabLv) { showToast(`공방 레벨 ${recipe.reqLabLv} 이상 필요합니다.`, 'error'); return false; }
   if (!spendGold(recipe.cost.gold)) { showToast('골드가 부족합니다.', 'error'); return false; }
   if (!spendMaterials(recipe.cost.materials)) {
     addGold(recipe.cost.gold);
@@ -809,6 +814,36 @@ function tickLab() {
     showToast(`${q.name} 제작 완료! 인벤토리에 추가됐습니다.`, 'success');
     if (typeof renderLabTab === 'function' && getCurrentTab() === 'lab') renderLabTab();
   }
+}
+
+// ===== 장비 즉시 제작 =====
+function craftEquipment(slot, materialGrade) {
+  const recipe = CRAFT_RECIPES.find(r => r.materialGrade === materialGrade);
+  if (!recipe) return null;
+  if ((State.materials[materialGrade] || 0) < recipe.matCost) {
+    showToast('재료가 부족합니다.', 'error'); return null;
+  }
+  if (!spendGold(recipe.gold)) { showToast('골드가 부족합니다.', 'error'); return null; }
+  State.materials[materialGrade] -= recipe.matCost;
+
+  // 결과 등급 결정 (ratios 기반 확률)
+  let roll = Math.random(), cum = 0, grade = recipe.grades[recipe.grades.length - 1];
+  for (let i = 0; i < recipe.grades.length; i++) {
+    cum += recipe.ratios[i];
+    if (roll < cum) { grade = recipe.grades[i]; break; }
+  }
+
+  if (State.inventory.length >= getInventoryCapacity()) {
+    showToast('창고가 가득 찼습니다. 아이템을 정리하세요.', 'error');
+    addGold(recipe.gold);
+    State.materials[materialGrade] += recipe.matCost;
+    return null;
+  }
+
+  const eq = generateEquipment(slot, grade);
+  State.inventory.push(eq);
+  saveState();
+  return eq;
 }
 
 // ===== 프레스티지(리빌딩) =====

@@ -124,10 +124,10 @@ const BUILDINGS = [
     maxLevel: 18,
   },
   {
-    id: 'laboratory',
-    name: '연구소',
-    icon: '⚗️',
-    desc: '경험치 책을 제작합니다. 레벨이 높을수록 더 좋은 책과 빠른 제작이 가능합니다.',
+    id: 'workshop',
+    name: '공방',
+    icon: '🔨',
+    desc: '경험치 책 제작 · 장비 즉시 제작을 수행합니다. 레벨이 높을수록 더 좋은 책과 빠른 제작이 가능합니다.',
     effectLabel: (lv) => {
       const maxGrade = lv >= 8 ? '전설' : lv >= 6 ? '영웅' : lv >= 4 ? '희귀' : lv >= 2 ? '마법' : '일반';
       return `제작 속도: ${100 + lv * 10}%, 최고 책: ${maxGrade}`;
@@ -136,6 +136,14 @@ const BUILDINGS = [
     costMult: 1.6,
     maxLevel: 12,
   },
+];
+
+// ===== 장비 제작 레시피 =====
+const CRAFT_RECIPES = [
+  { materialGrade: 'common',    label: '일반 재료',  matCost: 20, gold: 500,   grades: ['일반', '마법'],   ratios: [0.5, 0.5] },
+  { materialGrade: 'advanced',  label: '고급 재료',  matCost: 15, gold: 2000,  grades: ['희귀', '영웅'],   ratios: [0.5, 0.5] },
+  { materialGrade: 'rare',      label: '희귀 재료',  matCost: 10, gold: 10000, grades: ['전설'],           ratios: [1.0] },
+  { materialGrade: 'legendary', label: '전설 재료',  matCost: 5,  gold: 50000, grades: ['신화'],           ratios: [1.0] },
 ];
 
 // 파견 지역 정의

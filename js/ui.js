@@ -1408,11 +1408,27 @@ function confirmRebuild() {
   switchTab('prestige');
 }
 
+let _craftSlot = null;
+let _craftGrade = null;
+
+function setCraftSlot(slot) { _craftSlot = slot; renderLabTab(); }
+function setCraftMat(grade)  { _craftGrade = grade; renderLabTab(); }
+
+function doCraftEquipment() {
+  if (!_craftSlot || !_craftGrade) return;
+  const eq = craftEquipment(_craftSlot, _craftGrade);
+  if (eq) {
+    showToast(`🔨 ${eq.name} (${eq.grade}급) 제작 완료! 인벤토리에 추가됨`, 'success');
+    renderLabTab();
+    renderHeader();
+  }
+}
+
 function renderLabTab() {
   const el = document.getElementById('lab-content');
   if (!el) return;
 
-  const labLv = getBuildingLevel('laboratory');
+  const labLv = getBuildingLevel('workshop');
   const q = State.labQueue;
   const now = Date.now();
 
@@ -1499,11 +1515,67 @@ function renderLabTab() {
       </div>`;
   }).join('');
 
+  // ===== 장비 제작 UI =====
+  const m = State.materials || {};
+  const slotLabels = { weapon: '⚔️ 무기', armor: '🛡 방어구', accessory: '💍 악세서리' };
+  const slotBtns = Object.entries(slotLabels).map(([s, label]) =>
+    `<button class="btn ${_craftSlot === s ? 'btn-primary' : 'btn-outline'}" style="font-size:0.82rem;padding:5px 10px"
+      onclick="setCraftSlot('${s}')">${label}</button>`
+  ).join('');
+
+  const matBtns = CRAFT_RECIPES.map(r => {
+    const have = Math.floor(m[r.materialGrade] || 0);
+    const ok = have >= r.matCost;
+    const isSelected = _craftGrade === r.materialGrade;
+    return `<button class="btn ${isSelected ? 'btn-primary' : 'btn-outline'}" style="font-size:0.8rem;padding:5px 10px;${!ok ? 'opacity:0.6' : ''}"
+      onclick="setCraftMat('${r.materialGrade}')">
+      ${MAT_GRADE_LABELS[r.materialGrade]}<br>
+      <span style="font-size:0.7rem">${r.matCost}개 (보유 ${have})</span>
+    </button>`;
+  }).join('');
+
+  let craftSummary = '<span style="color:#aaa">슬롯과 재료 등급을 선택하세요.</span>';
+  let craftBtnDisabled = true;
+  if (_craftSlot && _craftGrade) {
+    const r = CRAFT_RECIPES.find(x => x.materialGrade === _craftGrade);
+    const have = Math.floor(m[_craftGrade] || 0);
+    const canCraft = r && have >= r.matCost && State.gold >= r.gold;
+    const resultLabel = r ? r.grades.join(' 또는 ') : '-';
+    const costColor = canCraft ? 'var(--cream)' : '#e57373';
+    craftSummary = `<span style="color:${costColor}">
+      ${slotLabels[_craftSlot]} &nbsp;|&nbsp;
+      ${MAT_GRADE_LABELS[_craftGrade]} ${r?.matCost ?? '?'}개 &nbsp;|&nbsp;
+      💰 ${(r?.gold ?? 0).toLocaleString()} G &nbsp;|&nbsp;
+      결과: <strong>${resultLabel}</strong>
+    </span>`;
+    craftBtnDisabled = !canCraft;
+  }
+
+  const craftEquipHtml = `
+    <div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px">
+      <span style="font-size:0.8rem;color:#aaa;align-self:center;min-width:48px">슬롯</span>
+      ${slotBtns}
+    </div>
+    <div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px">
+      <span style="font-size:0.8rem;color:#aaa;align-self:center;min-width:48px">재료</span>
+      ${matBtns}
+    </div>
+    <div style="font-size:0.82rem;margin-bottom:10px;padding:8px;background:rgba(0,0,0,0.15);border-radius:6px">
+      ${craftSummary}
+    </div>
+    <button class="btn btn-gold btn-full" ${craftBtnDisabled ? 'disabled' : ''} onclick="doCraftEquipment()">
+      🔨 즉시 제작
+    </button>`;
+
   el.innerHTML = `
     <div class="lab-section-title">현재 제작</div>
     ${queueHtml}
     <div class="lab-section-title" style="margin-top:20px">경험치 책 제작</div>
     <div class="lab-recipes-grid">${recipesHtml}</div>
+    <div class="lab-section-title" style="margin-top:20px">장비 즉시 제작
+      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">시간 소요 없음 · 랜덤 옵션</span>
+    </div>
+    <div style="padding:4px 0">${craftEquipHtml}</div>
     <div class="lab-section-title" style="margin-top:20px">영구 단련
       <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">리빌딩 후에도 유지됩니다</span>
     </div>
