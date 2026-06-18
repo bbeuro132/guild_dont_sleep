@@ -160,7 +160,7 @@ function renderAdvDetail(advId) {
   const expPct  = Math.min(100, (adv.exp / expNeed * 100)).toFixed(1);
 
   const promoTargets = JOB_PROMOTIONS[adv.job] || [];
-  const promoCostTier = jobInfo.tier === 1 ? 'tier2' : 'tier3';
+  const promoCostTier = jobInfo.tier === 1 ? 'tier2' : jobInfo.tier === 3 ? 'tier4' : 'tier3';
   const promoCost = PROMOTION_COST[promoCostTier];
 
   const promoButtons = promoTargets.map(pJob => {
@@ -258,7 +258,7 @@ function renderAdvDetail(advId) {
     ${promoTargets.length > 0 ? `
     <div>
       <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">
-        전직 (Lv.${promoCost.level} / 골드 ${promoCost.gold.toLocaleString()} / 재료 ${promoCost.material})
+        ${jobInfo.tier + 1}차 전직 (Lv.${promoCost.level} / 골드 ${promoCost.gold.toLocaleString()} / 재료 ${promoCost.material})
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${promoButtons}</div>
     </div>` : ''}
@@ -342,10 +342,14 @@ function promoteAdventurer(advId, targetJob) {
   const jobInfo = JOBS[adv.job];
   const tier = jobInfo.tier;
   if (JOBS[targetJob]?.tier === 3 && !hasPrestigeEffect('tier3unlock')) {
-    showToast('3차 전직은 경지 개방 Ⅱ가 필요합니다. (경지 탭 → 경지 가지 노드 개방)', 'error');
+    showToast('3차 전직은 경지 개방 Ⅰ이 필요합니다. (경지 탭 → 경지 가지 노드 개방)', 'error');
     return;
   }
-  const costKey = tier === 1 ? 'tier2' : 'tier3';
+  if (JOBS[targetJob]?.tier === 4 && !hasPrestigeEffect('tier4unlock')) {
+    showToast('4차 전직은 경지 개방 Ⅱ가 필요합니다. (경지 탭 → 경지 가지 노드 개방)', 'error');
+    return;
+  }
+  const costKey = tier === 1 ? 'tier2' : tier === 3 ? 'tier4' : 'tier3';
   const cost = PROMOTION_COST[costKey];
   if (adv.level < cost.level) { showToast(`레벨 ${cost.level} 이상 필요합니다.`, 'error'); return; }
   if (!spendGold(cost.gold)) { showToast('골드가 부족합니다.', 'error'); return; }
@@ -1195,14 +1199,14 @@ function updateInvBadge() {
 
 // ===== 튜토리얼 =====
 const TUTORIAL_STEPS = [
-  { text: '안녕하세요 길드장님! 저는 클로에입니다. 베른 모험가 길드에 오신 걸 환영해요! 제가 길드 운영을 도와드릴게요.', highlight: null },
-  { text: '우선 모집 탭을 확인해 볼까요? 저한테 오늘 지원서가 들어왔거든요. 마음에 드는 모험가를 골라 길드에 합류시켜 주세요!', highlight: '#tab-bar .tab-btn:nth-child(4)' },
-  { text: '길드에 합류한 모험가는 모험가 탭에서 확인할 수 있어요. 장비도 장착하고, 레벨업도 시킬 수 있답니다!', highlight: '#tab-bar .tab-btn:nth-child(2)' },
+  { text: '안녕하세요 길드장 님! 저는 클로에라고 해요. 베른 모험가 길드에 오신 걸 환영합니다! 제가 길드 운영을 도와드릴게요.', highlight: null },
+  { text: '우선 모집 탭을 확인해 볼까요? 마침 오늘 지원서가 들어왔거든요. 마음에 드는 모험가를 골라 길드에 합류시켜 주세요!', highlight: '#tab-bar .tab-btn:nth-child(4)' },
+  { text: '길드에 합류한 모험가는 모험가 탭에서 확인할 수 있어요. 장비도 장착하고, 경험치 서를 사용해서 레벨업도 시킬 수 있답니다!', highlight: '#tab-bar .tab-btn:nth-child(2)' },
   { text: '파견 탭에서 팀을 꾸려 지역으로 파견을 보내세요. 파견 중인 모험가들은 알아서 싸우고 골드와 재료를 모아온답니다!', highlight: '#tab-bar .tab-btn:nth-child(3)' },
   { text: '모험가들이 돌아오면 정산 버튼으로 성과물을 회수하세요. 골드와 재료로 길드 건물을 업그레이드할 수 있어요!', highlight: '#tab-bar .tab-btn:nth-child(1)' },
   { text: '연구소에서는 경험치 책을 제작해 모험가를 빠르게 성장시킬 수 있어요. 골드가 많이 모이면 영구 단련도 해보세요. 리빌딩 후에도 효과가 사라지지 않는 강력한 강화랍니다!', highlight: '#tab-bar .tab-btn:nth-child(6)' },
   { text: '경지 탭은 고급 기능이에요. 길드를 충분히 키웠다면 리빌딩으로 새 출발을 할 수 있어요. 누적 골드로 스킬포인트를 얻고, 경지 트리를 해금하면 길드 전체가 영구적으로 강해진답니다!', highlight: '#tab-bar .tab-btn:nth-child(7)' },
-  { text: '이제 길드장님 혼자서도 잘 하실 수 있겠죠? 궁금한 게 있으면 언제든 클로에를 찾아주세요! 화이팅! 💪', highlight: null },
+  { text: '이제 길드장 님 혼자서도 잘 하실 수 있겠죠? 궁금한 게 있으면 언제든 클로에를 찾아주세요! 화이팅!', highlight: null },
 ];
 
 function startTutorial() {
@@ -1232,7 +1236,7 @@ function showTutorialStep(step) {
   }
 
   document.getElementById('btn-tutorial-next').textContent =
-    step === TUTORIAL_STEPS.length - 1 ? '시작하기! 🎮' : '다음 →';
+    step === TUTORIAL_STEPS.length - 1 ? '시작하기!' : '다음 →';
 }
 
 function nextTutorialStep() {
@@ -1386,14 +1390,14 @@ function openRebuildDialog() {
   const bodyEl = document.getElementById('rebuild-popup-body');
   if (allMet) {
     bodyEl.innerHTML = `
-      <p class="rebuild-chloe-speech">길드장님, 지금까지 정말 고생 많으셨어요. 베른 전역을 평정하셨으니, 이제 새 출발을 하실 수 있어요. 리빌딩을 하시면 처음부터 다시 시작하지만… 길드장님이 쌓아온 경험만큼은 절대 사라지지 않아요!</p>
+      <p class="rebuild-chloe-speech">길드장 님, 지금까지 정말 고생 많으셨어요. 베른 전역을 평정하셨으니, 이제 새 출발을 하실 수 있어요. 리빌딩을 하시면 처음부터 다시 시작하지만… 길드장 님이 쌓아온 경험만큼은 절대 사라지지 않아요!</p>
       <div class="rebuild-cond-list">${condHtml}</div>
       <div class="rebuild-gain-box">이번 리빌딩 획득: <b class="gold-text">+${pending}pt</b></div>
       <div style="color:#c62828;font-size:0.82rem;margin-top:8px">⚠️ 모험가·장비·건물·골드가 모두 초기화됩니다. 스킬포인트와 경지 트리는 유지됩니다.</div>
       <button class="btn btn-danger btn-full" style="margin-top:14px" onclick="confirmRebuild()">🔄 리빌딩 실행</button>`;
   } else {
     bodyEl.innerHTML = `
-      <p class="rebuild-chloe-speech">아직 조건이 충족되지 않았어요, 길드장님. 베른 전역을 완전히 평정하고, 길드도 좀 더 키워주세요!</p>
+      <p class="rebuild-chloe-speech">아직 조건이 충족되지 않았어요, 길드장 님. 베른 전역을 완전히 평정하고, 길드도 좀 더 키워주세요!</p>
       <div class="rebuild-cond-list">${condHtml}</div>`;
   }
 

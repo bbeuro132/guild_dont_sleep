@@ -25,6 +25,16 @@ const JOBS = {
   priest:             { name: '신관',           tier: 3, branch: 'healer',  cssClass: 'job-priest' },
   dragon_priest:      { name: '용사제',         tier: 2, branch: 'healer',  cssClass: 'job-dragon-priest' },
   inquisitor:         { name: '심문관',         tier: 3, branch: 'healer',  cssClass: 'job-inquisitor' },
+
+  // 4차 전직
+  citadel:            { name: '성채',           tier: 4, branch: 'warrior', cssClass: 'job-citadel' },
+  destroyer:          { name: '파괴자',         tier: 4, branch: 'warrior', cssClass: 'job-destroyer' },
+  great_ninja:        { name: '대닌자',         tier: 4, branch: 'rogue',   cssClass: 'job-great-ninja' },
+  tracker:            { name: '추적자',         tier: 4, branch: 'rogue',   cssClass: 'job-tracker' },
+  controller:         { name: '통제관',         tier: 4, branch: 'mage',    cssClass: 'job-controller' },
+  grand_sage:         { name: '대현자',         tier: 4, branch: 'mage',    cssClass: 'job-grand-sage' },
+  light_apostle:      { name: '빛의 사도',     tier: 4, branch: 'healer',  cssClass: 'job-light-apostle' },
+  fanatic:            { name: '광신자',         tier: 4, branch: 'healer',  cssClass: 'job-fanatic' },
 };
 
 // 전직 트리 (jobKey → 가능한 2차 전직 목록)
@@ -41,12 +51,22 @@ const JOB_PROMOTIONS = {
   healer:             ['cleric', 'dragon_priest'],
   cleric:             ['priest'],
   dragon_priest:      ['inquisitor'],
+  // 4차 전직
+  guardian_knight:    ['citadel'],
+  champion:           ['destroyer'],
+  ninja:              ['great_ninja'],
+  bounty_hunter:      ['tracker'],
+  cathedral_scholar:  ['controller'],
+  ivory_sage:         ['grand_sage'],
+  priest:             ['light_apostle'],
+  inquisitor:         ['fanatic'],
 };
 
 // 전직 비용 (레벨, 골드, 재료)
 const PROMOTION_COST = {
-  tier2: { level: 10, gold: 2000, material: 10 },
-  tier3: { level: 25, gold: 8000, material: 30 },
+  tier2: { level: 10, gold: 2000,  material: 10 },
+  tier3: { level: 25, gold: 8000,  material: 30 },
+  tier4: { level: 40, gold: 25000, material: 80 },
 };
 
 // 특성 목록

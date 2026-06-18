@@ -336,7 +336,8 @@ const SKILLS = {
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
       const crit = rollCrit(u);
-      const d = magicDmg(u.atk, 2.8, crit, u.critDmg);
+      const magAtk = Math.floor(u.atk * (1 + (u.magicBonus || 0)));
+      const d = magicDmg(magAtk, 2.8, crit, u.critDmg);
       t.currentHp = Math.max(0, t.currentHp - d); // 회피 불가, shield 무시
       log(`💥 [좌표 붕괴] ${u.name}→${t.name}: <b class="log-damage">${d}</b> (모든 방어 무시)${crit ? ' 💥' : ''}`);
       if (!t.isAlive()) log(`💀 ${t.name} 쓰러짐!`);
@@ -347,11 +348,12 @@ const SKILLS = {
     exec(u, al, en, log) {
       const alive = en.filter(e => e.isAlive());
       const hits = 5 + Math.floor(Math.random() * 3);
+      const magAtk = Math.floor(u.atk * (1 + (u.magicBonus || 0)));
       let total = 0;
       for (let i = 0; i < hits; i++) {
         const t = pickRandom(alive.filter(e => e.isAlive()));
         if (!t) break;
-        const d = magicDmg(u.atk, 0.85, false, u.critDmg);
+        const d = magicDmg(magAtk, 0.85, false, u.critDmg);
         total += t.takeDamage(d).actual;
       }
       log(`⚡💀 [번개 지옥] ${u.name}: ${hits}회 번개 총 <b class="log-damage">${total}</b>!`);
@@ -445,6 +447,62 @@ const SKILLS = {
     },
   },
 
+  /* ---------- 4차 전직 패시브 ---------- */
+
+  // 성채 - 축성: 기본 피해 경감 20%
+  citadel_consecration: {
+    name: '축성', type: 'passive', desc: '기본 피해 경감 20% (항상 적용). 성벽 발동 시 최대 40% 경감.',
+    exec(u) { u.damageReduction = Math.min(0.75, (u.damageReduction || 0) + 0.2); },
+  },
+
+  // 파괴자 - 약점 파악: 치명타 확률 +20%
+  destroyer_weak_spot: {
+    name: '약점 파악', type: 'passive', desc: '치명타 확률 +20% (항상 적용).',
+    exec(u) { u.crit = (u.crit || 0) + 20; },
+  },
+
+  // 대닌자 - 기민함: 회피율 +25%
+  great_ninja_agility: {
+    name: '기민함', type: 'passive', desc: '회피율 +25% (항상 적용).',
+    exec(u) { u.evasion = (u.evasion || 0) + 25; },
+  },
+
+  // 추적자 - 개를 풀어라: 기본 공격 후 ATK×0.3 추가 타격
+  tracker_unleash: {
+    name: '개를 풀어라', type: 'passive', desc: '기본 공격 시 ATK 30% 추가 피해 (사냥개). 스킬 공격 제외.',
+    exec(u) { u.hasBoundDog = true; },
+  },
+
+  // 통제관 - 제어 프로토콜: 전투 시작 시 적 전체 속도 -30%
+  controller_protocol: {
+    name: '제어 프로토콜', type: 'passive', desc: '전투 시작 시 적 전체 속도 -30% (전투 내내 유지).',
+    exec(u, allies, enemies) {
+      if (!enemies) return;
+      enemies.forEach(e => { e.spd = Math.max(1, Math.floor(e.spd * 0.7)); });
+    },
+  },
+
+  // 대현자 - 마력 담금질: 마법 공격력 +10%
+  grand_sage_magic_temper: {
+    name: '마력 담금질', type: 'passive', desc: '마법 공격력 +10% (항상 적용). 좌표 붕괴·번개 지옥 모두 적용.',
+    exec(u) { u.magicBonus = (u.magicBonus || 0) + 0.1; },
+  },
+
+  // 빛의 사도 - 헌신: 아군 전체 받는 회복량 +10%
+  light_apostle_devotion: {
+    name: '헌신', type: 'passive', desc: '아군 전체가 받는 회복량 +10% (흡혈·장비 옵션 포함 모든 회복에 적용).',
+    exec(u, allies) {
+      if (!allies) return;
+      allies.forEach(a => { a.healBonus = (a.healBonus || 0) + 0.1; });
+    },
+  },
+
+  // 광신자 - 용의 축복: 아군 턴마다 광신자 ATK×10% 재생
+  fanatic_dragon_bless: {
+    name: '용의 축복', type: 'passive', desc: '아군의 턴마다 해당 아군의 체력을 광신자 ATK의 10%만큼 회복.',
+    exec(u) { u.hasDragonBless = true; },
+  },
+
   /* ---------- 몬스터 전용 (쿨다운 5턴 고정) ---------- */
 
   // 짐승류: 야수의 일격 — 강한 단일 물리 피해
@@ -522,7 +580,7 @@ const SKILLS = {
 };
 
 // 치유사 계열 직업 집합
-const HEALER_JOBS = new Set(['healer', 'cleric', 'priest', 'dragon_priest', 'inquisitor']);
+const HEALER_JOBS = new Set(['healer', 'cleric', 'priest', 'dragon_priest', 'inquisitor', 'light_apostle', 'fanatic']);
 
 // 직업 → 스킬 매핑
 const JOB_SKILLS = {
@@ -546,6 +604,16 @@ const JOB_SKILLS = {
   priest:             ['priest_blessing', 'priest_embrace'],
   dragon_priest:      ['dragon_priest_punish', 'dragon_priest_sermon'],
   inquisitor:         ['inquisitor_conviction', 'inquisitor_oration'],
+  // 4차 전직 (3차 스킬 2개 유지 + 패시브 1개 추가)
+  citadel:       ['guardian_fortress', 'guardian_judgment', 'citadel_consecration'],
+  destroyer:     ['champion_boiling', 'champion_storm', 'destroyer_weak_spot'],
+  great_ninja:   ['ninja_mass_assassinate', 'ninja_poison_fog', 'great_ninja_agility'],
+  tracker:       ['bounty_obsession', 'bounty_finisher', 'tracker_unleash'],
+  controller:    ['scholar_shield2', 'scholar_isolate', 'controller_protocol'],
+  grand_sage:    ['sage_collapse', 'sage_lightning_hell', 'grand_sage_magic_temper'],
+  light_apostle: ['priest_blessing', 'priest_embrace', 'light_apostle_devotion'],
+  fanatic:       ['inquisitor_conviction', 'inquisitor_oration', 'fanatic_dragon_bless'],
+
   monster_beast:      ['monster_beast_strike'],
   monster_insect:     ['monster_insect_poison'],
   monster_humanoid:   ['monster_humanoid_combo'],
@@ -692,7 +760,8 @@ class CombatUnit {
   }
 
   heal(amount) {
-    const h = Math.min(Math.floor(amount), this.maxHp - this.currentHp);
+    const boosted = Math.floor(amount * (1 + (this.healBonus || 0)));
+    const h = Math.min(boosted, this.maxHp - this.currentHp);
     this.currentHp += h;
     return h;
   }
@@ -884,6 +953,13 @@ class CombatUnit {
       }
     }
 
+    // 추적자: 개를 풀어라 — 기본 공격 후 ATK×0.3 추가 타격
+    if (this.hasBoundDog && r.actual > 0 && target.isAlive()) {
+      const dogDmg = physDmg(this.atk, target.def, 0.3, false, this.critDmg);
+      const dogR = target.takeDamage(dogDmg);
+      log(`🐕 사냥개가 ${target.name}를 물었다! <b class="log-damage">${dogR.actual}</b>`);
+    }
+
     if (!target.isAlive()) log(`<span class="log-system">💀 ${target.name} 쓰러짐!</span>`);
     if (!this.isAlive()) log(`<span class="log-system">💀 ${this.name} 쓰러짐!</span>`);
   }
@@ -975,11 +1051,13 @@ class BattleEngine {
 
     // 전투 시작: 패시브 즉시 적용, 쿨다운 스킬은 최대값으로 초기화 (즉발 방지)
     [...this.allies, ...this.enemies].forEach(u => {
+      const unitAllies  = u.isAlly ? this.allies : this.enemies;
+      const unitEnemies = u.isAlly ? this.enemies : this.allies;
       u.skillCooldowns = {};
       (JOB_SKILLS[u.job] || []).forEach(sid => {
         const sk = SKILLS[sid];
         if (!sk) return;
-        if (sk.type === 'passive') { sk.exec(u); }
+        if (sk.type === 'passive') { sk.exec(u, unitAllies, unitEnemies); }
         else if (sk.cooldown > 0) { u.skillCooldowns[sid] = sk.cooldown; }
       });
     });
@@ -999,6 +1077,16 @@ class BattleEngine {
         // 턴 시작: 상태이상 + 쿨다운
         unit.tickStart((t) => this.addLog(t));
         if (!unit.isAlive()) continue;
+
+        // 용의 축복: 아군 턴마다 광신자 ATK×10% 재생
+        if (unit.isAlly) {
+          const fanatic = this.allies.find(a => a.isAlive() && a.hasDragonBless);
+          if (fanatic) {
+            const regen = Math.floor(fanatic.atk * 0.1);
+            const healed = unit.heal(regen);
+            if (healed > 0) this.addLog(`🐉 [용의 축복] ${unit.name}: <b class="log-heal">${healed}</b> 재생!`);
+          }
+        }
 
         // 스킬 우선, 없으면 일반 공격
         const usedSkill = unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t));
@@ -1197,11 +1285,13 @@ class LiveBattle {
     if (!this._startDone) {
       this._startDone = true;
       [...this.allies, ...this.enemies].forEach(u => {
+        const unitAllies  = u.isAlly ? this.allies : this.enemies;
+        const unitEnemies = u.isAlly ? this.enemies : this.allies;
         u.skillCooldowns = {};
         (JOB_SKILLS[u.job] || []).forEach(sid => {
           const sk = SKILLS[sid];
           if (!sk) return;
-          if (sk.type === 'passive') { sk.exec(u); }
+          if (sk.type === 'passive') { sk.exec(u, unitAllies, unitEnemies); }
           else if (sk.cooldown > 0) { u.skillCooldowns[sid] = sk.cooldown; }
         });
       });
@@ -1247,6 +1337,16 @@ class LiveBattle {
       this.onUpdate(this);
       this._checkEnd();
       return;
+    }
+
+    // 용의 축복: 아군 턴마다 광신자 ATK×10% 재생
+    if (unit.isAlly) {
+      const fanatic = this.allies.find(a => a.isAlive() && a.hasDragonBless);
+      if (fanatic) {
+        const regen = Math.floor(fanatic.atk * 0.1);
+        const healed = unit.heal(regen);
+        if (healed > 0) this.addLog(`🐉 [용의 축복] ${unit.name}: <b class="log-heal">${healed}</b> 재생!`);
+      }
     }
 
     // 스킬 우선, 없으면 일반 공격
