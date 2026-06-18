@@ -15,10 +15,17 @@ function showToast(msg, type = 'info') {
   setTimeout(() => toast.remove(), 3000);
 }
 
+// 재료 등급 한글 레이블
+const MAT_GRADE_LABELS = { common: '일반', advanced: '고급', rare: '희귀', legendary: '전설' };
+
 // ===== 헤더 업데이트 =====
 function renderHeader() {
-  document.getElementById('gold-amount').textContent    = Math.floor(State.gold).toLocaleString();
-  document.getElementById('material-amount').textContent = Math.floor(State.materials).toLocaleString();
+  document.getElementById('gold-amount').textContent = Math.floor(State.gold).toLocaleString();
+  const m = State.materials || {};
+  document.getElementById('mat-common').textContent    = Math.floor(m.common    || 0).toLocaleString();
+  document.getElementById('mat-advanced').textContent  = Math.floor(m.advanced  || 0).toLocaleString();
+  document.getElementById('mat-rare').textContent      = Math.floor(m.rare      || 0).toLocaleString();
+  document.getElementById('mat-legendary').textContent = Math.floor(m.legendary || 0).toLocaleString();
 }
 
 // ===== 탭 전환 =====
@@ -57,7 +64,7 @@ function renderGuildTab() {
   for (const building of BUILDINGS) {
     const lv   = getBuildingLevel(building.id);
     const cost = getBuildingUpgradeCost(building);
-    const canAfford = State.gold >= cost.gold && State.materials >= cost.material;
+    const canAfford = State.gold >= cost.gold && (State.materials.common || 0) >= cost.material;
     const maxed = building.maxLevel && lv >= building.maxLevel;
 
     const card = document.createElement('div');
@@ -72,7 +79,7 @@ function renderGuildTab() {
       ${maxed ? '<p style="color:#888;font-size:0.8rem;text-align:center">최대 레벨 달성</p>' : `
         <div class="building-cost">
           <span class="cost-chip"><img src="assets/items/E_Gold01.png" alt="골드"> ${cost.gold.toLocaleString()}</span>
-          <span class="cost-chip"><img src="assets/items/I_Crystal01.png" alt="재료"> ${cost.material}</span>
+          <span class="cost-chip"><img src="assets/items/I_Crystal01.png" alt="재료"> 일반 ${cost.material}</span>
         </div>
         <button class="btn ${canAfford ? 'btn-gold' : 'btn-outline'} btn-full"
           ${canAfford ? '' : 'disabled'}
@@ -167,7 +174,7 @@ function renderAdvDetail(advId) {
     const pInfo = JOBS[pJob];
     const canPromo = adv.level >= promoCost.level
       && State.gold >= promoCost.gold
-      && State.materials >= promoCost.material;
+      && (State.materials.common || 0) >= promoCost.material;
     return `<button class="btn btn-primary" ${canPromo ? '' : 'disabled'}
       onclick="promoteAdventurer(${adv.id}, '${pJob}'); renderAdventurerTab()">
       → ${pInfo.name}
@@ -258,7 +265,7 @@ function renderAdvDetail(advId) {
     ${promoTargets.length > 0 ? `
     <div>
       <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">
-        ${jobInfo.tier + 1}차 전직 (Lv.${promoCost.level} / 골드 ${promoCost.gold.toLocaleString()} / 재료 ${promoCost.material})
+        ${jobInfo.tier + 1}차 전직 (Lv.${promoCost.level} / 골드 ${promoCost.gold.toLocaleString()} / 일반 재료 ${promoCost.material})
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${promoButtons}</div>
     </div>` : ''}
@@ -353,7 +360,7 @@ function promoteAdventurer(advId, targetJob) {
   const cost = PROMOTION_COST[costKey];
   if (adv.level < cost.level) { showToast(`레벨 ${cost.level} 이상 필요합니다.`, 'error'); return; }
   if (!spendGold(cost.gold)) { showToast('골드가 부족합니다.', 'error'); return; }
-  if (!spendMaterial(cost.material)) { addGold(cost.gold); showToast('재료가 부족합니다.', 'error'); return; }
+  if (!spendMaterials({ common: cost.material })) { addGold(cost.gold); showToast('일반 재료가 부족합니다.', 'error'); return; }
   adv.job = targetJob;
   showToast(`${adv.name} → ${JOBS[targetJob].name} 전직 완료!`, 'success');
 }
@@ -444,7 +451,11 @@ function renderDispatchTab() {
       if (area.unlocked) {
         if (activeDispatch) {
           const accGold = Math.floor(activeDispatch.accumulated.gold);
-          const accMat  = activeDispatch.accumulated.material.toFixed(1);
+          const accMatsObj = activeDispatch.accumulated.materials || {};
+          const accMat = Object.entries(accMatsObj)
+            .filter(([, v]) => v >= 0.1)
+            .map(([g, v]) => `${MAT_GRADE_LABELS[g]}: ${v.toFixed(1)}`)
+            .join(' / ') || '0';
           const prog    = Math.min(activeDispatch.progress, area.maxProgress).toFixed(0);
 
           const partyHpHtml = activeDispatch.team.map(id => {
@@ -605,7 +616,7 @@ function openSettlement(areaId) {
 
   document.getElementById('settlement-result').innerHTML = `
     <div class="settlement-row"><span class="settlement-label">💰 획득 골드</span><span class="settlement-value">${result.gold.toLocaleString()} G</span></div>
-    <div class="settlement-row"><span class="settlement-label">💎 획득 재료</span><span class="settlement-value">${result.material}개</span></div>
+    <div class="settlement-row"><span class="settlement-label">💎 획득 재료</span><span class="settlement-value">${Object.entries(result.materials || {}).filter(([,v])=>v>0).map(([g,v])=>`${MAT_GRADE_LABELS[g]} ${v}`).join(', ') || '없음'}</span></div>
     <div class="settlement-row"><span class="settlement-label">📍 도달 진행도</span><span class="settlement-value">${Math.min(result.progress, 200).toFixed(0)} / 200</span></div>
   `;
 
@@ -793,8 +804,11 @@ function openBattlePopup(areaId) {
             d2.progress = Math.min(d2.progress + progGain, area.maxProgress);
             const killGold = Math.floor(battle.enemies.length * area.stage * 1.5 * (isBoss ? 2 : 1));
             const killMat  = isBoss ? area.stage * 0.2 : area.stage * 0.04;
-            d2.accumulated.gold     += killGold;
-            d2.accumulated.material += killMat;
+            d2.accumulated.gold += killGold;
+            const lbRatios = getMaterialGradeRatios(area.stage);
+            for (const [grade, ratio] of Object.entries(lbRatios)) {
+              d2.accumulated.materials[grade] = (d2.accumulated.materials[grade] || 0) + killMat * ratio;
+            }
             handleProgressMax(d2, area);
           } else {
             d2.partyHp = {};
@@ -936,22 +950,7 @@ function showOfflinePopup(result) {
   const s = result.elapsed % 60;
   const timeStr = h > 0 ? `${h}시간 ${m}분` : m > 0 ? `${m}분 ${s}초` : `${s}초`;
 
-  // 전체 드롭 장비 집계
-  const allItems = result.areas.flatMap(a => a.items || []);
-  const totalItems = allItems.length;
-
   const areaHtml = result.areas.map(a => {
-    const itemsHtml = (a.items && a.items.length > 0)
-      ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">` +
-        a.items.map(eq => {
-          const gradeColor = { '일반':'#888','마법':'#4a9eff','희귀':'#a855f7','영웅':'#f97316','전설':'#eab308','신화':'#e11d48' }[eq.grade] || '#888';
-          const soldBadge = eq.autoSold
-            ? `<span style="font-size:0.65rem;color:#f97316"> (자동판매 +${eq.sellGold}G)</span>`
-            : '';
-          return `<span style="font-size:0.72rem;padding:2px 5px;border-radius:4px;background:#f5f5f5;border:1px solid ${gradeColor};color:${gradeColor}">${eq.name}${soldBadge}</span>`;
-        }).join('') +
-        `</div>`
-      : '';
     return `
     <div class="offline-area-row">
       <div class="offline-area-name">${a.icon} ${a.name}</div>
@@ -961,7 +960,6 @@ function showOfflinePopup(result) {
         <span class="offline-progress">진행도 ${a.progressFrom}→${a.progressTo}/${a.maxProgress}</span>
       </div>
       ${a.totalBattles != null ? `<div style="font-size:0.72rem;color:#888;margin-top:2px">⚔️ ${a.totalBattles}전 ${a.wins}승 (승률 ${a.winRate}%)</div>` : ''}
-      ${itemsHtml}
     </div>`;
   }).join('');
 
@@ -991,8 +989,7 @@ function showOfflinePopup(result) {
         <span>
           <span style="color:var(--gold-dark);font-weight:bold">💰 ${result.totalGold.toLocaleString()} G</span>
           <span style="color:#555"> &nbsp;·&nbsp; </span>
-          <span style="color:var(--blue);font-weight:bold">💎 ${result.totalMat}개</span>
-          ${totalItems > 0 ? `<span style="color:#555"> &nbsp;·&nbsp; </span><span style="color:#a855f7;font-weight:bold">⚔️ 장비 ${totalItems}개</span>` : ''}
+          <span style="color:var(--blue);font-weight:bold">💎 재료 ${Math.floor(result.totalMat).toLocaleString()}개</span>
         </span>
       </div>
       <p style="font-size:0.75rem;color:#888;margin:10px 0 14px;text-align:center">
@@ -1447,7 +1444,8 @@ function renderLabTab() {
   // 레시피 목록
   const recipesHtml = LAB_RECIPES.map(recipe => {
     const labLvOk  = labLv >= recipe.reqLabLv;
-    const canAfford = State.gold >= recipe.cost.gold && State.materials >= recipe.cost.material;
+    const canAfford = State.gold >= recipe.cost.gold &&
+      Object.entries(recipe.cost.materials || {}).every(([g, n]) => (State.materials[g] || 0) >= n);
     const busy      = !!q;
     const disabled  = busy || !labLvOk;
     const speedMult = (100 + labLv * 10) / 100;
@@ -1467,7 +1465,7 @@ function renderLabTab() {
         </div>
         <div class="lab-recipe-cost" style="${costStyle}">
           💰 ${recipe.cost.gold.toLocaleString()} &nbsp;|&nbsp;
-          💎 ${recipe.cost.material} &nbsp;|&nbsp;
+          💎 ${Object.entries(recipe.cost.materials||{}).map(([g,n])=>`${MAT_GRADE_LABELS[g]} ${n}`).join(' + ')} &nbsp;|&nbsp;
           ⏱ ${formatCraftTime(actualMs)}
         </div>
         <button class="btn ${disabled ? 'btn-outline' : 'btn-primary'} btn-full"

@@ -2,7 +2,7 @@
 
 const DEFAULT_STATE = {
   gold: 500,
-  materials: 5,
+  materials: { common: 5, advanced: 0, rare: 0, legendary: 0 },
   inventory: [],       // 장비 아이템 목록
 
   buildings: {
@@ -16,7 +16,7 @@ const DEFAULT_STATE = {
   adventurers: [],     // 보유 모험가 목록
   nextAdvId: 1,
 
-  dispatches: [],      // 활성 파견 목록 [{areaId, team:[advId], startTime, accumulated:{gold,material,items}, progress}]
+  dispatches: [],      // 활성 파견 목록 [{areaId, team:[advId], startTime, accumulated:{gold,materials:{...}}, progress}]
   areaProgress: {},    // {areaId: maxProgressEver}
 
   applications: [],    // 현재 서류함 (최대 3장)
@@ -73,6 +73,22 @@ function loadState() {
       migrateGrades(State);
       // 자동 갱신 주기 5분 → 15분 마이그레이션
       if (State.recruitInterval === 5 * 60 * 1000) State.recruitInterval = 15 * 60 * 1000;
+      // 재료 단일값 → 등급별 오브젝트 마이그레이션
+      if (typeof State.materials === 'number') {
+        State.materials = { common: State.materials, advanced: 0, rare: 0, legendary: 0 };
+      }
+      // 파견 accumulated 구조 마이그레이션
+      for (const d of (State.dispatches || [])) {
+        if (d.accumulated && typeof d.accumulated.material === 'number') {
+          const old = d.accumulated.material || 0;
+          d.accumulated.materials = { common: old, advanced: 0, rare: 0, legendary: 0 };
+          delete d.accumulated.material;
+        }
+        if (d.accumulated && d.accumulated.items) delete d.accumulated.items;
+        if (d.accumulated && !d.accumulated.materials) {
+          d.accumulated.materials = { common: 0, advanced: 0, rare: 0, legendary: 0 };
+        }
+      }
       // 오프라인 누적 처리 — 결과를 init()에서 팝업으로 표시
       window._pendingOffline = processOfflineProgress();
       // 저장된 areaProgress 기반으로 지역 해금 복원 (토스트 없이)
@@ -143,16 +159,19 @@ function processOfflineProgress() {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
 
+    // 파견 accumulated 초기화 확인
+    if (!dispatch.accumulated.materials) {
+      dispatch.accumulated.materials = { common: 0, advanced: 0, rare: 0, legendary: 0 };
+    }
+
     // 패시브 수입 (시간 비례)
-    const gold = area.goldPerSec * elapsed;
-    const mat  = area.materialPerMin * (elapsed / 60);
+    const gold   = area.goldPerSec * elapsed;
+    const mat    = area.materialPerMin * (elapsed / 60);
 
     // 파티 전투력 기반 전투 결과 추정
     const totalBattles = Math.floor(elapsed / COMBAT_INTERVAL);
     const winRate      = estimateOfflineWinRate(dispatch, area);
     const wins         = Math.floor(totalBattles * winRate);
-    const bossBattles  = Math.floor(wins * 0.05); // 승리 중 ~5%가 보스
-    const normWins     = wins - bossBattles;
 
     const killGold = wins * area.stage * 2 * 1.5;
     const killMat  = wins * area.stage * 0.04;
@@ -160,31 +179,16 @@ function processOfflineProgress() {
     totalGold += gold + killGold;
     totalMat  += mat  + killMat;
 
-    dispatch.accumulated.gold     += gold + killGold;
-    dispatch.accumulated.material += mat  + killMat;
+    dispatch.accumulated.gold += gold + killGold;
 
-    // 장비 드롭 (승리 횟수 기준)
-    const expectedDrops = normWins * EQUIP_DROP_CHANCE + bossBattles * EQUIP_BOSS_DROP_CHANCE;
-    const dropCount = Math.floor(expectedDrops) + (Math.random() < (expectedDrops % 1) ? 1 : 0);
-
-    const droppedItems = [];
-    const pool = EQUIP_GRADE_POOLS[getEquipGradePoolIdx(area.stage)];
-    for (let i = 0; i < dropCount; i++) {
-      const slot  = EQUIP_SLOTS[Math.floor(Math.random() * EQUIP_SLOTS.length)];
-      const grade = pool[Math.floor(Math.random() * pool.length)];
-      const eq    = generateEquipment(slot, grade);
-      if (State.inventory.length < getInventoryCapacity()) {
-        State.inventory.push(eq);
-        droppedItems.push(eq);
-      } else {
-        const sellGold = EQUIP_SELL_GOLD[grade] || 50;
-        totalGold += sellGold;
-        dispatch.accumulated.gold += sellGold;
-        droppedItems.push({ ...eq, autoSold: true, sellGold });
-      }
+    // 재료 등급별 분배
+    const matTotal = mat + killMat;
+    const ratios   = getMaterialGradeRatios(area.stage);
+    for (const [grade, ratio] of Object.entries(ratios)) {
+      dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + matTotal * ratio;
     }
 
-    // 진행도: 승리 횟수 = 진행도 상승 (온라인과 동일 기준)
+    // 진행도: 승리 횟수 = 진행도 상승
     const prevProgress = Math.floor(dispatch.progress);
     dispatch.progress = Math.min(dispatch.progress + wins, area.maxProgress);
     if (dispatch.progress >= area.maxProgress) {
@@ -195,14 +199,13 @@ function processOfflineProgress() {
       name: area.name,
       icon: area.icon,
       gold: Math.floor(gold + killGold),
-      mat:  Math.floor(mat  + killMat),
+      mat:  Math.floor(matTotal),
       progressFrom: prevProgress,
       progressTo:   Math.floor(dispatch.progress),
       maxProgress:  area.maxProgress,
       winRate:      Math.round(winRate * 100),
       wins,
       totalBattles,
-      items: droppedItems,
     });
   }
 
@@ -229,13 +232,25 @@ function spendGold(amount) {
   return true;
 }
 
-function addMaterial(amount) {
-  State.materials += amount;
+// 재료 등급별 드롭 비율 (stage 기준)
+function getMaterialGradeRatios(stage) {
+  if (stage <= 10) return { common: 0.97, advanced: 0.03, rare: 0,    legendary: 0    };
+  if (stage <= 20) return { common: 0.15, advanced: 0.83, rare: 0.02, legendary: 0    };
+  if (stage <= 30) return { common: 0.03, advanced: 0.12, rare: 0.83, legendary: 0.02 };
+  return             { common: 0.01, advanced: 0.02, rare: 0.10, legendary: 0.87 };
 }
 
-function spendMaterial(amount) {
-  if (State.materials < amount) return false;
-  State.materials -= amount;
+function addMaterial(grade, amount) {
+  State.materials[grade] = (State.materials[grade] || 0) + Math.floor(amount);
+}
+
+function spendMaterials(cost) {
+  for (const [grade, amt] of Object.entries(cost)) {
+    if ((State.materials[grade] || 0) < amt) return false;
+  }
+  for (const [grade, amt] of Object.entries(cost)) {
+    State.materials[grade] -= amt;
+  }
   return true;
 }
 
@@ -260,9 +275,8 @@ function upgradeBuilding(buildingId) {
   }
   const cost = getBuildingUpgradeCost(building);
   if (State.gold < cost.gold) { showToast('골드가 부족합니다.', 'error'); return false; }
-  if (State.materials < cost.material) { showToast('재료가 부족합니다.', 'error'); return false; }
+  if (!spendMaterials({ common: cost.material })) { showToast('일반 재료가 부족합니다.', 'error'); return false; }
   State.gold -= cost.gold;
-  State.materials -= cost.material;
   State.buildings[buildingId] = lv + 1;
   showToast(`${building.name} 레벨 ${lv + 1} 업그레이드!`, 'success');
   return true;
@@ -377,7 +391,7 @@ function getMaxDispatchSlots() {
 }
 
 function getInventoryCapacity() {
-  return getBuildingLevel('warehouse') * 5 + 10;
+  return getBuildingLevel('warehouse') * 5 + 20;
 }
 
 function startDispatch(areaId, teamIds) {
@@ -408,7 +422,7 @@ function startDispatch(areaId, teamIds) {
     areaId,
     team: teamIds,
     startTime: Date.now(),
-    accumulated: { gold: 0, material: 0, items: [] },
+    accumulated: { gold: 0, materials: { common: 0, advanced: 0, rare: 0, legendary: 0 } },
     progress: startProg,
     partyHp: {},
     combatCooldown: 2,
@@ -426,10 +440,13 @@ function settleDispatch(areaId) {
   const dispatch = State.dispatches[idx];
 
   const goldEarned = Math.floor(dispatch.accumulated.gold);
-  const matEarned  = Math.floor(dispatch.accumulated.material);
-
   addGold(goldEarned);
-  addMaterial(matEarned);
+
+  const matsEarned = {};
+  for (const [grade, amt] of Object.entries(dispatch.accumulated.materials || {})) {
+    matsEarned[grade] = Math.floor(amt);
+    if (matsEarned[grade] > 0) addMaterial(grade, matsEarned[grade]);
+  }
 
   // 최대 진행도 기록
   if (!State.areaProgress[areaId] || dispatch.progress > State.areaProgress[areaId]) {
@@ -437,9 +454,9 @@ function settleDispatch(areaId) {
   }
 
   // 누적 재화만 초기화 — 파티는 귀환하지 않음
-  dispatch.accumulated = { gold: 0, material: 0, items: [] };
+  dispatch.accumulated = { gold: 0, materials: { common: 0, advanced: 0, rare: 0, legendary: 0 } };
 
-  return { gold: goldEarned, material: matEarned, items: [], progress: dispatch.progress };
+  return { gold: goldEarned, materials: matsEarned, progress: dispatch.progress };
 }
 
 function recallDispatch(areaId) {
@@ -448,7 +465,9 @@ function recallDispatch(areaId) {
   // 잔여 누적 재화 지급 후 귀환
   const dispatch = State.dispatches[idx];
   addGold(Math.floor(dispatch.accumulated.gold));
-  addMaterial(Math.floor(dispatch.accumulated.material));
+  for (const [grade, amt] of Object.entries(dispatch.accumulated.materials || {})) {
+    addMaterial(grade, Math.floor(amt));
+  }
   State.dispatches.splice(idx, 1);
   showToast('파견 팀이 귀환했습니다.', 'info');
   return true;
@@ -483,8 +502,12 @@ function tickDispatches(deltaSeconds) {
     // 재화 누적 (장비 옵션 + 프레스티지 성장 가지 반영)
     const goldMult    = (1 + getTeamGoldBonus(dispatch)) * (1 + getPrestigeBonusTotal('goldBonus') / 100);
     const materialMult = (1 + getTeamMaterialBonus(dispatch)) * (1 + getPrestigeBonusTotal('materialBonus') / 100);
-    dispatch.accumulated.gold     += area.goldPerSec * deltaSeconds * goldMult;
-    dispatch.accumulated.material += area.materialPerMin * (deltaSeconds / 60) * materialMult;
+    dispatch.accumulated.gold += area.goldPerSec * deltaSeconds * goldMult;
+    const matPerTick = area.materialPerMin * (deltaSeconds / 60) * materialMult;
+    const ratios = getMaterialGradeRatios(area.stage);
+    for (const [grade, ratio] of Object.entries(ratios)) {
+      dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + matPerTick * ratio;
+    }
 
     // 전투 로직 (combat.js)
     initDispatchCombat(dispatch);
@@ -685,7 +708,7 @@ function buyShopItem(itemId) {
   if (!item) return false;
   if (!spendGold(item.price)) { showToast('골드가 부족합니다.', 'error'); return false; }
   if (item.type === 'material') {
-    addMaterial(item.amount);
+    addMaterial('common', item.amount);
     showToast(`${item.name} 구매 완료!`, 'success');
   } else if (item.type === 'exp_book') {
     State.inventory.push({ type: 'exp_book', expValue: item.expValue, name: item.name, icon: item.icon });
@@ -722,9 +745,9 @@ function dismantleEquipment(idx) {
   if (!item || !item.slot) return;
   const mat = DISMANTLE_MATS[item.grade] || 1;
   State.inventory.splice(idx, 1);
-  addMaterial(mat);
+  addMaterial('common', mat);
   saveState();
-  showToast(`${item.name} 분해 → 💎 재료 ${mat}`, 'success');
+  showToast(`${item.name} 분해 → 💎 일반 재료 ${mat}`, 'success');
 }
 
 // ===== 현재 파견 중인 모험가 ID 집합 =====
@@ -740,7 +763,7 @@ function startCraft(recipeId) {
   const labLv = getBuildingLevel('laboratory');
   if (labLv < recipe.reqLabLv) { showToast(`연구소 레벨 ${recipe.reqLabLv} 이상 필요합니다.`, 'error'); return false; }
   if (!spendGold(recipe.cost.gold)) { showToast('골드가 부족합니다.', 'error'); return false; }
-  if (!spendMaterial(recipe.cost.material)) {
+  if (!spendMaterials(recipe.cost.materials)) {
     addGold(recipe.cost.gold);
     showToast('재료가 부족합니다.', 'error'); return false;
   }
@@ -766,7 +789,9 @@ function cancelCraft() {
   const recipe = LAB_RECIPES.find(r => r.id === State.labQueue.recipeId);
   if (recipe) {
     addGold(recipe.cost.gold);
-    addMaterial(recipe.cost.material);
+    for (const [grade, amt] of Object.entries(recipe.cost.materials || {})) {
+      addMaterial(grade, amt);
+    }
   }
   State.labQueue = null;
   saveState();

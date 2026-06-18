@@ -1408,7 +1408,7 @@ const LAB_RECIPES = [
     grade: '일반',
     icon: 'assets/items/I_Book.png',
     expValue: 1000,
-    cost: { gold: 300, material: 3 },
+    cost: { gold: 300, materials: { common: 10 } },
     craftTime: 60,
     reqLabLv: 1,
   },
@@ -1418,7 +1418,7 @@ const LAB_RECIPES = [
     grade: '마법',
     icon: 'assets/items/I_Book.png',
     expValue: 4000,
-    cost: { gold: 1000, material: 10 },
+    cost: { gold: 1000, materials: { common: 30, advanced: 5 } },
     craftTime: 180,
     reqLabLv: 2,
   },
@@ -1428,7 +1428,7 @@ const LAB_RECIPES = [
     grade: '희귀',
     icon: 'assets/items/I_Book.png',
     expValue: 15000,
-    cost: { gold: 4000, material: 30 },
+    cost: { gold: 4000, materials: { advanced: 30, rare: 5 } },
     craftTime: 480,
     reqLabLv: 4,
   },
@@ -1438,7 +1438,7 @@ const LAB_RECIPES = [
     grade: '영웅',
     icon: 'assets/items/I_Book.png',
     expValue: 60000,
-    cost: { gold: 15000, material: 90 },
+    cost: { gold: 15000, materials: { rare: 50, legendary: 10 } },
     craftTime: 1200,
     reqLabLv: 6,
   },
@@ -1448,7 +1448,7 @@ const LAB_RECIPES = [
     grade: '전설',
     icon: 'assets/items/I_Book.png',
     expValue: 200000,
-    cost: { gold: 60000, material: 280 },
+    cost: { gold: 60000, materials: { legendary: 100 } },
     craftTime: 3600,
     reqLabLv: 8,
   },
@@ -1483,7 +1483,7 @@ const PERMANENT_TRAINING = [
 
 // 경험치 테이블 (레벨당 필요 경험치)
 function expRequired(level) {
-  return Math.floor(100 * Math.pow(1.3, level - 1));
+  return Math.floor(1000 * Math.pow(1.35, level - 1));
 }
 
 // 레벨별 스탯 성장

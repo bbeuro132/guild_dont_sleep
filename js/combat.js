@@ -1220,27 +1220,13 @@ function tickDispatchCombat(dispatch, delta) {
     if (isBossFight) progGain += getPrestigeBonusTotal('bossProgress');
     dispatch.progress = Math.min(dispatch.progress + progGain, area.maxProgress);
 
-    // 몬스터 처치 즉시 골드 보너스 (#9)
+    // 몬스터 처치 즉시 골드 보너스
     const killGold = Math.floor(enemies.length * area.stage * 1.5 * (isBossFight ? 2 : 1));
     const killMat  = isBossFight ? area.stage * 0.2 : area.stage * 0.04;
-    dispatch.accumulated.gold     += killGold;
-    dispatch.accumulated.material += killMat;
-
-    // 장비 드롭
-    const dropChance = isBossFight ? EQUIP_BOSS_DROP_CHANCE : EQUIP_DROP_CHANCE;
-    if (Math.random() < dropChance) {
-      const slot  = EQUIP_SLOTS[Math.floor(Math.random() * EQUIP_SLOTS.length)];
-      const pool  = EQUIP_GRADE_POOLS[getEquipGradePoolIdx(area.stage)];
-      const grade = pool[Math.floor(Math.random() * pool.length)];
-      const eq    = generateEquipment(slot, grade);
-      if (State.inventory.length < getInventoryCapacity()) {
-        State.inventory.push(eq);
-        showToast(`⚔️ 장비 획득: ${eq.name} (${eq.grade}급)`, 'success');
-      } else {
-        const sellGold = EQUIP_SELL_GOLD[grade] || 50;
-        addGold(sellGold);
-        showToast(`📦 창고 가득! ${eq.name} 자동 판매 (+${sellGold.toLocaleString()}G)`, 'info');
-      }
+    dispatch.accumulated.gold += killGold;
+    const ratios = getMaterialGradeRatios(area.stage);
+    for (const [grade, ratio] of Object.entries(ratios)) {
+      dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + killMat * ratio;
     }
 
     // 파견 EXP: 전투 승리 시 모험가에게 소량 경험치

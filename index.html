@@ -12,7 +12,7 @@
 <header id="header">
   <div id="guild-title">
     <span class="guild-icon">⚔️</span>
-    <h1 id="guild-name">베른 모험가 길드</h1>
+    <h1 id="guild-name">길드는 잠들지 않는다</h1>
   </div>
   <div id="resources">
     <div class="resource-chip">
@@ -20,10 +20,15 @@
       <span id="gold-amount">0</span>
       <span class="res-label">골드</span>
     </div>
-    <div class="resource-chip">
-      <img src="assets/items/I_Crystal01.png" alt="재료" class="res-icon" onerror="this.textContent='💎';this.style.fontSize='1rem'" />
-      <span id="material-amount">0</span>
-      <span class="res-label">재료</span>
+    <div class="resource-chip" style="gap:4px;font-size:0.82rem">
+      <img src="assets/items/I_Crystal01.png" alt="재료" class="res-icon" onerror="this.style.display='none'" />
+      <span class="res-label">일반</span><span id="mat-common">0</span>
+      <span style="opacity:0.3;margin:0 1px">|</span>
+      <span class="res-label">고급</span><span id="mat-advanced">0</span>
+      <span style="opacity:0.3;margin:0 1px">|</span>
+      <span class="res-label">희귀</span><span id="mat-rare">0</span>
+      <span style="opacity:0.3;margin:0 1px">|</span>
+      <span class="res-label">전설</span><span id="mat-legendary">0</span>
     </div>
     <div class="resource-chip">
       <span style="font-size:0.85rem">⏱</span>
@@ -102,7 +107,7 @@
         <div class="npc-name">길드 비서 클로에</div>
       </div>
       <div id="chloe-speech">
-        <p id="chloe-text">길드장님! 오늘도 모험가 지원서가 들어왔어요. 함께 검토해 볼까요?</p>
+        <p id="chloe-text">길드장 님! 오늘도 모험가 지원서가 들어왔어요. 함께 검토해 볼까요?</p>
       </div>
     </div>
     <div id="recruit-actions">
@@ -138,7 +143,7 @@
         <div class="npc-name">황금의 길 상인</div>
       </div>
       <div id="shop-npc-bubble">
-        <p>어서오세요~ 황금의 길 최고의 상품들을 준비했답니다! 마음에 드는 게 있으면 주저 말고 말씀해 주세요. 💛</p>
+        <p>어서오세요~ 황금의 길 최고의 상품들을 준비했답니다! 마음에 드는 게 있으면 주저 말고 말씀해 주세요.</p>
       </div>
     </div>
     <div id="shop-items"></div>
