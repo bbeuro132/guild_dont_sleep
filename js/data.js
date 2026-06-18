@@ -118,7 +118,7 @@ const BUILDINGS = [
     name: '창고',
     icon: '📦',
     desc: '장비와 아이템을 보관합니다. 레벨당 보관 칸이 늘어납니다.',
-    effectLabel: (lv) => `보관 칸: ${lv * 5 + 10}칸`,
+    effectLabel: (lv) => `보관 칸: ${lv * 5 + 20}칸`,
     baseCost: { gold: 800, material: 4 },
     costMult: 1.5,
     maxLevel: 18,
