@@ -18,6 +18,19 @@ function showToast(msg, type = 'info') {
 // 재료 등급 한글 레이블
 const MAT_GRADE_LABELS = { common: '일반', advanced: '고급', rare: '희귀', legendary: '전설' };
 
+function formatUpgradeDuration(seconds) {
+  if (seconds < 60) return `${Math.floor(seconds)}초`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}분`;
+  if (seconds < 86400) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+  }
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  return h > 0 ? `${d}일 ${h}시간` : `${d}일`;
+}
+
 // ===== 헤더 업데이트 =====
 function renderHeader() {
   document.getElementById('gold-amount').textContent = Math.floor(State.gold).toLocaleString();
@@ -60,33 +73,68 @@ function getCurrentTab() {
 function renderGuildTab() {
   const grid = document.getElementById('buildings-grid');
   grid.innerHTML = '';
+  const upg = State.buildingUpgrade;
 
   for (const building of BUILDINGS) {
-    const lv   = getBuildingLevel(building.id);
-    const cost = getBuildingUpgradeCost(building);
-    const canAfford = State.gold >= cost.gold && (State.materials.common || 0) >= cost.material;
+    const lv    = getBuildingLevel(building.id);
+    const cost  = getBuildingUpgradeCost(building);
     const maxed = building.maxLevel && lv >= building.maxLevel;
+    const isUpgrading     = upg && upg.buildingId === building.id;
+    const anotherUpgrading = upg && upg.buildingId !== building.id;
+
+    const canAfford = !maxed && !upg &&
+      State.gold >= cost.gold &&
+      Object.entries(cost.materials).every(([g, qty]) => (State.materials[g] || 0) >= qty);
+
+    const matLabel = Object.entries(cost.materials)
+      .map(([g, qty]) => `${MAT_GRADE_LABELS[g] ?? g} ${qty}`)
+      .join(' + ');
+
+    let actionHtml;
+    if (isUpgrading) {
+      const totalSec  = (upg.finishAt - upg.startAt) / 1000;
+      const remaining = Math.max(0, (upg.finishAt - Date.now()) / 1000);
+      const pct       = Math.min(100, Math.round((1 - remaining / totalSec) * 100));
+      actionHtml = `
+        <div style="margin:8px 0 4px">
+          <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:8px;overflow:hidden">
+            <div style="background:#f0c040;width:${pct}%;height:100%;transition:width 1s linear"></div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:0.82rem;color:#ccc;margin-bottom:6px">
+          ⏳ 완료까지 ${formatUpgradeDuration(remaining)}
+        </div>
+        <button class="btn btn-danger btn-full"
+          onclick="cancelBuildingUpgrade(); renderGuildTab(); renderHeader();">
+          ✕ 취소 (재료 전액 환불)
+        </button>
+      `;
+    } else if (maxed) {
+      actionHtml = '<p style="color:#888;font-size:0.8rem;text-align:center">최대 레벨 달성</p>';
+    } else {
+      actionHtml = `
+        <div class="building-cost">
+          <span class="cost-chip"><img src="assets/items/E_Gold01.png" alt="골드"> ${cost.gold.toLocaleString()}</span>
+          <span class="cost-chip"><img src="assets/items/I_Crystal01.png" alt="재료"> ${matLabel}</span>
+        </div>
+        <button class="btn ${canAfford ? 'btn-gold' : 'btn-outline'} btn-full"
+          ${(canAfford && !anotherUpgrading) ? '' : 'disabled'}
+          onclick="upgradeBuilding('${building.id}'); renderGuildTab(); renderHeader();">
+          ${anotherUpgrading ? '다른 건물 업그레이드 중...' : '업그레이드 →'}
+        </button>
+      `;
+    }
 
     const card = document.createElement('div');
-    card.className = 'building-card';
+    card.className = `building-card${isUpgrading ? ' building-upgrading' : ''}`;
     card.innerHTML = `
       <div class="building-header">
         <div class="building-name">${building.icon} ${building.name}</div>
-        <div class="building-level">Lv.${lv}${maxed ? ' (MAX)' : ''}</div>
+        <div class="building-level">Lv.${lv}${maxed ? ' (MAX)' : ''}${isUpgrading ? ' → ' + upg.targetLevel : ''}</div>
       </div>
       <div class="building-desc">${building.desc}</div>
       <div class="building-effect">✨ ${building.effectLabel(lv)}</div>
-      ${maxed ? '<p style="color:#888;font-size:0.8rem;text-align:center">최대 레벨 달성</p>' : `
-        <div class="building-cost">
-          <span class="cost-chip"><img src="assets/items/E_Gold01.png" alt="골드"> ${cost.gold.toLocaleString()}</span>
-          <span class="cost-chip"><img src="assets/items/I_Crystal01.png" alt="재료"> 일반 ${cost.material}</span>
-        </div>
-        <button class="btn ${canAfford ? 'btn-gold' : 'btn-outline'} btn-full"
-          ${canAfford ? '' : 'disabled'}
-          onclick="upgradeBuilding('${building.id}'); renderGuildTab(); renderHeader();">
-          업그레이드 →
-        </button>
-      `}
+      ${actionHtml}
     `;
     grid.appendChild(card);
   }

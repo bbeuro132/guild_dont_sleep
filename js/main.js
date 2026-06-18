@@ -3,6 +3,7 @@
 let lastTick = 0;
 let _dispatchRenderTimer = 0;
 let _labRenderTimer = 0;
+let _guildRenderTimer = 0;
 
 function gameLoop(timestamp) {
   const delta = (timestamp - lastTick) / 1000; // 초 단위
@@ -11,6 +12,7 @@ function gameLoop(timestamp) {
   if (delta > 0 && delta < 60) {
     tickDispatches(delta);
     tickLab();
+    checkBuildingUpgradeComplete();
   }
 
   // 헤더 항상 갱신
@@ -34,6 +36,12 @@ function gameLoop(timestamp) {
     if (_labRenderTimer <= 0) {
       renderLabTab();
       _labRenderTimer = 1;
+    }
+  } else if (tab === 'guild' && State.buildingUpgrade) {
+    _guildRenderTimer -= delta;
+    if (_guildRenderTimer <= 0) {
+      renderGuildTab();
+      _guildRenderTimer = 1;
     }
   }
 

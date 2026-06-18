@@ -28,6 +28,7 @@ const DEFAULT_STATE = {
   tutorialDone: false,
 
   labQueue: null,       // {recipeId, name, icon, grade, expValue, startAt, finishAt, totalMs}
+  buildingUpgrade: null, // {buildingId, targetLevel, startAt, finishAt, gold, materials}
 
   lastSaveTime: 0,
   totalPlayTime: 0,
@@ -260,15 +261,34 @@ function spendMaterials(cost) {
 }
 
 // ===== 건물 =====
+const BUILDING_UPGRADE_TIMES = [15, 60, 180, 600, 1800, 5400, 14400, 36000, 86400, 172800];
+
+function getBuildingUpgradeTime(lv) {
+  const idx = Math.min(lv - 1, BUILDING_UPGRADE_TIMES.length - 1);
+  return BUILDING_UPGRADE_TIMES[idx];
+}
+
+// lv = 현재 레벨 (업그레이드 시작 레벨)
+function getBuildingUpgradeMats(building, lv) {
+  const base = building.baseCost.material;
+  if (lv <= 3) return { common: base * lv };
+  if (lv <= 6) return { advanced: Math.max(1, Math.ceil(base * 0.4 * (lv - 3))) };
+  if (lv <= 8) return { rare: Math.max(1, Math.ceil(base * 0.15 * (lv - 6))) };
+  return {
+    rare: Math.max(1, Math.ceil(base * 0.3)),
+    legendary: Math.max(1, Math.ceil(base * 0.05 * (lv - 8))),
+  };
+}
+
 function getBuildingLevel(id) {
   return State.buildings[id] || 1;
 }
 
 function getBuildingUpgradeCost(building) {
   const lv = getBuildingLevel(building.id);
-  const goldCost  = Math.floor(building.baseCost.gold * Math.pow(building.costMult, lv - 1));
-  const matCost   = Math.floor(building.baseCost.material * Math.pow(building.costMult, lv - 1));
-  return { gold: goldCost, material: matCost };
+  const goldCost = Math.floor(building.baseCost.gold * Math.pow(building.costMult, lv - 1));
+  const materials = getBuildingUpgradeMats(building, lv);
+  return { gold: goldCost, materials };
 }
 
 function upgradeBuilding(buildingId) {
@@ -278,12 +298,51 @@ function upgradeBuilding(buildingId) {
   if (building.maxLevel && lv >= building.maxLevel) {
     showToast('이미 최대 레벨입니다.', 'error'); return false;
   }
+  if (State.buildingUpgrade) {
+    showToast('이미 업그레이드 중인 건물이 있습니다.', 'error'); return false;
+  }
   const cost = getBuildingUpgradeCost(building);
   if (State.gold < cost.gold) { showToast('골드가 부족합니다.', 'error'); return false; }
-  if (!spendMaterials({ common: cost.material })) { showToast('일반 재료가 부족합니다.', 'error'); return false; }
+  if (!spendMaterials(cost.materials)) { showToast('재료가 부족합니다.', 'error'); return false; }
   State.gold -= cost.gold;
-  State.buildings[buildingId] = lv + 1;
-  showToast(`${building.name} 레벨 ${lv + 1} 업그레이드!`, 'success');
+
+  const durationSec = getBuildingUpgradeTime(lv);
+  const now = Date.now();
+  State.buildingUpgrade = {
+    buildingId,
+    targetLevel: lv + 1,
+    startAt: now,
+    finishAt: now + durationSec * 1000,
+    gold: cost.gold,
+    materials: cost.materials,
+  };
+  saveState();
+  showToast(`${building.name} 업그레이드 시작! (${formatUpgradeDuration(durationSec)})`, 'info');
+  return true;
+}
+
+function checkBuildingUpgradeComplete() {
+  if (!State.buildingUpgrade) return;
+  if (Date.now() < State.buildingUpgrade.finishAt) return;
+
+  const { buildingId, targetLevel } = State.buildingUpgrade;
+  State.buildings[buildingId] = targetLevel;
+  State.buildingUpgrade = null;
+  saveState();
+
+  const building = BUILDINGS.find(b => b.id === buildingId);
+  showToast(`${building?.name ?? buildingId} 레벨 ${targetLevel} 업그레이드 완료!`, 'success');
+  if (typeof renderGuildTab === 'function' && getCurrentTab() === 'guild') renderGuildTab();
+}
+
+function cancelBuildingUpgrade() {
+  if (!State.buildingUpgrade) return false;
+  const { gold, materials } = State.buildingUpgrade;
+  addGold(gold);
+  for (const [grade, amt] of Object.entries(materials || {})) addMaterial(grade, amt);
+  State.buildingUpgrade = null;
+  saveState();
+  showToast('업그레이드를 취소했습니다. 재료를 전액 환불받았습니다.', 'info');
   return true;
 }
 

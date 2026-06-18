@@ -201,6 +201,11 @@ body {
   border-color: var(--gold-dark);
 }
 
+.building-card.building-upgrading {
+  border-color: #f0c040;
+  box-shadow: 0 0 12px rgba(240, 192, 64, 0.35);
+}
+
 .building-header {
   display: flex;
   justify-content: space-between;
