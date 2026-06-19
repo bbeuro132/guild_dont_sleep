@@ -397,6 +397,21 @@ body {
 .job-ivory-sorcerer { background: #1565c0; }
 .job-ivory-sage { background: #0d47a1; }
 
+.job-healer { background: #ef6c00; }
+.job-cleric { background: #e65100; }
+.job-priest { background: #d84315; }
+.job-dragon-priest { background: #f57c00; }
+.job-inquisitor { background: #bf360c; }
+
+.job-citadel { background: #880e4f; }
+.job-destroyer { background: #b71c1c; }
+.job-great-ninja { background: #1b5e20; }
+.job-tracker { background: #33691e; }
+.job-controller { background: #4a148c; }
+.job-grand-sage { background: #0d47a1; }
+.job-light-apostle { background: #e65100; }
+.job-fanatic { background: #bf360c; }
+
 .adv-name {
   font-size: 0.95rem;
   font-weight: bold;
@@ -837,7 +852,7 @@ body {
   padding: 12px 16px;
   position: relative;
   box-shadow: var(--shadow);
-  flex: 1;
+  flex: 0 1 auto;
   font-size: 0.88rem;
   line-height: 1.5;
   color: #3e2200;
@@ -993,7 +1008,7 @@ body {
   border: 2px solid var(--gold-dark);
   border-radius: 12px;
   padding: 12px 16px;
-  flex: 1;
+  flex: 0 1 auto;
   font-size: 0.88rem;
   line-height: 1.5;
   color: #3e2200;
