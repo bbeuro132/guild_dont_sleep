@@ -115,7 +115,7 @@ function renderGuildTab() {
       const upgTime = getBuildingUpgradeTime(lv);
       actionHtml = `
         <div class="building-cost">
-          <span class="cost-chip"><img src="assets/items/E_Gold01.png" alt="골드"> ${cost.gold.toLocaleString()}</span>
+          <span class="cost-chip"><img src="assets/items/CoinsGold.PNG" alt="골드"> ${cost.gold.toLocaleString()}</span>
           <span class="cost-chip"><img src="assets/items/I_Crystal01.png" alt="재료"> ${matLabel}</span>
           <span class="cost-chip">⏱ ${formatUpgradeDuration(upgTime)}</span>
         </div>
