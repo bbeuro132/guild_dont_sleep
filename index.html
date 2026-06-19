@@ -15,6 +15,7 @@
     <h1 id="guild-name">길드는 잠들지 않는다</h1>
   </div>
   <div id="resources">
+    <button id="btn-lore" class="lore-btn" onclick="openPopup('lore-popup')">?</button>
     <div class="resource-chip">
       <img src="assets/items/E_Gold01.png" alt="골드" class="res-icon" onerror="this.textContent='💰';this.style.fontSize='1rem'" />
       <span id="gold-amount">0</span>
@@ -198,6 +199,17 @@
       <h3 class="popup-title">🔄 리빌딩</h3>
     </div>
     <div id="rebuild-popup-body"></div>
+  </div>
+</div>
+
+<!-- 세계관 팝업 -->
+<div id="lore-popup" class="popup hidden">
+  <div class="popup-inner" style="max-width:520px">
+    <button class="popup-close" id="btn-close-lore" onclick="closePopup('lore-popup')">✕</button>
+    <h3 class="popup-title">📜 세계관</h3>
+    <div id="lore-content" style="font-size:0.88rem;line-height:1.7;color:#ddd;max-height:60vh;overflow-y:auto;padding-right:8px">
+      <p style="color:#aaa;text-align:center">세계관 내용이 아직 준비되지 않았습니다.</p>
+    </div>
   </div>
 </div>
 
