@@ -220,12 +220,18 @@
           <button class="lore-tab active" onclick="switchLoreTab('world')">🌍 세계 소개</button>
           <button class="lore-tab" onclick="switchLoreTab('magic')">✨ 마법에 대해</button>
         </div>
-        <div id="lore-content" style="font-size:0.88rem;line-height:1.7;color:#ddd;max-height:50vh;overflow-y:auto;padding-right:8px">
-          <div id="lore-world">
-            <p style="color:#aaa">세계 소개 내용이 아직 준비되지 않았습니다.</p>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div id="lore-content" style="flex:1;min-width:0;font-size:0.88rem;line-height:1.7;color:#ddd;max-height:50vh;overflow-y:auto;padding-right:8px">
+            <div id="lore-world">
+              <p style="color:#aaa">세계 소개 내용이 아직 준비되지 않았습니다.</p>
+            </div>
+            <div id="lore-magic" class="hidden">
+              <p style="color:#aaa">마법에 대한 내용이 아직 준비되지 않았습니다.</p>
+            </div>
           </div>
-          <div id="lore-magic" class="hidden">
-            <p style="color:#aaa">마법에 대한 내용이 아직 준비되지 않았습니다.</p>
+          <div class="lore-illustration lore-illustration-right">
+            <img src="assets/characters/세계관_파프니르.png" alt="파프니르"
+                 onerror="this.parentElement.style.display='none'" />
           </div>
         </div>
       </div>
