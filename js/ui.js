@@ -112,10 +112,12 @@ function renderGuildTab() {
     } else if (maxed) {
       actionHtml = '<p style="color:#888;font-size:0.8rem;text-align:center">최대 레벨 달성</p>';
     } else {
+      const upgTime = getBuildingUpgradeTime(lv);
       actionHtml = `
         <div class="building-cost">
           <span class="cost-chip"><img src="assets/items/E_Gold01.png" alt="골드"> ${cost.gold.toLocaleString()}</span>
           <span class="cost-chip"><img src="assets/items/I_Crystal01.png" alt="재료"> ${matLabel}</span>
+          <span class="cost-chip">⏱ ${formatUpgradeDuration(upgTime)}</span>
         </div>
         <button class="btn ${canAfford ? 'btn-gold' : 'btn-outline'} btn-full"
           ${(canAfford && !anotherUpgrading) ? '' : 'disabled'}

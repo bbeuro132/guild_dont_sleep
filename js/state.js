@@ -365,24 +365,27 @@ function generateAdventurer(gradeOverride) {
   const baseMult = GRADE_STAT_MULT[grade];
   const name = ADVENTURER_NAMES[Math.floor(Math.random() * ADVENTURER_NAMES.length)];
 
-  const traitCount = Math.random() < 0.4 ? 2 : 1;
+  const traitRoll = Math.random();
+  const traitCount = traitRoll < 0.5 ? 0 : traitRoll < 0.9 ? 1 : 2;
   const shuffledTraits = [...TRAITS].sort(() => Math.random() - 0.5);
   const traits = shuffledTraits.slice(0, traitCount).map(t => t.id);
 
-  const baseStats = {
-    hp:      Math.floor((60 + Math.random() * 40) * baseMult),
-    atk:     Math.floor((12 + Math.random() * 8)  * baseMult),
-    def:     Math.floor((6  + Math.random() * 6)  * baseMult),
-    spd:     Math.floor((8  + Math.random() * 6)  * baseMult),
-    crit:    Math.floor((5  + Math.random() * 10) * baseMult),
-    critDmg: Math.floor((150 + Math.random() * 50)),
+  const branchStats = {
+    warrior: { hp: 1.3, atk: 1.0, def: 1.3, spd: 0.8, crit: 0.8, critDmg: 1.0 },
+    rogue:   { hp: 0.7, atk: 1.1, def: 0.6, spd: 1.4, crit: 1.4, critDmg: 1.2 },
+    mage:    { hp: 0.6, atk: 1.3, def: 0.5, spd: 1.0, crit: 1.0, critDmg: 1.1 },
+    healer:  { hp: 1.0, atk: 0.6, def: 0.9, spd: 0.5, crit: 0.7, critDmg: 0.8 },
   };
+  const bm = branchStats[jobInfo.branch] || branchStats.warrior;
 
-  // 치유사 계열: 속도 절반, HP 소폭 증가 (항상 후순위 행동)
-  if (jobInfo.branch === 'healer') {
-    baseStats.spd = Math.floor(baseStats.spd * 0.5);
-    baseStats.hp  = Math.floor(baseStats.hp  * 1.2);
-  }
+  const baseStats = {
+    hp:      Math.floor((60 + Math.random() * 40) * baseMult * bm.hp),
+    atk:     Math.floor((12 + Math.random() * 8)  * baseMult * bm.atk),
+    def:     Math.floor((6  + Math.random() * 6)  * baseMult * bm.def),
+    spd:     Math.floor((8  + Math.random() * 6)  * baseMult * bm.spd),
+    crit:    Math.floor((5  + Math.random() * 10) * baseMult * bm.crit),
+    critDmg: Math.floor((150 + Math.random() * 50) * bm.critDmg),
+  };
 
   return {
     id: State.nextAdvId++,
