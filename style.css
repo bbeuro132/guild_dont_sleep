@@ -114,6 +114,31 @@ body {
   color: var(--gold);
 }
 
+.lore-body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.lore-illustration {
+  flex-shrink: 0;
+  width: 160px;
+}
+.lore-illustration img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  opacity: 0.9;
+}
+.lore-main {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .lore-body { flex-direction: column; }
+  .lore-illustration { width: 120px; align-self: center; }
+}
+
 .resource-chip {
   display: flex;
   align-items: center;
