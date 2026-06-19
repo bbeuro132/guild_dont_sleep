@@ -238,6 +238,10 @@ function spendGold(amount) {
   return true;
 }
 
+function refundGold(amount) {
+  State.gold += Math.floor(amount);
+}
+
 // 재료 등급별 드롭 비율 (stage 기준)
 function getMaterialGradeRatios(stage) {
   if (stage <= 10) return { common: 0.97, advanced: 0.03, rare: 0,    legendary: 0    };
@@ -338,7 +342,7 @@ function checkBuildingUpgradeComplete() {
 function cancelBuildingUpgrade() {
   if (!State.buildingUpgrade) return false;
   const { gold, materials } = State.buildingUpgrade;
-  addGold(gold);
+  refundGold(gold);
   for (const [grade, amt] of Object.entries(materials || {})) addMaterial(grade, amt);
   State.buildingUpgrade = null;
   saveState();
@@ -780,7 +784,7 @@ function buyShopItem(itemId) {
   } else if (item.type === 'equipment') {
     if (State.inventory.length >= getInventoryCapacity()) {
       showToast('창고가 가득 찼습니다. 창고를 업그레이드하거나 아이템을 정리하세요.', 'error');
-      addGold(item.price); // 골드 환불
+      refundGold(item.price);
       return false;
     }
     const eq = generateEquipment(item.slot, item.grade, item.branch || null);
@@ -828,7 +832,7 @@ function startCraft(recipeId) {
   if (labLv < recipe.reqLabLv) { showToast(`공방 레벨 ${recipe.reqLabLv} 이상 필요합니다.`, 'error'); return false; }
   if (!spendGold(recipe.cost.gold)) { showToast('골드가 부족합니다.', 'error'); return false; }
   if (!spendMaterials(recipe.cost.materials)) {
-    addGold(recipe.cost.gold);
+    refundGold(recipe.cost.gold);
     showToast('재료가 부족합니다.', 'error'); return false;
   }
   const speedMult = (100 + labLv * 10) / 100;
@@ -856,7 +860,7 @@ function cancelCraft() {
   } else {
     const recipe = LAB_RECIPES.find(r => r.id === q.recipeId);
     if (recipe) {
-      addGold(recipe.cost.gold);
+      refundGold(recipe.cost.gold);
       for (const [grade, amt] of Object.entries(recipe.cost.materials || {})) addMaterial(grade, amt);
     }
   }
@@ -927,7 +931,7 @@ function craftEquipment(slot, materialGrade) {
 
   if (State.inventory.length >= getInventoryCapacity()) {
     showToast('창고가 가득 찼습니다. 아이템을 정리하세요.', 'error');
-    addGold(recipe.gold);
+    refundGold(recipe.gold);
     State.materials[materialGrade] += recipe.matCost;
     return null;
   }
