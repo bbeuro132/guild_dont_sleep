@@ -91,6 +91,29 @@ body {
   color: #fff;
 }
 
+.lore-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.lore-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  color: #aaa;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lore-tab:hover { background: rgba(255,255,255,0.1); }
+.lore-tab.active {
+  background: rgba(245,200,66,0.15);
+  border-color: var(--gold-dark);
+  color: var(--gold);
+}
+
 .resource-chip {
   display: flex;
   align-items: center;

@@ -843,6 +843,13 @@ function closePopup(id) {
   document.getElementById('overlay').classList.add('hidden');
 }
 
+function switchLoreTab(tabId) {
+  document.querySelectorAll('#lore-content > div').forEach(d => d.classList.add('hidden'));
+  document.getElementById('lore-' + tabId).classList.remove('hidden');
+  document.querySelectorAll('.lore-tab').forEach(btn => btn.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
 function openBattlePopup(areaId) {
   const area = AREAS.find(a => a.id === areaId);
   if (!area) return;
