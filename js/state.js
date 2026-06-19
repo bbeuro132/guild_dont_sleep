@@ -850,11 +850,14 @@ function startCraft(recipeId) {
 
 function cancelCraft() {
   if (!State.labQueue) return false;
-  const recipe = LAB_RECIPES.find(r => r.id === State.labQueue.recipeId);
-  if (recipe) {
-    addGold(recipe.cost.gold);
-    for (const [grade, amt] of Object.entries(recipe.cost.materials || {})) {
-      addMaterial(grade, amt);
+  const q = State.labQueue;
+  if (q.type === 'synthesis') {
+    for (const [grade, amt] of Object.entries(q.refundMaterials || {})) addMaterial(grade, amt);
+  } else {
+    const recipe = LAB_RECIPES.find(r => r.id === q.recipeId);
+    if (recipe) {
+      addGold(recipe.cost.gold);
+      for (const [grade, amt] of Object.entries(recipe.cost.materials || {})) addMaterial(grade, amt);
     }
   }
   State.labQueue = null;
@@ -867,12 +870,42 @@ function tickLab() {
   if (!State.labQueue) return;
   if (Date.now() >= State.labQueue.finishAt) {
     const q = State.labQueue;
-    State.inventory.push({ type: 'exp_book', name: q.name, icon: q.icon, grade: q.grade, expValue: q.expValue });
+    if (q.type === 'synthesis') {
+      for (const [grade, amt] of Object.entries(q.output)) addMaterial(grade, amt);
+      showToast(`${q.name} 완료! 재료를 획득했습니다.`, 'success');
+    } else {
+      State.inventory.push({ type: 'exp_book', name: q.name, icon: q.icon, grade: q.grade, expValue: q.expValue });
+      showToast(`${q.name} 제작 완료! 인벤토리에 추가됐습니다.`, 'success');
+    }
     State.labQueue = null;
     saveState();
-    showToast(`${q.name} 제작 완료! 인벤토리에 추가됐습니다.`, 'success');
     if (typeof renderLabTab === 'function' && getCurrentTab() === 'lab') renderLabTab();
   }
+}
+
+// ===== 재료 합성 =====
+function startSynthesis(recipeId) {
+  if (State.labQueue) { showToast('이미 제작 중입니다.', 'error'); return false; }
+  const recipe = SYNTHESIS_RECIPES.find(r => r.id === recipeId);
+  if (!recipe) return false;
+  if (!spendMaterials(recipe.input)) { showToast('재료가 부족합니다.', 'error'); return false; }
+  const labLv = getBuildingLevel('workshop');
+  const speedMult = (100 + labLv * 10) / 100;
+  const totalMs = Math.floor(recipe.craftTime / speedMult) * 1000;
+  const now = Date.now();
+  State.labQueue = {
+    type: 'synthesis',
+    recipeId,
+    name: recipe.name,
+    startAt: now,
+    finishAt: now + totalMs,
+    totalMs,
+    output: { ...recipe.output },
+    refundMaterials: { ...recipe.input },
+  };
+  saveState();
+  showToast(`${recipe.name} 시작!`, 'success');
+  return true;
 }
 
 // ===== 장비 즉시 제작 =====

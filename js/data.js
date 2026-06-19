@@ -146,6 +146,13 @@ const CRAFT_RECIPES = [
   { materialGrade: 'legendary', label: '전설 재료',  matCost: 5,  gold: 50000, grades: ['신화'],           ratios: [1.0] },
 ];
 
+// ===== 재료 합성 레시피 =====
+const SYNTHESIS_RECIPES = [
+  { id: 'synth_advanced',  name: '고급 재료 합성', input: { common: 10 },   output: { advanced: 1 },  craftTime: 300  },
+  { id: 'synth_rare',      name: '희귀 재료 합성', input: { advanced: 10 }, output: { rare: 1 },      craftTime: 900  },
+  { id: 'synth_legendary', name: '전설 재료 합성', input: { rare: 10 },     output: { legendary: 1 }, craftTime: 2700 },
+];
+
 // 파견 지역 정의
 const AREAS = [
   // ===== 베른 왕국 (1-5) =====

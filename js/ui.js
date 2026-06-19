@@ -1485,11 +1485,15 @@ function renderLabTab() {
   if (q) {
     const remaining = Math.max(0, q.finishAt - now);
     const pct = Math.min(100, ((q.totalMs - remaining) / q.totalMs) * 100).toFixed(1);
-    const col = gradeColor(q.grade);
+    const isSynth = q.type === 'synthesis';
+    const col = isSynth ? '#8bc34a' : gradeColor(q.grade);
+    const iconHtml = isSynth
+      ? '<span style="font-size:28px;margin-right:10px">🔄</span>'
+      : `<img src="${q.icon}" class="lab-queue-icon" onerror="this.style.display='none'" />`;
     queueHtml = `
       <div class="lab-queue-card active">
         <div class="lab-queue-item">
-          <img src="${q.icon}" class="lab-queue-icon" onerror="this.style.display='none'" />
+          ${iconHtml}
           <div class="lab-queue-info">
             <div class="lab-queue-name" style="color:${col}">${q.name}</div>
             <div class="progress-bar-wrap" style="margin:6px 0">
@@ -1499,7 +1503,7 @@ function renderLabTab() {
           </div>
         </div>
         <button class="btn btn-danger" style="margin-top:10px;width:100%"
-          onclick="if(cancelCraft()) renderLabTab()">취소 (재료 전액 환불)</button>
+          onclick="if(cancelCraft()) renderLabTab()">취소 (전액 환불)</button>
       </div>`;
   } else {
     queueHtml = `<div class="lab-queue-card empty">⚗️ 제작 슬롯이 비어 있습니다.</div>`;
@@ -1615,6 +1619,40 @@ function renderLabTab() {
       🔨 즉시 제작
     </button>`;
 
+  // ===== 재료 합성 섹션 =====
+  const speedMult2 = (100 + labLv * 10) / 100;
+  const synthHtml = SYNTHESIS_RECIPES.map(recipe => {
+    const inputLabel = Object.entries(recipe.input)
+      .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n}`)
+      .join(' + ');
+    const outputLabel = Object.entries(recipe.output)
+      .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n}`)
+      .join(' + ');
+    const canAfford = Object.entries(recipe.input)
+      .every(([g, n]) => (State.materials[g] || 0) >= n);
+    const busy = !!q;
+    const disabled = busy || !canAfford;
+    const actualMs = Math.floor(recipe.craftTime / speedMult2) * 1000;
+    const btnLabel = busy ? '제작 중...' : canAfford ? '합성 시작' : '재료 부족';
+
+    return `
+      <div class="lab-recipe-card${disabled ? ' disabled' : ''}">
+        <div class="lab-recipe-header">
+          <span style="font-size:28px;line-height:1">🔄</span>
+          <div style="margin-left:10px">
+            <div class="lab-recipe-name">${recipe.name}</div>
+            <div class="lab-recipe-exp">${inputLabel} → <strong style="color:#8bc34a">${outputLabel}</strong></div>
+          </div>
+        </div>
+        <div class="lab-recipe-cost" style="${canAfford ? '' : 'color:#e57373'}">
+          💎 ${inputLabel} &nbsp;|&nbsp; ⏱ ${formatCraftTime(actualMs)}
+        </div>
+        <button class="btn ${disabled ? 'btn-outline' : 'btn-primary'} btn-full"
+          onclick="if(startSynthesis('${recipe.id}')) renderLabTab()"
+          ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+      </div>`;
+  }).join('');
+
   el.innerHTML = `
     <div class="lab-section-title">현재 제작</div>
     ${queueHtml}
@@ -1624,6 +1662,10 @@ function renderLabTab() {
       <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">시간 소요 없음 · 랜덤 옵션</span>
     </div>
     <div style="padding:4px 0">${craftEquipHtml}</div>
+    <div class="lab-section-title" style="margin-top:20px">재료 합성
+      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">10:1 비율 · 공방 속도 적용</span>
+    </div>
+    <div class="lab-recipes-grid">${synthHtml}</div>
     <div class="lab-section-title" style="margin-top:20px">영구 단련
       <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">리빌딩 후에도 유지됩니다</span>
     </div>
