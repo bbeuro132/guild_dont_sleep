@@ -757,24 +757,77 @@ function updateRecruitCountdown() {
 // ===== 상점 탭 =====
 function renderShopTab() {
   const container = document.getElementById('shop-items');
-  container.innerHTML = '';
+  const buffs = (State.activeBuffs || []).filter(b => b.expiresAt > Date.now());
 
-  for (const item of SHOP_ITEMS) {
-    const canAfford = State.gold >= item.price;
-    const card = document.createElement('div');
-    card.className = 'shop-item-card';
-    card.innerHTML = `
-      <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'">
-      <div class="shop-item-name">${item.name}</div>
-      <div class="shop-item-desc">${item.desc}</div>
-      <div class="shop-item-price">💰 ${item.price.toLocaleString()} G</div>
-      <button class="btn btn-gold btn-full" ${canAfford ? '' : 'disabled'}
-        onclick="buyShopItem('${item.id}'); renderShopTab(); renderHeader()">
-        구매
-      </button>
-    `;
-    container.appendChild(card);
+  let buffHtml = '';
+  if (buffs.length > 0) {
+    buffHtml = `<div class="lab-section-title">활성 부스트</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        ${buffs.map(b => {
+          const rem = Math.max(0, (b.expiresAt - Date.now()) / 1000);
+          return `<div style="background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.4);border-radius:6px;padding:6px 12px;font-size:0.8rem;color:#f0c040">
+            ✨ ${b.name} +${b.value}% <span style="color:#aaa">(${formatUpgradeDuration(rem)})</span>
+          </div>`;
+        }).join('')}
+      </div>`;
   }
+
+  const permHtml = SHOP_PERMANENT.map(item => {
+    const canAfford = State.gold >= item.price;
+    const isActive = item.type === 'consumable' && buffs.some(b => b.effect === item.effect);
+    return `
+      <div class="shop-item-card">
+        <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'">
+        <div class="shop-item-name">${item.name}</div>
+        <div class="shop-item-desc">${item.desc}</div>
+        <div class="shop-item-price">💰 ${item.price.toLocaleString()} G</div>
+        <button class="btn btn-gold btn-full" ${canAfford && !isActive ? '' : 'disabled'}
+          onclick="buyShopPermanent('${item.id}'); renderShopTab(); renderHeader();">
+          ${isActive ? '✨ 이미 활성 중' : '구매'}
+        </button>
+      </div>`;
+  }).join('');
+
+  const rotation = State.shopRotation || [];
+  const remaining = Math.max(0, ((State.lastShopRefresh || 0) + SHOP_REFRESH_INTERVAL - Date.now()) / 1000);
+
+  const rotHtml = rotation.map((item, i) => {
+    if (item.sold) {
+      return `<div class="shop-item-card" style="opacity:0.4">
+        <div style="text-align:center;color:#666;padding:30px 0;font-size:0.85rem">판매 완료</div>
+      </div>`;
+    }
+    const canAfford = State.gold >= item.price;
+    const col = item.type === 'equipment' ? gradeColor(item.grade) : '';
+    return `
+      <div class="shop-item-card">
+        <img src="${item.icon || 'assets/items/I_Crystal01.png'}" alt="${item.name || ''}" onerror="this.style.display='none'">
+        <div class="shop-item-name" ${col ? `style="color:${col}"` : ''}>${item.name || '???'}</div>
+        <div class="shop-item-desc">${item.desc || ''}</div>
+        <div class="shop-item-price">💰 ${item.price.toLocaleString()} G</div>
+        <button class="btn btn-gold btn-full" ${canAfford ? '' : 'disabled'}
+          onclick="buyShopRotation(${i}); renderShopTab(); renderHeader();">
+          구매
+        </button>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    ${buffHtml}
+    <div class="lab-section-title">상시 판매</div>
+    <div class="shop-grid">${permHtml}</div>
+    <div class="lab-section-title" style="margin-top:20px">
+      한정 판매
+      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">갱신까지 ${formatUpgradeDuration(remaining)}</span>
+    </div>
+    <div style="margin-bottom:12px">
+      <button class="btn btn-outline" style="font-size:0.8rem"
+        onclick="if(forceRefreshShop()) { renderShopTab(); renderHeader(); }">
+        💰 즉시 갱신 (2,000 골드)
+      </button>
+    </div>
+    <div class="shop-grid">${rotHtml}</div>
+  `;
 }
 
 // ===== 팝업 =====

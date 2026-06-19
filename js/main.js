@@ -4,6 +4,7 @@ let lastTick = 0;
 let _dispatchRenderTimer = 0;
 let _labRenderTimer = 0;
 let _guildRenderTimer = 0;
+let _shopRenderTimer = 0;
 
 function gameLoop(timestamp) {
   const delta = (timestamp - lastTick) / 1000; // 초 단위
@@ -13,6 +14,8 @@ function gameLoop(timestamp) {
     tickDispatches(delta);
     tickLab();
     checkBuildingUpgradeComplete();
+    tickBuffs();
+    checkShopRefresh();
   }
 
   // 헤더 항상 갱신
@@ -42,6 +45,12 @@ function gameLoop(timestamp) {
     if (_guildRenderTimer <= 0) {
       renderGuildTab();
       _guildRenderTimer = 1;
+    }
+  } else if (tab === 'shop') {
+    _shopRenderTimer -= delta;
+    if (_shopRenderTimer <= 0) {
+      renderShopTab();
+      _shopRenderTimer = 5;
     }
   }
 

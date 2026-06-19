@@ -30,6 +30,10 @@ const DEFAULT_STATE = {
   labQueue: null,       // {recipeId, name, icon, grade, expValue, startAt, finishAt, totalMs}
   buildingUpgrade: null, // {buildingId, targetLevel, startAt, finishAt, gold, materials}
 
+  shopRotation: [],      // 로테이션 상점 현재 상품
+  lastShopRefresh: 0,    // 마지막 상점 갱신 시각
+  activeBuffs: [],       // [{id, name, effect, value, expiresAt}]
+
   lastSaveTime: 0,
   totalPlayTime: 0,
 
@@ -568,8 +572,8 @@ function tickDispatches(deltaSeconds) {
     if (!area) continue;
 
     // 재화 누적 (장비 옵션 + 프레스티지 성장 가지 반영)
-    const goldMult    = (1 + getTeamGoldBonus(dispatch)) * (1 + getPrestigeBonusTotal('goldBonus') / 100);
-    const materialMult = (1 + getTeamMaterialBonus(dispatch)) * (1 + getPrestigeBonusTotal('materialBonus') / 100);
+    const goldMult    = (1 + getTeamGoldBonus(dispatch)) * (1 + getPrestigeBonusTotal('goldBonus') / 100) * (1 + getBuffBonus('goldBonus') / 100);
+    const materialMult = (1 + getTeamMaterialBonus(dispatch)) * (1 + getPrestigeBonusTotal('materialBonus') / 100) * (1 + getBuffBonus('materialBonus') / 100);
     dispatch.accumulated.gold += area.goldPerSec * deltaSeconds * goldMult;
     const matPerTick = area.materialPerMin * (deltaSeconds / 60) * materialMult;
     const ratios = getMaterialGradeRatios(area.stage);
@@ -686,7 +690,7 @@ function getEffectiveStats(adv) {
 function giveExp(advId, amount) {
   const adv = State.adventurers.find(a => a.id === advId);
   if (!adv) return;
-  const expMult = 1 + getPrestigeBonusTotal('expBonus') / 100;
+  const expMult = 1 + getPrestigeBonusTotal('expBonus') / 100 + getBuffBonus('expBonus') / 100;
   adv.exp += Math.floor(amount * expMult);
   let needed = expRequired(adv.level);
   const oldMaxHp = getEffectiveStats(adv).hp;
@@ -770,28 +774,117 @@ function unequipItem(advId, slot) {
   showToast('장비 해제됨', 'info');
 }
 
-// ===== 상점 구매 =====
-function buyShopItem(itemId) {
-  const item = SHOP_ITEMS.find(i => i.id === itemId);
+// ===== 상점 =====
+function checkShopRefresh() {
+  if (!State.lastShopRefresh || Date.now() - State.lastShopRefresh >= SHOP_REFRESH_INTERVAL) {
+    refreshShopRotation();
+  }
+}
+
+function refreshShopRotation() {
+  const pool = [...SHOP_ROTATION_POOL];
+  const selected = [];
+  const SLOT_LABELS = { weapon: '무기', armor: '방어구', accessory: '악세서리' };
+  for (let i = 0; i < 4 && pool.length > 0; i++) {
+    const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let picked = pool.length - 1;
+    for (let j = 0; j < pool.length; j++) {
+      roll -= pool[j].weight;
+      if (roll <= 0) { picked = j; break; }
+    }
+    const raw = pool.splice(picked, 1)[0];
+    const entry = { ...raw, sold: false };
+    if (raw.type === 'equipment') {
+      const eq = generateEquipment(raw.slot, raw.grade);
+      entry.equipment = eq;
+      entry.name = eq.name;
+      entry.icon = eq.icon;
+      entry.desc = `${raw.grade}급 ${SLOT_LABELS[raw.slot] || raw.slot}`;
+    }
+    selected.push(entry);
+  }
+  State.shopRotation = selected;
+  State.lastShopRefresh = Date.now();
+  saveState();
+}
+
+function forceRefreshShop() {
+  const cost = 2000;
+  if (!spendGold(cost)) { showToast('골드가 부족합니다.', 'error'); return false; }
+  refreshShopRotation();
+  showToast('상점 갱신 완료!', 'success');
+  return true;
+}
+
+function buyShopPermanent(itemId) {
+  const item = SHOP_PERMANENT.find(i => i.id === itemId);
   if (!item) return false;
   if (!spendGold(item.price)) { showToast('골드가 부족합니다.', 'error'); return false; }
-  if (item.type === 'material') {
-    addMaterial('common', item.amount);
+  if (item.type === 'material_pack') {
+    for (const [grade, amt] of Object.entries(item.materials)) addMaterial(grade, amt);
     showToast(`${item.name} 구매 완료!`, 'success');
-  } else if (item.type === 'exp_book') {
-    State.inventory.push({ type: 'exp_book', expValue: item.expValue, name: item.name, icon: item.icon });
-    showToast(`${item.name} 구매 완료!`, 'success');
-  } else if (item.type === 'equipment') {
+  } else if (item.type === 'consumable') {
+    applyBuff(item);
+    showToast(`${item.name} 사용!`, 'success');
+  }
+  saveState();
+  return true;
+}
+
+function buyShopRotation(index) {
+  const item = State.shopRotation[index];
+  if (!item || item.sold) return false;
+  if (!spendGold(item.price)) { showToast('골드가 부족합니다.', 'error'); return false; }
+  if (item.type === 'equipment') {
     if (State.inventory.length >= getInventoryCapacity()) {
-      showToast('창고가 가득 찼습니다. 창고를 업그레이드하거나 아이템을 정리하세요.', 'error');
+      showToast('창고가 가득 찼습니다.', 'error');
       refundGold(item.price);
       return false;
     }
-    const eq = generateEquipment(item.slot, item.grade, item.branch || null);
-    State.inventory.push(eq);
-    showToast(`${eq.name} 구매 완료! (모험가 상세에서 장착)`, 'success');
+    State.inventory.push(item.equipment);
+    showToast(`${item.name} 구매 완료!`, 'success');
+  } else if (item.type === 'material_pack') {
+    for (const [grade, amt] of Object.entries(item.materials)) addMaterial(grade, amt);
+    showToast(`${item.name} 구매 완료!`, 'success');
+  } else if (item.type === 'consumable') {
+    applyBuff(item);
+    showToast(`${item.name} 사용!`, 'success');
   }
+  item.sold = true;
+  saveState();
   return true;
+}
+
+// ===== 소모품 버프 =====
+function applyBuff(item) {
+  if (!State.activeBuffs) State.activeBuffs = [];
+  State.activeBuffs = State.activeBuffs.filter(b => b.effect !== item.effect);
+  State.activeBuffs.push({
+    id: item.id || item.effect,
+    name: item.name,
+    effect: item.effect,
+    value: item.value,
+    expiresAt: Date.now() + item.duration * 1000,
+  });
+}
+
+function tickBuffs() {
+  if (!State.activeBuffs || State.activeBuffs.length === 0) return;
+  const now = Date.now();
+  const before = State.activeBuffs.length;
+  State.activeBuffs = State.activeBuffs.filter(b => b.expiresAt > now);
+  if (State.activeBuffs.length < before) {
+    showToast('부스트 효과가 만료되었습니다.', 'info');
+  }
+}
+
+function getBuffBonus(effectType) {
+  let total = 0;
+  for (const b of (State.activeBuffs || [])) {
+    if (b.effect === effectType && b.expiresAt > Date.now()) total += b.value;
+  }
+  return total;
 }
 
 // ===== 장비 판매 / 분해 =====
