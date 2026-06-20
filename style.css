@@ -114,6 +114,20 @@ body {
   color: var(--gold);
 }
 
+#lore-popup {
+  overflow: hidden;
+}
+#lore-popup .popup-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+#lore-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .lore-tab-illust {
   text-align: center;
   margin-top: 20px;
