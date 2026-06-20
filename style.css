@@ -114,29 +114,29 @@ body {
   color: var(--gold);
 }
 
-.lore-body {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
+#lore-popup {
+  overflow: visible;
 }
-.lore-illustration {
-  flex-shrink: 0;
-  width: 160px;
-}
-.lore-illustration img {
-  width: 100%;
-  height: auto;
+.lore-bg-left, .lore-bg-right {
+  position: absolute;
+  bottom: 0;
+  height: 260px;
+  width: auto;
   object-fit: contain;
-  border-radius: 8px;
-  opacity: 0.9;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
 }
-.lore-main {
-  flex: 1;
-  min-width: 0;
+.lore-bg-left {
+  right: 100%;
+  margin-right: 8px;
 }
-@media (max-width: 560px) {
-  .lore-body { flex-direction: column; }
-  .lore-illustration { width: 120px; align-self: center; }
+.lore-bg-right {
+  left: 100%;
+  margin-left: 8px;
+}
+@media (max-width: 900px) {
+  .lore-bg-left, .lore-bg-right { display: none; }
 }
 
 .resource-chip {
