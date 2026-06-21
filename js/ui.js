@@ -1258,6 +1258,8 @@ function equipFromInventory(inventoryIdx, advIdStr) {
   equipItem(parseInt(advIdStr), inventoryIdx);
   updateInvBadge();
   renderInventoryPopup();
+  renderAdvDetail(selectedAdvId);
+  renderAdventurerTab();
 }
 
 function useBookFromInventory(inventoryIdx, advIdStr) {
