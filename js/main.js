@@ -68,18 +68,6 @@ function checkAutoRecruitRefresh() {
   }
 }
 
-// ===== 세션 경과 시간 표시 =====
-const _sessionStart = Date.now();
-
-function updateClock() {
-  const elapsed = Math.floor((Date.now() - _sessionStart) / 1000);
-  const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-  const s = String(elapsed % 60).padStart(2, '0');
-  const el = document.getElementById('time-display');
-  if (el) el.textContent = `${h}:${m}:${s}`;
-}
-
 // ===== 자동 저장 =====
 function autoSave() {
   saveState();
@@ -162,10 +150,6 @@ function init() {
 
   // 자동 저장 (30초마다)
   setInterval(autoSave, 30000);
-
-  // 시계 (1초마다)
-  setInterval(updateClock, 1000);
-  updateClock();
 
   // 게임 루프 시작
   lastTick = performance.now();
