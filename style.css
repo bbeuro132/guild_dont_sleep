@@ -249,8 +249,10 @@ body {
   width: 180px;
   height: auto;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: 12px;
   flex-shrink: 0;
+  border: 2px solid rgba(139, 94, 60, 0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 .char-bio {
   flex: 1;
