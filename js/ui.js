@@ -909,6 +909,14 @@ function closePopup(id) {
   document.getElementById('overlay').classList.add('hidden');
 }
 
+function openLorePopup() {
+  document.querySelectorAll('#lore-content > div').forEach(d => d.classList.add('hidden'));
+  document.getElementById('lore-world').classList.remove('hidden');
+  document.querySelectorAll('.lore-tab').forEach(btn => btn.classList.remove('active'));
+  document.querySelector('.lore-tab').classList.add('active');
+  openPopup('lore-popup');
+}
+
 function switchLoreTab(tabId) {
   document.querySelectorAll('#lore-content > div').forEach(d => d.classList.add('hidden'));
   document.getElementById('lore-' + tabId).classList.remove('hidden');
