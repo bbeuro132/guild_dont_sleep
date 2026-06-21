@@ -240,7 +240,7 @@ body {
   font-weight: bold;
 }
 
-.char-profile {
+.char-profile-body {
   display: flex;
   gap: 16px;
   align-items: flex-start;
