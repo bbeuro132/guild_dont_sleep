@@ -121,27 +121,60 @@ function resetState() {
   window.location.reload();
 }
 
-// ===== 오프라인 승률 추정 (파티 전투력 vs 구역 난이도) =====
+// ===== 파티 전투력 계산 =====
+const HEAL_COEFFICIENT = 20;
+
+function calcAdvDPS(stats, branch) {
+  const raw = stats.atk * (1 + stats.crit / 100 * stats.critDmg / 200) * (1 + stats.spd / 100);
+  return branch === 'healer' ? raw * 0.3 : raw;
+}
+
+function calcAdvTank(stats) {
+  return stats.hp * (1 + stats.def / 50);
+}
+
+function calcPartyPower(team) {
+  if (!team || team.length === 0) return 0;
+
+  let partyDPS = 0;
+  let partyTank = 0;
+  let healContrib = 0;
+
+  for (const adv of team) {
+    const s = getEffectiveStats(adv);
+    const branch = JOBS[adv.job]?.branch;
+    partyDPS += calcAdvDPS(s, branch);
+    partyTank += calcAdvTank(s);
+    if (branch === 'healer') {
+      healContrib += s.atk * (1 + s.spd / 100) * HEAL_COEFFICIENT;
+    }
+  }
+
+  const effectiveTank = partyTank + healContrib;
+  return partyDPS * Math.sqrt(effectiveTank);
+}
+
+// ===== 지역 몬스터 평균 전투력 =====
+function calcAreaPower(area, progress) {
+  const st = area.stage;
+  const pm = 1 + (progress / area.maxProgress) * 0.5;
+  const eAtk = 8  * Math.pow(st, 0.65) * pm;
+  const eDef = 2  * Math.pow(st, 0.8)  * pm;
+  const eHp  = 80 * Math.pow(st, 1.15) * pm;
+  const eDPS  = eAtk * (1 + 0.05 * st / 100) * 1.1;
+  const eTank = eHp * (1 + eDef / 50);
+  return eDPS * Math.sqrt(eTank) * 2;
+}
+
+// ===== 오프라인 승률 추정 =====
 function estimateOfflineWinRate(dispatch, area) {
   const team = dispatch.team
     .map(id => State.adventurers.find(a => a.id === id))
     .filter(Boolean);
   if (team.length === 0) return 0;
 
-  // 파티 전투력: 각 모험가의 atk + def×0.5 + hp×0.05 합산
-  const partyPower = team.reduce((sum, adv) => {
-    const s = getEffectiveStats(adv);
-    return sum + s.atk + s.def * 0.5 + s.hp * 0.05;
-  }, 0);
-
-  // 현재 진행도 기준 몬스터 전투력 (평균 2마리 가정)
-  const st = area.stage;
-  const pm = 1 + (dispatch.progress / area.maxProgress) * 0.5;
-  const eAtk = 8  * Math.pow(st, 0.65) * pm;
-  const eDef = 2  * Math.pow(st, 0.8)  * pm;
-  const eHp  = 80 * Math.pow(st, 1.15) * pm;
-  const enemyPower = (eAtk + eDef * 0.5 + eHp * 0.05) * 2;
-
+  const partyPower = calcPartyPower(team);
+  const enemyPower = calcAreaPower(area, dispatch.progress);
   const ratio = partyPower / Math.max(1, enemyPower);
 
   if (ratio >= 4)   return 0.97;
