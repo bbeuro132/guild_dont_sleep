@@ -1659,7 +1659,7 @@ function renderLabTab() {
     const speedMult = (100 + labLv * 10) / 100;
     const actualMs  = Math.floor(recipe.craftTime * rqty / speedMult) * 1000;
     const col       = gradeColor(recipe.grade);
-    const btnLabel  = busy ? '제작 중...' : !labLvOk ? `🔒 Lv.${recipe.reqLabLv} 필요` : `제작 ×${rqty}`;
+    const btnLabel  = busy ? '제작 중...' : !labLvOk ? `Lv.${recipe.reqLabLv} 필요` : `제작 ×${rqty}`;
     const costStyle = canAfford ? '' : 'color:#e57373';
 
     return `

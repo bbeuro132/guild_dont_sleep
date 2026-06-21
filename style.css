@@ -166,7 +166,8 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 8px;
+  margin-top: auto;
+  padding-top: 8px;
   min-width: 0;
 }
 .qty-row > button:last-child {
@@ -1365,6 +1366,7 @@ body {
 .lab-recipe-cost {
   font-size: 0.78rem;
   color: #ccc;
+  min-height: 2.4em;
 }
 
 /* ===== 팝업 ===== */
