@@ -914,6 +914,10 @@ function openLorePopup() {
   document.getElementById('lore-world').classList.remove('hidden');
   document.querySelectorAll('.lore-tab').forEach(btn => btn.classList.remove('active'));
   document.querySelector('.lore-tab').classList.add('active');
+  document.querySelectorAll('.char-profile').forEach(d => d.classList.add('hidden'));
+  document.getElementById('char-chloe').classList.remove('hidden');
+  document.querySelectorAll('.char-subtab').forEach(btn => btn.classList.remove('active'));
+  document.querySelector('.char-subtab').classList.add('active');
   openPopup('lore-popup');
 }
 
