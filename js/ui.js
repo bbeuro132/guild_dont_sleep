@@ -690,8 +690,7 @@ function toggleNation(country) {
   const arrow = document.getElementById(`nation-arrow-${nationId}`);
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  if (isOpen) sessionStorage.setItem(`nation_open_${country}`, '1');
-  else         sessionStorage.removeItem(`nation_open_${country}`);
+  sessionStorage.setItem(`nation_open_${country}`, isOpen ? '1' : '0');
   if (arrow) arrow.textContent = isOpen ? '▲' : '▼';
 }
 
