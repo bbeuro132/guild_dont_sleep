@@ -275,6 +275,7 @@ function renderAdvDetail(advId) {
         ${renderEquipSlot(adv, 'accessory', '악세서리')}
       </div>
     </div>
+    ${_equipPickerAdvId === adv.id && _equipPickerSlot ? renderEquipPicker(adv, _equipPickerSlot) : ''}
     ${(() => {
       const bookCount = State.inventory.filter(i => i.type === 'exp_book').length;
       if (bookCount === 0) return '';
@@ -376,16 +377,82 @@ function renderEquipSlot(adv, slot, label) {
     return true;
   });
 
-  // 빈 슬롯: 장착 가능 여부와 무관하게 인벤토리 팝업으로 연결
   const countLabel = avail.length > 0
     ? `<div style="font-size:0.62rem;color:var(--green-dark);margin-top:2px">장착 가능 ${avail.length}개</div>`
     : `<div style="font-size:0.6rem;color:#bbb">없음</div>`;
 
-  return `<div class="equip-slot" style="cursor:pointer" onclick="openInventoryPopup()">
+  return `<div class="equip-slot" style="cursor:pointer" onclick="openEquipPicker(${adv.id},'${slot}')">
     <div style="font-size:1.2rem">＋</div>
     <div style="font-size:0.75rem">${label}</div>
     ${countLabel}
-    <div style="font-size:0.55rem;color:var(--brown);margin-top:2px">🎒 인벤토리</div>
+  </div>`;
+}
+
+let _equipPickerSlot = null;
+let _equipPickerAdvId = null;
+
+function openEquipPicker(advId, slot) {
+  _equipPickerAdvId = advId;
+  _equipPickerSlot = slot;
+  renderAdvDetail(advId);
+}
+
+function closeEquipPicker() {
+  _equipPickerAdvId = null;
+  _equipPickerSlot = null;
+  renderAdvDetail(selectedAdvId);
+}
+
+function quickEquip(advId, inventoryIdx) {
+  equipItem(advId, inventoryIdx);
+  _equipPickerAdvId = null;
+  _equipPickerSlot = null;
+  renderAdvDetail(advId);
+  renderAdventurerTab();
+}
+
+function renderEquipPicker(adv, slot) {
+  const advBranch = JOBS[adv.job]?.branch;
+  const weaponBranch = advBranch === 'healer' ? 'mage' : advBranch;
+  const avail = [];
+  State.inventory.forEach((it, idx) => {
+    if (it.slot !== slot) return;
+    if (slot === 'weapon' && it.jobClass && it.jobClass !== weaponBranch) return;
+    avail.push({ item: it, idx });
+  });
+
+  const slotLabels = { weapon: '무기', armor: '방어구', accessory: '악세서리' };
+  if (avail.length === 0) {
+    return `<div class="equip-picker">
+      <div class="equip-picker-header">
+        <strong>${slotLabels[slot]} 선택</strong>
+        <button class="btn btn-outline" style="font-size:0.7rem;padding:2px 8px" onclick="closeEquipPicker()">닫기</button>
+      </div>
+      <p style="color:#888;font-size:0.82rem;text-align:center;padding:16px 0">장착 가능한 ${slotLabels[slot]}이(가) 없습니다.</p>
+    </div>`;
+  }
+
+  const rows = avail.map(({ item, idx }) => {
+    const col = gradeColor(item.grade);
+    const statsText = formatEquipStats(item.stats);
+    const optHtml = formatEquipOptions(item.options);
+    return `<div class="equip-picker-item" onclick="quickEquip(${adv.id},${idx})">
+      <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'" />
+      <div class="equip-picker-info">
+        <div style="font-weight:bold;color:${col}">${item.name} <span style="font-size:0.75rem">${item.grade}급</span></div>
+        <div style="font-size:0.75rem;color:#aaa">${statsText}</div>
+        ${optHtml ? `<div class="equip-options-wrap" style="margin-top:2px">${optHtml}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="equip-picker">
+    <div class="equip-picker-header">
+      <strong>${slotLabels[slot]} 선택</strong>
+      <span style="font-size:0.75rem;color:#aaa">${avail.length}개</span>
+      <button class="btn btn-outline" style="font-size:0.7rem;padding:2px 8px;margin-left:auto" onclick="closeEquipPicker()">닫기</button>
+    </div>
+    <div class="equip-picker-list">${rows}</div>
   </div>`;
 }
 

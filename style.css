@@ -114,6 +114,54 @@ body {
   color: var(--gold);
 }
 
+.equip-picker {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+.equip-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+.equip-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.equip-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.equip-picker-item:hover {
+  background: rgba(245,200,66,0.12);
+  border-color: var(--gold-dark);
+}
+.equip-picker-item img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.equip-picker-info {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+}
+
 .qty-row {
   display: flex;
   align-items: center;
