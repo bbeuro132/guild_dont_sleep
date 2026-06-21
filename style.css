@@ -247,9 +247,8 @@ body {
 }
 .char-profile img {
   width: 180px;
-  height: 240px;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
+  object-fit: contain;
   border-radius: 12px;
   flex-shrink: 0;
   border: 2px solid rgba(139, 94, 60, 0.3);
@@ -266,6 +265,9 @@ body {
   margin-bottom: 8px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
   padding-bottom: 6px;
+  min-height: 2.4em;
+  display: flex;
+  align-items: flex-end;
 }
 @media (max-width: 560px) {
   .char-profile { flex-direction: column; align-items: center; }
