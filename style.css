@@ -195,7 +195,7 @@ body {
 #lore-popup .popup-inner {
   display: flex;
   flex-direction: column;
-  height: 75vh;
+  height: 60vh;
 }
 #lore-content {
   flex: 1;
