@@ -916,6 +916,13 @@ function switchLoreTab(tabId) {
   event.currentTarget.classList.add('active');
 }
 
+function switchCharTab(charId) {
+  document.querySelectorAll('.char-profile').forEach(d => d.classList.add('hidden'));
+  document.getElementById('char-' + charId).classList.remove('hidden');
+  document.querySelectorAll('.char-subtab').forEach(btn => btn.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
 function openBattlePopup(areaId) {
   const area = AREAS.find(a => a.id === areaId);
   if (!area) return;

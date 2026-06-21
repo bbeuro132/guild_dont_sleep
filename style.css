@@ -216,6 +216,51 @@ body {
   border-radius: 8px;
 }
 
+.char-subtabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.char-subtab {
+  padding: 6px 14px;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.04);
+  color: #8b5e3c;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.char-subtab:hover { background: rgba(0,0,0,0.08); }
+.char-subtab.active {
+  background: var(--gold);
+  border-color: var(--gold-dark);
+  color: #3e2200;
+  font-weight: bold;
+}
+
+.char-profile {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.char-profile img {
+  width: 180px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.char-bio {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .char-profile { flex-direction: column; align-items: center; }
+  .char-profile img { width: 140px; }
+}
+
 .resource-chip {
   display: flex;
   align-items: center;

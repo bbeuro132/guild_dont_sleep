@@ -213,12 +213,13 @@
 
 <!-- 세계관 팝업 -->
 <div id="lore-popup" class="popup hidden">
-  <div class="popup-inner" style="max-width:520px">
+  <div class="popup-inner" style="max-width:580px">
     <button class="popup-close" id="btn-close-lore" onclick="closePopup('lore-popup')">✕</button>
     <h3 class="popup-title">📜 세계관</h3>
     <div class="lore-tabs">
       <button class="lore-tab active" onclick="switchLoreTab('world')">🌍 세계 소개</button>
       <button class="lore-tab" onclick="switchLoreTab('magic')">✨ 마법에 대해</button>
+      <button class="lore-tab" onclick="switchLoreTab('chars')">👤 인물 소개</button>
     </div>
     <div id="lore-content" style="font-size:0.95rem;line-height:1.7;color:#3e2200;max-height:55vh;overflow-y:auto;padding-right:8px;word-break:keep-all">
       <div id="lore-world">
@@ -238,6 +239,30 @@
         <p style="color:#8b5e3c">마법에 대한 내용이 아직 준비되지 않았습니다.</p>
         <div class="lore-tab-illust">
           <img src="assets/characters/세계관_마법.png" alt="마법" onerror="this.style.display='none'" />
+        </div>
+      </div>
+      <div id="lore-chars" class="hidden">
+        <div class="char-subtabs">
+          <button class="char-subtab active" onclick="switchCharTab('chloe')">클로에</button>
+          <button class="char-subtab" onclick="switchCharTab('sion')">시온</button>
+          <button class="char-subtab" onclick="switchCharTab('aida')">에이다</button>
+          <button class="char-subtab" onclick="switchCharTab('tiamat')">티아마트</button>
+        </div>
+        <div class="char-profile" id="char-chloe">
+          <img src="assets/characters/소개_클로에.png" alt="클로에" onerror="this.style.display='none'" />
+          <div class="char-bio"><p style="color:#8b5e3c">클로에의 소개가 아직 준비되지 않았습니다.</p></div>
+        </div>
+        <div class="char-profile hidden" id="char-sion">
+          <img src="assets/characters/소개_시온.png" alt="시온" onerror="this.style.display='none'" />
+          <div class="char-bio"><p style="color:#8b5e3c">시온의 소개가 아직 준비되지 않았습니다.</p></div>
+        </div>
+        <div class="char-profile hidden" id="char-aida">
+          <img src="assets/characters/소개_에이다.PNG" alt="에이다" onerror="this.style.display='none'" />
+          <div class="char-bio"><p style="color:#8b5e3c">에이다의 소개가 아직 준비되지 않았습니다.</p></div>
+        </div>
+        <div class="char-profile hidden" id="char-tiamat">
+          <img src="assets/characters/소개_티아마트.png" alt="티아마트" onerror="this.style.display='none'" />
+          <div class="char-bio"><p style="color:#8b5e3c">티아마트의 소개가 아직 준비되지 않았습니다.</p></div>
         </div>
       </div>
     </div>
