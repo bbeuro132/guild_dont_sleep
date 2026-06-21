@@ -198,6 +198,14 @@ function processOfflineProgress() {
       dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + matTotal * ratio;
     }
 
+    // 오프라인 경험치: 승리 횟수 기반, 보스전 비율 약 20% 가정
+    const normalWins = Math.floor(wins * 0.8);
+    const bossWins   = wins - normalWins;
+    const battleExp  = normalWins * (area.stage * 2 + 3) + bossWins * (area.stage * 2 + 3) * 3;
+    for (const advId of dispatch.team) {
+      giveExp(advId, battleExp);
+    }
+
     // 진행도: 승리 횟수 = 진행도 상승
     const prevProgress = Math.floor(dispatch.progress);
     dispatch.progress = Math.min(dispatch.progress + wins, area.maxProgress);
