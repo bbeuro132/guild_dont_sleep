@@ -928,22 +928,26 @@ function getDispatchedAdvIds() {
 }
 
 // ===== 연구소 =====
-function startCraft(recipeId) {
+function startCraft(recipeId, qty = 1) {
   if (State.labQueue) { showToast('이미 제작 중입니다.', 'error'); return false; }
   const recipe = LAB_RECIPES.find(r => r.id === recipeId);
   if (!recipe) return false;
   const labLv = getBuildingLevel('workshop');
   if (labLv < recipe.reqLabLv) { showToast(`공방 레벨 ${recipe.reqLabLv} 이상 필요합니다.`, 'error'); return false; }
-  if (!spendGold(recipe.cost.gold)) { showToast('골드가 부족합니다.', 'error'); return false; }
-  if (!spendMaterials(recipe.cost.materials)) {
-    refundGold(recipe.cost.gold);
+  const totalGold = recipe.cost.gold * qty;
+  const totalMats = {};
+  for (const [g, n] of Object.entries(recipe.cost.materials)) totalMats[g] = n * qty;
+  if (!spendGold(totalGold)) { showToast('골드가 부족합니다.', 'error'); return false; }
+  if (!spendMaterials(totalMats)) {
+    refundGold(totalGold);
     showToast('재료가 부족합니다.', 'error'); return false;
   }
   const speedMult = (100 + labLv * 10) / 100;
-  const totalMs = Math.floor(recipe.craftTime / speedMult) * 1000;
+  const totalMs = Math.floor(recipe.craftTime * qty / speedMult) * 1000;
   State.labQueue = {
     recipeId,
-    name: recipe.name,
+    quantity: qty,
+    name: recipe.name + (qty > 1 ? ` ×${qty}` : ''),
     icon: recipe.icon,
     grade: recipe.grade,
     expValue: recipe.expValue,
@@ -952,20 +956,21 @@ function startCraft(recipeId) {
     totalMs,
   };
   saveState();
-  showToast(`${recipe.name} 제작 시작!`, 'success');
+  showToast(`${recipe.name} ×${qty} 제작 시작!`, 'success');
   return true;
 }
 
 function cancelCraft() {
   if (!State.labQueue) return false;
   const q = State.labQueue;
+  const qty = q.quantity || 1;
   if (q.type === 'synthesis') {
     for (const [grade, amt] of Object.entries(q.refundMaterials || {})) addMaterial(grade, amt);
   } else {
     const recipe = LAB_RECIPES.find(r => r.id === q.recipeId);
     if (recipe) {
-      refundGold(recipe.cost.gold);
-      for (const [grade, amt] of Object.entries(recipe.cost.materials || {})) addMaterial(grade, amt);
+      refundGold(recipe.cost.gold * qty);
+      for (const [grade, amt] of Object.entries(recipe.cost.materials || {})) addMaterial(grade, amt * qty);
     }
   }
   State.labQueue = null;
@@ -978,12 +983,15 @@ function tickLab() {
   if (!State.labQueue) return;
   if (Date.now() >= State.labQueue.finishAt) {
     const q = State.labQueue;
+    const qty = q.quantity || 1;
     if (q.type === 'synthesis') {
       for (const [grade, amt] of Object.entries(q.output)) addMaterial(grade, amt);
       showToast(`${q.name} 완료! 재료를 획득했습니다.`, 'success');
     } else {
-      State.inventory.push({ type: 'exp_book', name: q.name, icon: q.icon, grade: q.grade, expValue: q.expValue });
-      showToast(`${q.name} 제작 완료! 인벤토리에 추가됐습니다.`, 'success');
+      for (let i = 0; i < qty; i++) {
+        State.inventory.push({ type: 'exp_book', name: q.name.replace(/ ×\d+$/, ''), icon: q.icon, grade: q.grade, expValue: q.expValue });
+      }
+      showToast(`${q.name} 제작 완료! ${qty > 1 ? qty + '개 ' : ''}인벤토리에 추가됐습니다.`, 'success');
     }
     State.labQueue = null;
     saveState();
@@ -992,58 +1000,64 @@ function tickLab() {
 }
 
 // ===== 재료 합성 =====
-function startSynthesis(recipeId) {
+function startSynthesis(recipeId, qty = 1) {
   if (State.labQueue) { showToast('이미 제작 중입니다.', 'error'); return false; }
   const recipe = SYNTHESIS_RECIPES.find(r => r.id === recipeId);
   if (!recipe) return false;
-  if (!spendMaterials(recipe.input)) { showToast('재료가 부족합니다.', 'error'); return false; }
+  const totalInput = {};
+  for (const [g, n] of Object.entries(recipe.input)) totalInput[g] = n * qty;
+  if (!spendMaterials(totalInput)) { showToast('재료가 부족합니다.', 'error'); return false; }
   const labLv = getBuildingLevel('workshop');
   const speedMult = (100 + labLv * 10) / 100;
-  const totalMs = Math.floor(recipe.craftTime / speedMult) * 1000;
+  const totalMs = Math.floor(recipe.craftTime * qty / speedMult) * 1000;
   const now = Date.now();
+  const totalOutput = {};
+  for (const [g, n] of Object.entries(recipe.output)) totalOutput[g] = n * qty;
   State.labQueue = {
     type: 'synthesis',
     recipeId,
-    name: recipe.name,
+    quantity: qty,
+    name: recipe.name + (qty > 1 ? ` ×${qty}` : ''),
     startAt: now,
     finishAt: now + totalMs,
     totalMs,
-    output: { ...recipe.output },
-    refundMaterials: { ...recipe.input },
+    output: totalOutput,
+    refundMaterials: totalInput,
   };
   saveState();
-  showToast(`${recipe.name} 시작!`, 'success');
+  showToast(`${recipe.name} ×${qty} 시작!`, 'success');
   return true;
 }
 
 // ===== 장비 즉시 제작 =====
-function craftEquipment(slot, materialGrade) {
+function craftEquipment(slot, materialGrade, qty = 1) {
   const recipe = CRAFT_RECIPES.find(r => r.materialGrade === materialGrade);
   if (!recipe) return null;
-  if ((State.materials[materialGrade] || 0) < recipe.matCost) {
+  const totalMat = recipe.matCost * qty;
+  const totalGold = recipe.gold * qty;
+  if ((State.materials[materialGrade] || 0) < totalMat) {
     showToast('재료가 부족합니다.', 'error'); return null;
   }
-  if (!spendGold(recipe.gold)) { showToast('골드가 부족합니다.', 'error'); return null; }
-  State.materials[materialGrade] -= recipe.matCost;
-
-  // 결과 등급 결정 (ratios 기반 확률)
-  let roll = Math.random(), cum = 0, grade = recipe.grades[recipe.grades.length - 1];
-  for (let i = 0; i < recipe.grades.length; i++) {
-    cum += recipe.ratios[i];
-    if (roll < cum) { grade = recipe.grades[i]; break; }
-  }
-
-  if (State.inventory.length >= getInventoryCapacity()) {
-    showToast('창고가 가득 찼습니다. 아이템을 정리하세요.', 'error');
-    refundGold(recipe.gold);
-    State.materials[materialGrade] += recipe.matCost;
+  if (!spendGold(totalGold)) { showToast('골드가 부족합니다.', 'error'); return null; }
+  if (State.inventory.length + qty > getInventoryCapacity()) {
+    showToast('창고 공간이 부족합니다.', 'error');
+    refundGold(totalGold);
     return null;
   }
+  State.materials[materialGrade] -= totalMat;
 
-  const eq = generateEquipment(slot, grade);
-  State.inventory.push(eq);
+  const results = [];
+  for (let i = 0; i < qty; i++) {
+    let roll = Math.random(), cum = 0, grade = recipe.grades[recipe.grades.length - 1];
+    for (let j = 0; j < recipe.grades.length; j++) {
+      cum += recipe.ratios[j];
+      if (roll < cum) { grade = recipe.grades[j]; break; }
+    }
+    results.push(generateEquipment(slot, grade));
+  }
+  State.inventory.push(...results);
   saveState();
-  return eq;
+  return results;
 }
 
 // ===== 프레스티지(리빌딩) =====

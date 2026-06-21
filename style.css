@@ -114,6 +114,26 @@ body {
   color: var(--gold);
 }
 
+.qty-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+.qty-btn {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  font-size: 1rem !important;
+  line-height: 1;
+}
+.qty-display {
+  min-width: 28px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
 #lore-popup {
   overflow: hidden;
 }

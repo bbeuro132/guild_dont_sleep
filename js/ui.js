@@ -1520,15 +1520,23 @@ function confirmRebuild() {
 
 let _craftSlot = null;
 let _craftGrade = null;
+const _labQty = {};
+
+function setLabQty(key, delta) {
+  _labQty[key] = Math.max(1, Math.min(99, (_labQty[key] || 1) + delta));
+  renderLabTab();
+}
+function getLabQty(key) { return _labQty[key] || 1; }
 
 function setCraftSlot(slot) { _craftSlot = slot; renderLabTab(); }
 function setCraftMat(grade)  { _craftGrade = grade; renderLabTab(); }
 
 function doCraftEquipment() {
   if (!_craftSlot || !_craftGrade) return;
-  const eq = craftEquipment(_craftSlot, _craftGrade);
-  if (eq) {
-    showToast(`🔨 ${eq.name} (${eq.grade}급) 제작 완료! 인벤토리에 추가됨`, 'success');
+  const qty = getLabQty('equip');
+  const results = craftEquipment(_craftSlot, _craftGrade, qty);
+  if (results) {
+    showToast(`🔨 장비 ${results.length}개 제작 완료! 인벤토리에 추가됨`, 'success');
     renderLabTab();
     renderHeader();
   }
@@ -1574,14 +1582,15 @@ function renderLabTab() {
   // 레시피 목록
   const recipesHtml = LAB_RECIPES.map(recipe => {
     const labLvOk  = labLv >= recipe.reqLabLv;
-    const canAfford = State.gold >= recipe.cost.gold &&
-      Object.entries(recipe.cost.materials || {}).every(([g, n]) => (State.materials[g] || 0) >= n);
+    const rqty = getLabQty(recipe.id);
+    const canAfford = State.gold >= recipe.cost.gold * rqty &&
+      Object.entries(recipe.cost.materials || {}).every(([g, n]) => (State.materials[g] || 0) >= n * rqty);
     const busy      = !!q;
     const disabled  = busy || !labLvOk;
     const speedMult = (100 + labLv * 10) / 100;
-    const actualMs  = Math.floor(recipe.craftTime / speedMult) * 1000;
+    const actualMs  = Math.floor(recipe.craftTime * rqty / speedMult) * 1000;
     const col       = gradeColor(recipe.grade);
-    const btnLabel  = busy ? '제작 중...' : !labLvOk ? `🔒 Lv.${recipe.reqLabLv} 필요` : '제작 시작';
+    const btnLabel  = busy ? '제작 중...' : !labLvOk ? `🔒 Lv.${recipe.reqLabLv} 필요` : `제작 ×${rqty}`;
     const costStyle = canAfford ? '' : 'color:#e57373';
 
     return `
@@ -1594,13 +1603,18 @@ function renderLabTab() {
           </div>
         </div>
         <div class="lab-recipe-cost" style="${costStyle}">
-          💰 ${recipe.cost.gold.toLocaleString()} &nbsp;|&nbsp;
-          💎 ${Object.entries(recipe.cost.materials||{}).map(([g,n])=>`${MAT_GRADE_LABELS[g]} ${n}`).join(' + ')} &nbsp;|&nbsp;
+          💰 ${(recipe.cost.gold * rqty).toLocaleString()} &nbsp;|&nbsp;
+          💎 ${Object.entries(recipe.cost.materials||{}).map(([g,n])=>`${MAT_GRADE_LABELS[g]} ${n * rqty}`).join(' + ')} &nbsp;|&nbsp;
           ⏱ ${formatCraftTime(actualMs)}
         </div>
-        <button class="btn ${disabled ? 'btn-outline' : 'btn-primary'} btn-full"
-          onclick="if(startCraft('${recipe.id}')) renderLabTab()"
-          ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+        <div class="qty-row">
+          <button class="btn btn-outline qty-btn" onclick="setLabQty('${recipe.id}',-1)">−</button>
+          <span class="qty-display">${rqty}</span>
+          <button class="btn btn-outline qty-btn" onclick="setLabQty('${recipe.id}',1)">+</button>
+          <button class="btn ${disabled || !canAfford ? 'btn-outline' : 'btn-primary'}" style="flex:1;margin-left:8px"
+            onclick="if(startCraft('${recipe.id}',${rqty})) renderLabTab()"
+            ${disabled || !canAfford ? 'disabled' : ''}>${btnLabel}</button>
+        </div>
       </div>`;
   }).join('');
 
@@ -1648,18 +1662,20 @@ function renderLabTab() {
     </button>`;
   }).join('');
 
+  const eqty = getLabQty('equip');
   let craftSummary = '<span style="color:#aaa">슬롯과 재료 등급을 선택하세요.</span>';
   let craftBtnDisabled = true;
   if (_craftSlot && _craftGrade) {
     const r = CRAFT_RECIPES.find(x => x.materialGrade === _craftGrade);
     const have = Math.floor(m[_craftGrade] || 0);
-    const canCraft = r && have >= r.matCost && State.gold >= r.gold;
+    const canCraft = r && have >= r.matCost * eqty && State.gold >= r.gold * eqty
+      && State.inventory.length + eqty <= getInventoryCapacity();
     const resultLabel = r ? r.grades.join(' 또는 ') : '-';
     const costColor = canCraft ? 'var(--cream)' : '#e57373';
     craftSummary = `<span style="color:${costColor}">
-      ${slotLabels[_craftSlot]} &nbsp;|&nbsp;
-      ${MAT_GRADE_LABELS[_craftGrade]} ${r?.matCost ?? '?'}개 &nbsp;|&nbsp;
-      💰 ${(r?.gold ?? 0).toLocaleString()} G &nbsp;|&nbsp;
+      ${slotLabels[_craftSlot]} ×${eqty} &nbsp;|&nbsp;
+      ${MAT_GRADE_LABELS[_craftGrade]} ${(r?.matCost ?? 0) * eqty}개 &nbsp;|&nbsp;
+      💰 ${((r?.gold ?? 0) * eqty).toLocaleString()} G &nbsp;|&nbsp;
       결과: <strong>${resultLabel}</strong>
     </span>`;
     craftBtnDisabled = !canCraft;
@@ -1677,25 +1693,31 @@ function renderLabTab() {
     <div style="font-size:0.82rem;margin-bottom:10px;padding:8px;background:rgba(0,0,0,0.15);border-radius:6px">
       ${craftSummary}
     </div>
-    <button class="btn btn-gold btn-full" ${craftBtnDisabled ? 'disabled' : ''} onclick="doCraftEquipment()">
-      🔨 즉시 제작
-    </button>`;
+    <div class="qty-row">
+      <button class="btn btn-outline qty-btn" onclick="setLabQty('equip',-1)">−</button>
+      <span class="qty-display">${eqty}</span>
+      <button class="btn btn-outline qty-btn" onclick="setLabQty('equip',1)">+</button>
+      <button class="btn btn-gold" style="flex:1;margin-left:8px" ${craftBtnDisabled ? 'disabled' : ''} onclick="doCraftEquipment()">
+        🔨 즉시 제작 ×${eqty}
+      </button>
+    </div>`;
 
   // ===== 재료 합성 섹션 =====
   const speedMult2 = (100 + labLv * 10) / 100;
   const synthHtml = SYNTHESIS_RECIPES.map(recipe => {
+    const sqty = getLabQty(recipe.id);
     const inputLabel = Object.entries(recipe.input)
-      .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n}`)
+      .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n * sqty}`)
       .join(' + ');
     const outputLabel = Object.entries(recipe.output)
-      .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n}`)
+      .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n * sqty}`)
       .join(' + ');
     const canAfford = Object.entries(recipe.input)
-      .every(([g, n]) => (State.materials[g] || 0) >= n);
+      .every(([g, n]) => (State.materials[g] || 0) >= n * sqty);
     const busy = !!q;
     const disabled = busy || !canAfford;
-    const actualMs = Math.floor(recipe.craftTime / speedMult2) * 1000;
-    const btnLabel = busy ? '제작 중...' : canAfford ? '합성 시작' : '재료 부족';
+    const actualMs = Math.floor(recipe.craftTime * sqty / speedMult2) * 1000;
+    const btnLabel = busy ? '제작 중...' : !canAfford ? '재료 부족' : `합성 ×${sqty}`;
 
     return `
       <div class="lab-recipe-card${disabled ? ' disabled' : ''}">
@@ -1709,9 +1731,14 @@ function renderLabTab() {
         <div class="lab-recipe-cost" style="${canAfford ? '' : 'color:#e57373'}">
           💎 ${inputLabel} &nbsp;|&nbsp; ⏱ ${formatCraftTime(actualMs)}
         </div>
-        <button class="btn ${disabled ? 'btn-outline' : 'btn-primary'} btn-full"
-          onclick="if(startSynthesis('${recipe.id}')) renderLabTab()"
-          ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+        <div class="qty-row">
+          <button class="btn btn-outline qty-btn" onclick="setLabQty('${recipe.id}',-1)">−</button>
+          <span class="qty-display">${sqty}</span>
+          <button class="btn btn-outline qty-btn" onclick="setLabQty('${recipe.id}',1)">+</button>
+          <button class="btn ${disabled ? 'btn-outline' : 'btn-primary'}" style="flex:1;margin-left:8px"
+            onclick="if(startSynthesis('${recipe.id}',${sqty})) renderLabTab()"
+            ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+        </div>
       </div>`;
   }).join('');
 
