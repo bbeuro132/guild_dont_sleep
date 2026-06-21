@@ -167,6 +167,12 @@ body {
   align-items: center;
   gap: 4px;
   margin-top: 8px;
+  min-width: 0;
+}
+.qty-row > button:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .qty-btn {
   width: 30px !important;
@@ -1317,6 +1323,7 @@ body {
   border: 2px solid var(--brown);
   padding: 14px;
   box-shadow: var(--shadow);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
