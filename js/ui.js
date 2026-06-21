@@ -345,7 +345,7 @@ function renderEquipSlot(adv, slot, label) {
   if (item) {
     const optHtml = formatEquipOptions(item.options);
     const jobClassTag = item.slot === 'weapon' && item.jobClass
-      ? `<div style="font-size:0.58rem;color:var(--brown);margin-bottom:1px">${{ warrior:'전사', rogue:'도적', mage:'마법사' }[item.jobClass]}계</div>`
+      ? `<div style="font-size:0.58rem;color:var(--brown);margin-bottom:1px">${{ warrior:'전사', rogue:'도적', mage:'마법사/치유사' }[item.jobClass]}계</div>`
       : '';
     return `<div class="equip-slot has-item">
       <img src="${item.icon}" alt="${item.name}" onerror="this.style.display='none'">

@@ -759,11 +759,14 @@ function equipItem(advId, inventoryIdx) {
   const item = State.inventory[inventoryIdx];
   if (!item || !item.slot) return;
 
-  // 무기 직업 제한 검사
+  // 무기 직업 제한 검사 (mage와 healer는 지팡이 공유)
   if (item.slot === 'weapon' && item.jobClass) {
     const advBranch = JOBS[adv.job]?.branch;
-    if (item.jobClass !== advBranch) {
-      const branchLabel = { warrior: '전사', rogue: '도적', mage: '마법사' }[item.jobClass] || item.jobClass;
+    const compatible = item.jobClass === advBranch
+      || (item.jobClass === 'mage' && advBranch === 'healer')
+      || (item.jobClass === 'healer' && advBranch === 'mage');
+    if (!compatible) {
+      const branchLabel = { warrior: '전사', rogue: '도적', mage: '마법사/치유사' }[item.jobClass] || item.jobClass;
       showToast(`이 무기는 ${branchLabel} 계열 전용입니다.`, 'error');
       return;
     }
