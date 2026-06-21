@@ -243,7 +243,7 @@ body {
 .char-profile {
   display: flex;
   gap: 16px;
-  align-items: center;
+  align-items: flex-start;
 }
 .char-profile img {
   width: 180px;
@@ -265,9 +265,6 @@ body {
   margin-bottom: 8px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
   padding-bottom: 6px;
-  min-height: 2.4em;
-  display: flex;
-  align-items: flex-end;
 }
 @media (max-width: 560px) {
   .char-profile { flex-direction: column; align-items: center; }
