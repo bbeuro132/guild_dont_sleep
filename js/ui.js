@@ -1006,11 +1006,13 @@ function openBattlePopup(areaId) {
   }
 
   // 전투 1회를 시작하는 내부 함수 — 승패 후 결과를 dispatch에 반영하고 2초 뒤 재호출
-  function startBattle(allies) {
+  function startBattle(allies, cachedEnemies) {
     const d = State.dispatches.find(dd => dd.areaId === areaId);
     if (!d) { closeBattleViewer(); return; }
 
-    const enemies = generateEnemyGroup(area, Math.floor(d.progress));
+    const enemies = cachedEnemies || generateEnemyGroup(area, Math.floor(d.progress));
+    d._cachedEnemies = enemies;
+    d._cachedProgress = Math.floor(d.progress);
     renderBattleUI(allies, enemies);
 
     const battle = new LiveBattle(
@@ -1086,7 +1088,10 @@ function openBattlePopup(areaId) {
     ));
 
   openPopup('battle-popup');
-  startBattle(allies);
+  // 진행도가 같으면 캐싱된 적 그룹 재사용
+  const cachedEnemies = (dispatch._cachedProgress === Math.floor(dispatch.progress) && dispatch._cachedEnemies)
+    ? dispatch._cachedEnemies : null;
+  startBattle(allies, cachedEnemies);
 
   document.getElementById('btn-close-battle').onclick = closeBattleViewer;
 }
