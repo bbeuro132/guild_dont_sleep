@@ -891,7 +891,7 @@ function renderShopTab() {
     <div style="margin-bottom:12px">
       <button class="btn btn-outline" style="font-size:0.8rem"
         onclick="if(forceRefreshShop()) { renderShopTab(); renderHeader(); }">
-        💰 즉시 갱신 (2,000 골드)
+        💰 즉시 갱신 (200 골드)
       </button>
     </div>
     <div class="shop-grid">${rotHtml}</div>

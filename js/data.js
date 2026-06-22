@@ -64,9 +64,9 @@ const JOB_PROMOTIONS = {
 
 // 전직 비용 (레벨, 골드, 재료)
 const PROMOTION_COST = {
-  tier2: { level: 10, gold: 2000,  material: 10 },
-  tier3: { level: 25, gold: 8000,  material: 30 },
-  tier4: { level: 40, gold: 25000, material: 80 },
+  tier2: { level: 10, gold: 200,   material: 10 },
+  tier3: { level: 25, gold: 800,   material: 30 },
+  tier4: { level: 40, gold: 2500,  material: 80 },
 };
 
 // 특성 목록
@@ -89,9 +89,9 @@ const BUILDINGS = [
     icon: '🏯',
     desc: '길드의 중심. 레벨에 따라 동시 파견 가능한 팀 수가 결정됩니다.',
     effectLabel: (lv) => `파견 슬롯: ${lv}팀`,
-    baseCost: { gold: 5000, material: 20 },
-    costMult: 2.5,
-    maxLevel: 10,
+    baseCost: { gold: 800, material: 20 },
+    costMult: 1.5,
+    maxLevel: 8,
   },
   {
     id: 'lounge',
@@ -99,8 +99,8 @@ const BUILDINGS = [
     icon: '🛋️',
     desc: '모험가들이 쉬는 공간. 레벨당 보유 가능한 모험가 수가 늘어납니다.',
     effectLabel: (lv) => `최대 모험가: ${lv + 2}명`,
-    baseCost: { gold: 2000, material: 8 },
-    costMult: 1.7,
+    baseCost: { gold: 500, material: 8 },
+    costMult: 1.5,
     maxLevel: 10,
   },
   {
@@ -109,8 +109,8 @@ const BUILDINGS = [
     icon: '📋',
     desc: '서류 질이 높아질수록 더 우수한 모험가가 찾아옵니다.',
     effectLabel: (lv) => `서류 등급: ${['일반','일반','마법','마법','희귀','희귀','영웅','영웅','전설'][Math.min(lv, 8)]} 이상 출현`,
-    baseCost: { gold: 1500, material: 5 },
-    costMult: 1.8,
+    baseCost: { gold: 400, material: 5 },
+    costMult: 1.5,
     maxLevel: 8,
   },
   {
@@ -119,7 +119,7 @@ const BUILDINGS = [
     icon: '📦',
     desc: '장비와 아이템을 보관합니다. 레벨당 보관 칸이 늘어납니다.',
     effectLabel: (lv) => `보관 칸: ${lv * 5 + 20}칸`,
-    baseCost: { gold: 800, material: 4 },
+    baseCost: { gold: 300, material: 4 },
     costMult: 1.5,
     maxLevel: 18,
   },
@@ -132,25 +132,25 @@ const BUILDINGS = [
       const maxGrade = lv >= 8 ? '전설' : lv >= 6 ? '영웅' : lv >= 4 ? '희귀' : lv >= 2 ? '마법' : '일반';
       return `제작 속도: ${100 + lv * 10}%, 최고 책: ${maxGrade}`;
     },
-    baseCost: { gold: 1200, material: 6 },
-    costMult: 1.6,
+    baseCost: { gold: 600, material: 6 },
+    costMult: 1.5,
     maxLevel: 12,
   },
 ];
 
 // ===== 장비 제작 레시피 =====
 const CRAFT_RECIPES = [
-  { materialGrade: 'common',    label: '일반 재료',  matCost: 20, gold: 500,   grades: ['일반', '마법'],   ratios: [0.5, 0.5] },
-  { materialGrade: 'advanced',  label: '고급 재료',  matCost: 15, gold: 2000,  grades: ['희귀', '영웅'],   ratios: [0.5, 0.5] },
-  { materialGrade: 'rare',      label: '희귀 재료',  matCost: 10, gold: 10000, grades: ['전설'],           ratios: [1.0] },
-  { materialGrade: 'legendary', label: '전설 재료',  matCost: 5,  gold: 50000, grades: ['신화'],           ratios: [1.0] },
+  { materialGrade: 'common',    label: '일반 재료',  matCost: 20, gold: 50,    grades: ['일반', '마법'],   ratios: [0.5, 0.5] },
+  { materialGrade: 'advanced',  label: '고급 재료',  matCost: 15, gold: 200,   grades: ['희귀', '영웅'],   ratios: [0.5, 0.5] },
+  { materialGrade: 'rare',      label: '희귀 재료',  matCost: 10, gold: 1000,  grades: ['전설'],           ratios: [1.0] },
+  { materialGrade: 'legendary', label: '전설 재료',  matCost: 5,  gold: 5000,  grades: ['신화'],           ratios: [1.0] },
 ];
 
 // ===== 재료 합성 레시피 =====
 const SYNTHESIS_RECIPES = [
-  { id: 'synth_advanced',  name: '고급 재료 합성', input: { common: 10 },   output: { advanced: 1 },  craftTime: 300  },
-  { id: 'synth_rare',      name: '희귀 재료 합성', input: { advanced: 10 }, output: { rare: 1 },      craftTime: 900  },
-  { id: 'synth_legendary', name: '전설 재료 합성', input: { rare: 10 },     output: { legendary: 1 }, craftTime: 2700 },
+  { id: 'synth_advanced',  name: '고급 재료 합성', input: { common: 10 },   output: { advanced: 1 },  craftTime: 60,   gold: 50   },
+  { id: 'synth_rare',      name: '희귀 재료 합성', input: { advanced: 10 }, output: { rare: 1 },      craftTime: 180,  gold: 300  },
+  { id: 'synth_legendary', name: '전설 재료 합성', input: { rare: 10 },     output: { legendary: 1 }, craftTime: 600,  gold: 1500 },
 ];
 
 // 파견 지역 정의
@@ -1203,32 +1203,42 @@ function generateEquipment(slot, grade, branch = null) {
 
 // ===== 상점 — 상시 판매 =====
 const SHOP_PERMANENT = [
-  { id: 'mat_common_5',  name: '일반 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { common: 5 },   price: 400,  desc: '일반 재료 5개' },
-  { id: 'mat_adv_3',     name: '고급 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { advanced: 3 }, price: 2000, desc: '고급 재료 3개' },
-  { id: 'mat_rare_1',    name: '희귀 재료',            icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { rare: 1 },     price: 6000, desc: '희귀 재료 1개' },
-  { id: 'buff_exp',      name: '경험치 부스트 스크롤', icon: 'assets/items/I_Scroll02.png',  type: 'consumable', effect: 'expBonus',  value: 30, duration: 1800, price: 3000, desc: '경험치 +30% (30분)' },
-  { id: 'buff_gold',     name: '골드 부스트 스크롤',   icon: 'assets/items/I_Scroll02.png',  type: 'consumable', effect: 'goldBonus', value: 30, duration: 1800, price: 3000, desc: '골드 +30% (30분)' },
+  { id: 'mat_common_5',  name: '일반 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { common: 5 },   price: 40,   desc: '일반 재료 5개' },
+  { id: 'mat_adv_3',     name: '고급 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { advanced: 3 }, price: 200,  desc: '고급 재료 3개' },
+  { id: 'mat_rare_1',    name: '희귀 재료',            icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { rare: 1 },     price: 600,  desc: '희귀 재료 1개' },
+  { id: 'buff_exp',      name: '경험치 부스트 스크롤', icon: 'assets/items/I_Scroll02.png',  type: 'consumable', effect: 'expBonus',  value: 30, duration: 1800, price: 300, desc: '경험치 +30% (30분)' },
+  { id: 'buff_gold',     name: '골드 부스트 스크롤',   icon: 'assets/items/I_Scroll02.png',  type: 'consumable', effect: 'goldBonus', value: 30, duration: 1800, price: 300, desc: '골드 +30% (30분)' },
 ];
 
 // ===== 상점 — 로테이션 풀 =====
 const SHOP_ROTATION_POOL = [
-  { type: 'equipment', slot: 'weapon',    grade: '마법', price: 2500,  weight: 10 },
-  { type: 'equipment', slot: 'weapon',    grade: '희귀', price: 8000,  weight: 5  },
-  { type: 'equipment', slot: 'weapon',    grade: '영웅', price: 25000, weight: 2  },
-  { type: 'equipment', slot: 'armor',     grade: '마법', price: 2500,  weight: 10 },
-  { type: 'equipment', slot: 'armor',     grade: '희귀', price: 8000,  weight: 5  },
-  { type: 'equipment', slot: 'armor',     grade: '영웅', price: 25000, weight: 2  },
-  { type: 'equipment', slot: 'accessory', grade: '마법', price: 2500,  weight: 10 },
-  { type: 'equipment', slot: 'accessory', grade: '희귀', price: 8000,  weight: 5  },
-  { type: 'equipment', slot: 'accessory', grade: '영웅', price: 25000, weight: 2  },
-  { type: 'material_pack', name: '일반 재료 대량팩', icon: 'assets/items/I_Crystal01.png', materials: { common: 20 },    price: 1200,  weight: 8, desc: '일반 재료 20개 (할인)' },
-  { type: 'material_pack', name: '고급 재료 대량팩', icon: 'assets/items/I_Crystal01.png', materials: { advanced: 8 },   price: 4500,  weight: 5, desc: '고급 재료 8개 (할인)' },
-  { type: 'material_pack', name: '희귀 재료 묶음',   icon: 'assets/items/I_Crystal01.png', materials: { rare: 3 },       price: 14000, weight: 3, desc: '희귀 재료 3개 (할인)' },
-  { type: 'material_pack', name: '전설 재료',         icon: 'assets/items/I_Crystal01.png', materials: { legendary: 1 }, price: 25000, weight: 1, desc: '전설 재료 1개' },
-  { type: 'consumable', name: '재료 부스트 스크롤', icon: 'assets/items/I_Scroll02.png', effect: 'materialBonus', value: 30, duration: 1800, price: 3000, weight: 4, desc: '재료 획득 +30% (30분)' },
+  { type: 'equipment', slot: 'weapon',    grade: '마법', price: 250,   weight: 10 },
+  { type: 'equipment', slot: 'weapon',    grade: '희귀', price: 800,   weight: 5  },
+  { type: 'equipment', slot: 'weapon',    grade: '영웅', price: 2500,  weight: 2  },
+  { type: 'equipment', slot: 'armor',     grade: '마법', price: 250,   weight: 10 },
+  { type: 'equipment', slot: 'armor',     grade: '희귀', price: 800,   weight: 5  },
+  { type: 'equipment', slot: 'armor',     grade: '영웅', price: 2500,  weight: 2  },
+  { type: 'equipment', slot: 'accessory', grade: '마법', price: 250,   weight: 10 },
+  { type: 'equipment', slot: 'accessory', grade: '희귀', price: 800,   weight: 5  },
+  { type: 'equipment', slot: 'accessory', grade: '영웅', price: 2500,  weight: 2  },
+  { type: 'material_pack', name: '일반 재료 대량팩', icon: 'assets/items/I_Crystal01.png', materials: { common: 20 },    price: 120,   weight: 8, desc: '일반 재료 20개 (할인)' },
+  { type: 'material_pack', name: '고급 재료 대량팩', icon: 'assets/items/I_Crystal01.png', materials: { advanced: 8 },   price: 450,   weight: 5, desc: '고급 재료 8개 (할인)' },
+  { type: 'material_pack', name: '희귀 재료 묶음',   icon: 'assets/items/I_Crystal01.png', materials: { rare: 3 },       price: 1400,  weight: 3, desc: '희귀 재료 3개 (할인)' },
+  { type: 'material_pack', name: '전설 재료',         icon: 'assets/items/I_Crystal01.png', materials: { legendary: 1 }, price: 2500,  weight: 1, desc: '전설 재료 1개' },
+  { type: 'consumable', name: '재료 부스트 스크롤', icon: 'assets/items/I_Scroll02.png', effect: 'materialBonus', value: 30, duration: 1800, price: 300, weight: 4, desc: '재료 획득 +30% (30분)' },
 ];
 
 const SHOP_REFRESH_INTERVAL = 60 * 60 * 1000;
+
+// ===== 장비 리롤 비용 테이블 =====
+const REROLL_COSTS = {
+  '일반': { gold: 50,    materials: { common: 5 } },
+  '마법': { gold: 200,   materials: { advanced: 3 } },
+  '희귀': { gold: 800,   materials: { rare: 2 } },
+  '영웅': { gold: 2500,  materials: { rare: 5 } },
+  '전설': { gold: 8000,  materials: { legendary: 3 } },
+  '신화': { gold: 25000, materials: { legendary: 10 } },
+};
 
 // ===== 리빌딩(프레스티지) 시스템 =====
 
@@ -1358,7 +1368,7 @@ const LAB_RECIPES = [
     grade: '일반',
     icon: 'assets/items/I_Book.png',
     expValue: 1000,
-    cost: { gold: 300, materials: { common: 10 } },
+    cost: { gold: 30, materials: { common: 10 } },
     craftTime: 60,
     reqLabLv: 1,
   },
@@ -1368,7 +1378,7 @@ const LAB_RECIPES = [
     grade: '마법',
     icon: 'assets/items/I_Book.png',
     expValue: 4000,
-    cost: { gold: 1000, materials: { common: 30, advanced: 5 } },
+    cost: { gold: 100, materials: { common: 30, advanced: 5 } },
     craftTime: 180,
     reqLabLv: 2,
   },
@@ -1378,7 +1388,7 @@ const LAB_RECIPES = [
     grade: '희귀',
     icon: 'assets/items/I_Book.png',
     expValue: 15000,
-    cost: { gold: 4000, materials: { advanced: 30, rare: 5 } },
+    cost: { gold: 400, materials: { advanced: 30, rare: 5 } },
     craftTime: 480,
     reqLabLv: 4,
   },
@@ -1388,7 +1398,7 @@ const LAB_RECIPES = [
     grade: '영웅',
     icon: 'assets/items/I_Book.png',
     expValue: 60000,
-    cost: { gold: 15000, materials: { rare: 50, legendary: 10 } },
+    cost: { gold: 1500, materials: { rare: 50, legendary: 10 } },
     craftTime: 1200,
     reqLabLv: 6,
   },
@@ -1398,7 +1408,7 @@ const LAB_RECIPES = [
     grade: '전설',
     icon: 'assets/items/I_Book.png',
     expValue: 200000,
-    cost: { gold: 60000, materials: { legendary: 100 } },
+    cost: { gold: 6000, materials: { legendary: 100 } },
     craftTime: 3600,
     reqLabLv: 8,
   },
@@ -1426,9 +1436,9 @@ const GRADE_STAT_MULT = {
 
 // 영구 단련 정의 (연구소, 리빌딩 후에도 유지)
 const PERMANENT_TRAINING = [
-  { id: 'hp',  name: '강인한 체력', icon: '❤️', stat: 'hp',  desc: '최대 HP +1%',  baseCost: 300000, costMult: 1.35 },
-  { id: 'atk', name: '전투 훈련',   icon: '⚔️', stat: 'atk', desc: '공격력 +1%',   baseCost: 400000, costMult: 1.35 },
-  { id: 'def', name: '방어 수련',   icon: '🛡️', stat: 'def', desc: '방어력 +1%',   baseCost: 350000, costMult: 1.35 },
+  { id: 'hp',  name: '강인한 체력', icon: '❤️', stat: 'hp',  desc: '최대 HP +1%',  baseCost: 30000, costMult: 1.35 },
+  { id: 'atk', name: '전투 훈련',   icon: '⚔️', stat: 'atk', desc: '공격력 +1%',   baseCost: 40000, costMult: 1.35 },
+  { id: 'def', name: '방어 수련',   icon: '🛡️', stat: 'def', desc: '방어력 +1%',   baseCost: 35000, costMult: 1.35 },
 ];
 
 // 경험치 테이블 (레벨당 필요 경험치)

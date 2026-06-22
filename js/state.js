@@ -1,7 +1,7 @@
 // ===== state.js: 게임 상태 관리 =====
 
 const DEFAULT_STATE = {
-  gold: 500,
+  gold: 50,
   materials: { common: 5, advanced: 0, rare: 0, legendary: 0 },
   inventory: [],       // 장비 아이템 목록
 
@@ -310,7 +310,7 @@ function spendMaterials(cost) {
 }
 
 // ===== 건물 =====
-const BUILDING_UPGRADE_TIMES = [15, 60, 180, 600, 1800, 5400, 14400, 36000, 86400, 172800];
+const BUILDING_UPGRADE_TIMES = [30, 60, 180, 600, 1200, 2400, 5400];
 
 function getBuildingUpgradeTime(lv) {
   const idx = Math.min(lv - 1, BUILDING_UPGRADE_TIMES.length - 1);
@@ -476,7 +476,7 @@ function refreshApplications(isAuto = false) {
 }
 
 function getForceRefreshCost() {
-  return Math.floor(500 * Math.pow(2, State.recruitForceCount ?? 0));
+  return Math.floor(50 * Math.pow(2, State.recruitForceCount ?? 0));
 }
 
 function forceRefreshApplications() {
@@ -857,7 +857,7 @@ function refreshShopRotation() {
 }
 
 function forceRefreshShop() {
-  const cost = 2000;
+  const cost = 200;
   if (!spendGold(cost)) { showToast('골드가 부족합니다.', 'error'); return false; }
   refreshShopRotation();
   showToast('상점 갱신 완료!', 'success');
@@ -935,7 +935,7 @@ function getBuffBonus(effectType) {
 }
 
 // ===== 장비 판매 / 분해 =====
-const SELL_PRICES    = { '일반': 80, '마법': 350, '희귀': 1500, '영웅': 6000, '전설': 25000, '신화': 100000 };
+const SELL_PRICES    = { '일반': 8, '마법': 35, '희귀': 150, '영웅': 600, '전설': 2500, '신화': 10000 };
 const DISMANTLE_MATS = { '일반': 1,  '마법': 3,   '희귀': 10,   '영웅': 30,   '전설': 100,   '신화': 350 };
 
 function sellEquipment(idx) {
