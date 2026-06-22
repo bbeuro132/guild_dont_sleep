@@ -273,7 +273,7 @@ function renderAdvDetail(advId) {
       </div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-danger" style="font-size:0.8rem;padding:6px 12px"
-          onclick="if(confirm('정말 ${adv.name}을(를) 해고하시겠습니까?\\n장착 중인 장비는 인벤토리로 반환됩니다.')){if(dismissAdventurer(${adv.id})){selectedAdvId=null;renderAdventurerTab();renderHeader()}}">
+          onclick="gameConfirm('🚪 해고', '정말 ${adv.name}을(를) 해고하시겠습니까?\\n장착 중인 장비는 인벤토리로 반환됩니다.', () => {if(dismissAdventurer(${adv.id})){selectedAdvId=null;renderAdventurerTab();renderHeader()}})">
           🚪 해고
         </button>
         <button class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px"
@@ -644,7 +644,7 @@ function renderDispatchTab() {
               <div class="dispatch-actions">
                 <button class="btn btn-gold" onclick="openSettlement('${area.id}')">📋 정산하기</button>
                 <button class="btn btn-primary" onclick="openBattlePopup('${area.id}')">⚔️ 전투 관람</button>
-                <button class="btn btn-outline" onclick="if(confirm('파견 팀을 귀환시키겠습니까?\\n잔여 누적 재화도 함께 수령합니다.')){recallDispatch('${area.id}');renderDispatchTab();renderHeader()}">🏠 귀환 명령</button>
+                <button class="btn btn-outline" onclick="gameConfirm('🏠 귀환 명령', '파견 팀을 귀환시키겠습니까?\\n잔여 누적 재화도 함께 수령합니다.', () => {recallDispatch('${area.id}');renderDispatchTab();renderHeader()})">🏠 귀환 명령</button>
               </div>
             </div>
           `;
@@ -931,6 +931,20 @@ function renderShopTab() {
   `;
 }
 
+// ===== 게임 내 확인 팝업 =====
+function gameConfirm(title, message, onYes) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  document.getElementById('confirm-yes').onclick = () => {
+    closePopup('confirm-popup');
+    onYes();
+  };
+  document.getElementById('confirm-no').onclick = () => {
+    closePopup('confirm-popup');
+  };
+  openPopup('confirm-popup');
+}
+
 // ===== 팝업 =====
 function openPopup(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -948,7 +962,7 @@ const CHLOE_HELP = {
   dispatch:   '팀을 꾸려 지역에 보내세요. 전투에서 승리해야 골드와 재료를 얻을 수 있어요. 정산 버튼으로 수령하세요!',
   recruit:    '마음에 드는 모험가를 영입하세요. 서류는 15분마다 자동 갱신돼요.',
   shop:       '유랑 상인 시온 씨가 준비한 재료 묶음이나 부스트 스크롤을 구매할 수 있어요. 한정 판매는 1시간마다 바뀌니 자주 확인해 주세요!',
-  lab:        '경험치 서와 장비를 제작하고, 재료를 합성할 수 있어요. 담당관 에이다 씨의 솜씨가 뛰어나니 실패할 걱정은 붙들어매도 좋답니다!',
+  lab:        '경험치 서와 장비를 제작하고, 재료를 합성할 수 있어요. 담당관 에이다 씨의 솜씨가 뛰어나니 실패할 걱정도 없답니다!',
   prestige:   '길드가 충분히 성장한다면 리빌딩을 통해 길드를 영구적으로 성장시킬 수 있어요. 더 높은 곳을 노리신다면 반드시 목표로 해주세요!',
 };
 
