@@ -126,9 +126,15 @@ function bindEvents() {
   // 튜토리얼 다음 버튼
   document.getElementById('btn-tutorial-next').addEventListener('click', nextTutorialStep);
 
-  // 페이지 숨김 시 저장
+  // 페이지 숨김/복귀 처리 (브라우저 탭 전환 시 requestAnimationFrame 정지 보상)
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) autoSave();
+    if (document.hidden) {
+      autoSave();
+    } else {
+      processOfflineProgress();
+      lastTick = performance.now();
+      saveState();
+    }
   });
 
   // 언로드 시 저장
