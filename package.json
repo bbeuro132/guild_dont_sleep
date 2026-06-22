@@ -1,0 +1,32 @@
+{
+  "name": "guild-dont-sleep",
+  "version": "0.1.0",
+  "description": "길드는 잠들지 않는다 — 방치형 길드 경영 게임",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.guild.dontsleep",
+    "productName": "길드는 잠들지 않는다",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron-main.js",
+      "index.html",
+      "style.css",
+      "js/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "asar": true
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  }
+}
