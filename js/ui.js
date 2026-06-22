@@ -1627,7 +1627,8 @@ function openRebuildDialog() {
       <p class="rebuild-chloe-speech">길드장 님, 지금까지 정말 고생 많으셨어요. 베른 전역을 평정하셨으니, 이제 새 출발을 하실 수 있어요. 리빌딩을 하시면 처음부터 다시 시작하지만… 길드장 님이 쌓아온 경험만큼은 절대 사라지지 않아요!</p>
       <div class="rebuild-cond-list">${condHtml}</div>
       <div class="rebuild-gain-box">이번 리빌딩 획득: <b class="gold-text">+${pending}pt</b></div>
-      <div style="color:#c62828;font-size:0.82rem;margin-top:8px">⚠️ 모험가·장비·건물·골드가 모두 초기화됩니다. 스킬포인트와 경지 트리는 유지됩니다.</div>
+      <div style="color:#c62828;font-size:0.82rem;margin-top:8px">⚠️ 모험가·장비·골드·건물이 초기화됩니다. (공방·대기실 등 레벨 리셋)</div>
+      <div style="color:#388e3c;font-size:0.82rem;margin-top:4px">✅ 유지: 스킬포인트, 경지 트리, 영구 단련, <b>지휘 본부 레벨</b></div>
       <button class="btn btn-danger btn-full" style="margin-top:14px" onclick="confirmRebuild()">🔄 리빌딩 실행</button>`;
   } else {
     bodyEl.innerHTML = `
