@@ -1220,11 +1220,14 @@ function tickDispatchCombat(dispatch, delta) {
     if (isBossFight) progGain += getPrestigeBonusTotal('bossProgress');
     dispatch.progress = Math.min(dispatch.progress + progGain, area.maxProgress);
 
-    // 몬스터 처치 즉시 골드 보너스
-    const killGold = Math.floor(enemies.length * area.stage * 1.5 * (isBossFight ? 2 : 1));
-    const killMat  = isBossFight ? area.stage * 0.2 : area.stage * 0.04;
+    // 몬스터 드롭: 0.5 × stage^1.8 기반
+    const st = area.stage;
+    const baseGold = Math.max(1, Math.floor(0.5 * Math.pow(st, 1.8)));
+    const killGold = enemies.length * (isBossFight ? baseGold * 5 : baseGold);
+    const baseMat  = 0.03 * Math.pow(st, 1.2);
+    const killMat  = enemies.length * (isBossFight ? baseMat * 5 : baseMat);
     dispatch.accumulated.gold += killGold;
-    const ratios = getMaterialGradeRatios(area.stage);
+    const ratios = getMaterialGradeRatios(st);
     for (const [grade, ratio] of Object.entries(ratios)) {
       dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + killMat * ratio;
     }

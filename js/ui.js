@@ -997,8 +997,10 @@ function openBattlePopup(areaId) {
             let progGain = 1 + getPrestigeBonusTotal('bonusProgress');
             if (isBoss) progGain += getPrestigeBonusTotal('bossProgress');
             d2.progress = Math.min(d2.progress + progGain, area.maxProgress);
-            const killGold = Math.floor(battle.enemies.length * area.stage * 1.5 * (isBoss ? 2 : 1));
-            const killMat  = isBoss ? area.stage * 0.2 : area.stage * 0.04;
+            const lbBaseGold = Math.max(1, Math.floor(0.5 * Math.pow(area.stage, 1.8)));
+            const killGold = battle.enemies.length * (isBoss ? lbBaseGold * 5 : lbBaseGold);
+            const lbBaseMat = 0.03 * Math.pow(area.stage, 1.2);
+            const killMat  = battle.enemies.length * (isBoss ? lbBaseMat * 5 : lbBaseMat);
             d2.accumulated.gold += killGold;
             const lbRatios = getMaterialGradeRatios(area.stage);
             for (const [grade, ratio] of Object.entries(lbRatios)) {

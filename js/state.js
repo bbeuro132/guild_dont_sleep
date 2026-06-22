@@ -207,39 +207,40 @@ function processOfflineProgress() {
       dispatch.accumulated.materials = { common: 0, advanced: 0, rare: 0, legendary: 0 };
     }
 
-    // 패시브 수입 (시간 비례)
-    const gold   = area.goldPerSec * elapsed;
-    const mat    = area.materialPerMin * (elapsed / 60);
-
-    // 파티 전투력 기반 전투 결과 추정
+    // 전투 승리 기반 수입 (패시브 제거됨)
+    const st = area.stage;
     const totalBattles = Math.floor(elapsed / COMBAT_INTERVAL);
     const winRate      = estimateOfflineWinRate(dispatch, area);
     const wins         = Math.floor(totalBattles * winRate);
+    const bossWins     = Math.floor(wins * 0.2);
+    const normalWins   = wins - bossWins;
 
-    const killGold = wins * area.stage * 2 * 1.5;
-    const killMat  = wins * area.stage * 0.04;
+    // 몬스터 드롭 공식: 0.5 × stage^1.8 (1/10 적용)
+    const normalGold = Math.max(1, Math.floor(0.5 * Math.pow(st, 1.8)));
+    const bossGold   = normalGold * 5;
+    const normalMat  = 0.03 * Math.pow(st, 1.2);
+    const bossMat    = normalMat * 5;
 
-    totalGold += gold + killGold;
-    totalMat  += mat  + killMat;
+    const killGold = normalWins * normalGold + bossWins * bossGold;
+    const killMat  = normalWins * normalMat + bossWins * bossMat;
 
-    dispatch.accumulated.gold += gold + killGold;
+    totalGold += killGold;
+    totalMat  += killMat;
 
-    // 재료 등급별 분배
-    const matTotal = mat + killMat;
-    const ratios   = getMaterialGradeRatios(area.stage);
+    dispatch.accumulated.gold += killGold;
+
+    const ratios = getMaterialGradeRatios(st);
     for (const [grade, ratio] of Object.entries(ratios)) {
-      dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + matTotal * ratio;
+      dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + killMat * ratio;
     }
 
-    // 오프라인 경험치: 승리 횟수 기반, 보스전 비율 약 20% 가정
-    const normalWins = Math.floor(wins * 0.8);
-    const bossWins   = wins - normalWins;
-    const battleExp  = normalWins * (area.stage * 2 + 3) + bossWins * (area.stage * 2 + 3) * 3;
+    // 오프라인 경험치
+    const battleExp = normalWins * (st * 2 + 3) + bossWins * (st * 2 + 3) * 3;
     for (const advId of dispatch.team) {
       giveExp(advId, battleExp);
     }
 
-    // 진행도: 승리 횟수 = 진행도 상승
+    // 진행도
     const prevProgress = Math.floor(dispatch.progress);
     dispatch.progress = Math.min(dispatch.progress + wins, area.maxProgress);
     if (dispatch.progress >= area.maxProgress) {
@@ -249,8 +250,8 @@ function processOfflineProgress() {
     areaResults.push({
       name: area.name,
       icon: area.icon,
-      gold: Math.floor(gold + killGold),
-      mat:  Math.floor(matTotal),
+      gold: Math.floor(killGold),
+      mat:  Math.floor(killMat),
       progressFrom: prevProgress,
       progressTo:   Math.floor(dispatch.progress),
       maxProgress:  area.maxProgress,
@@ -615,15 +616,7 @@ function tickDispatches(deltaSeconds) {
     const area = AREAS.find(a => a.id === dispatch.areaId);
     if (!area) continue;
 
-    // 재화 누적 (장비 옵션 + 프레스티지 성장 가지 반영)
-    const goldMult    = (1 + getTeamGoldBonus(dispatch)) * (1 + getPrestigeBonusTotal('goldBonus') / 100) * (1 + getBuffBonus('goldBonus') / 100);
-    const materialMult = (1 + getTeamMaterialBonus(dispatch)) * (1 + getPrestigeBonusTotal('materialBonus') / 100) * (1 + getBuffBonus('materialBonus') / 100);
-    dispatch.accumulated.gold += area.goldPerSec * deltaSeconds * goldMult;
-    const matPerTick = area.materialPerMin * (deltaSeconds / 60) * materialMult;
-    const ratios = getMaterialGradeRatios(area.stage);
-    for (const [grade, ratio] of Object.entries(ratios)) {
-      dispatch.accumulated.materials[grade] = (dispatch.accumulated.materials[grade] || 0) + matPerTick * ratio;
-    }
+    // 패시브 수입 제거됨 — 재화는 전투 승리 시에만 combat.js에서 누적
 
     // 전투 로직 (combat.js)
     initDispatchCombat(dispatch);
