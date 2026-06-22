@@ -1434,12 +1434,11 @@ function updateInvBadge() {
 // ===== 튜토리얼 =====
 const TUTORIAL_STEPS = [
   { text: '안녕하세요 길드장 님! 저는 클로에라고 해요. 베른 모험가 길드에 오신 걸 환영합니다! 제가 길드 운영을 도와드릴게요.', highlight: null },
-  { text: '우선 모집 탭을 확인해 볼까요? 마침 오늘 지원서가 들어왔거든요. 마음에 드는 모험가를 골라 길드에 합류시켜 주세요!', highlight: '#tab-bar .tab-btn:nth-child(4)' },
-  { text: '길드에 합류한 모험가는 모험가 탭에서 확인할 수 있어요. 장비도 장착하고, 경험치 서를 사용해서 레벨업도 시킬 수 있답니다!', highlight: '#tab-bar .tab-btn:nth-child(2)' },
-  { text: '파견 탭에서 팀을 꾸려 지역으로 파견을 보내세요. 파견 중인 모험가들은 알아서 싸우고 골드와 재료를 모아온답니다!', highlight: '#tab-bar .tab-btn:nth-child(3)' },
-  { text: '모험가들이 돌아오면 정산 버튼으로 성과물을 회수하세요. 골드와 재료로 길드 건물을 업그레이드할 수 있어요!', highlight: '#tab-bar .tab-btn:nth-child(1)' },
-  { text: '연구소에서는 경험치 책을 제작해 모험가를 빠르게 성장시킬 수 있어요. 골드가 많이 모이면 영구 단련도 해보세요. 리빌딩 후에도 효과가 사라지지 않는 강력한 강화랍니다!', highlight: '#tab-bar .tab-btn:nth-child(6)' },
-  { text: '경지 탭은 고급 기능이에요. 길드를 충분히 키웠다면 리빌딩으로 새 출발을 할 수 있어요. 누적 골드로 스킬포인트를 얻고, 경지 트리를 해금하면 길드 전체가 영구적으로 강해진답니다!', highlight: '#tab-bar .tab-btn:nth-child(7)' },
+  { text: '우선 모집 탭을 확인해 볼까요? 마침 오늘 지원서가 들어왔거든요. 첫 지원자는 전사, 마법사, 치유사예요. 셋 다 영입하는 걸 추천드려요!', highlight: '#tab-bar .tab-btn:nth-child(4)' },
+  { text: '길드에 합류한 모험가는 모험가 탭에서 확인할 수 있어요. 장비를 장착하면 더 강해진답니다!', highlight: '#tab-bar .tab-btn:nth-child(2)' },
+  { text: '파견 탭에서 팀을 꾸려 지역으로 파견을 보내세요. 전투에서 승리할 때마다 골드와 재료를 획득할 수 있어요!', highlight: '#tab-bar .tab-btn:nth-child(3)' },
+  { text: '정산 버튼을 누르면 모아둔 골드와 재료를 수령할 수 있어요. 이걸로 길드 건물을 업그레이드하세요!', highlight: '#tab-bar .tab-btn:nth-child(1)' },
+  { text: '지휘 본부를 업그레이드하면 새로운 기능이 열려요. Lv.2에서 공방, Lv.4에서 상점, Lv.5에서 경지가 해금됩니다. 파견 슬롯도 늘어나니 본부 업그레이드를 우선하세요!', highlight: '#buildings-grid' },
   { text: '이제 길드장 님 혼자서도 잘 하실 수 있겠죠? 궁금한 게 있으면 언제든 클로에를 찾아주세요! 화이팅!', highlight: null },
 ];
 
