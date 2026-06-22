@@ -942,6 +942,23 @@ function closePopup(id) {
   document.getElementById('overlay').classList.add('hidden');
 }
 
+const CHLOE_HELP = {
+  guild:      '건물을 업그레이드하면 길드가 성장해요! 업그레이드에는 자원과 시간이 필요하니 신중하게 선택해주세요.',
+  adventurer: '모험가를 클릭 후 장비 슬롯을 통해 모험가에게 장비를 장착시키거나, 조건에 맞는다면 전직도 시켜줄 수 있답니다!',
+  dispatch:   '팀을 꾸려 지역에 보내세요. 전투에서 승리해야 골드와 재료를 얻을 수 있어요. 정산 버튼으로 수령하세요!',
+  recruit:    '마음에 드는 모험가를 영입하세요. 서류는 15분마다 자동 갱신돼요.',
+  shop:       '유랑 상인 시온 씨가 준비한 재료 묶음이나 부스트 스크롤을 구매할 수 있어요. 한정 판매는 1시간마다 바뀌니 자주 확인해 주세요!',
+  lab:        '경험치 서와 장비를 제작하고, 재료를 합성할 수 있어요. 담당관 에이다 씨의 솜씨가 뛰어나니 실패할 걱정은 붙들어매도 좋답니다!',
+  prestige:   '길드가 충분히 성장한다면 리빌딩을 통해 길드를 영구적으로 성장시킬 수 있어요. 더 높은 곳을 노리신다면 반드시 목표로 해주세요!',
+};
+
+function openChloeHelp() {
+  const tab = getCurrentTab();
+  const text = CHLOE_HELP[tab] || '무엇이든 물어봐 주세요!';
+  document.getElementById('chloe-help-text').textContent = text;
+  openPopup('chloe-help-popup');
+}
+
 function openLorePopup() {
   document.querySelectorAll('#lore-content > div').forEach(d => d.classList.add('hidden'));
   document.getElementById('lore-world').classList.remove('hidden');
@@ -1433,13 +1450,13 @@ function updateInvBadge() {
 
 // ===== 튜토리얼 =====
 const TUTORIAL_STEPS = [
-  { text: '안녕하세요 길드장 님! 저는 클로에라고 해요. 베른 모험가 길드에 오신 걸 환영합니다! 제가 길드 운영을 도와드릴게요.', highlight: null },
-  { text: '우선 모집 탭을 확인해 볼까요? 마침 오늘 지원서가 들어왔거든요. 첫 지원자는 전사, 마법사, 치유사예요. 셋 다 영입하는 걸 추천드려요!', highlight: '#tab-bar .tab-btn:nth-child(4)' },
+  { text: '안녕하세요 길드장 님! 저는 비서인 클로에라고 해요. 베른 모험가 길드에 오신 걸 환영합니다! 제가 길드 운영을 도와드릴게요.', highlight: null },
+  { text: '가장 먼저 보셔야 할 건 모집 탭이에요. 마침 지원서가 들어왔는데요, 첫 지원자로 전사, 마법사, 치유사 세 분이 오셨어요. 세 분 모두 영입하는 걸 추천드려요!', highlight: '#tab-bar .tab-btn:nth-child(4)' },
   { text: '길드에 합류한 모험가는 모험가 탭에서 확인할 수 있어요. 장비를 장착하면 더 강해진답니다!', highlight: '#tab-bar .tab-btn:nth-child(2)' },
   { text: '파견 탭에서 팀을 꾸려 지역으로 파견을 보내세요. 전투에서 승리할 때마다 골드와 재료를 획득할 수 있어요!', highlight: '#tab-bar .tab-btn:nth-child(3)' },
-  { text: '정산 버튼을 누르면 모아둔 골드와 재료를 수령할 수 있어요. 이걸로 길드 건물을 업그레이드하세요!', highlight: '#tab-bar .tab-btn:nth-child(1)' },
+  { text: '정산 버튼을 누르면 모아둔 골드와 재료를 수령할 수 있어요. 이걸로 길드 건물을 업그레이드하세요!', highlight: '#tab-bar .tab-btn:nth-child(3)' },
   { text: '지휘 본부를 업그레이드하면 새로운 기능이 열려요. Lv.2에서 공방, Lv.4에서 상점, Lv.5에서 경지가 해금됩니다. 파견 슬롯도 늘어나니 본부 업그레이드를 우선하세요!', highlight: '#buildings-grid' },
-  { text: '이제 길드장 님 혼자서도 잘 하실 수 있겠죠? 궁금한 게 있으면 언제든 클로에를 찾아주세요! 화이팅!', highlight: null },
+  { text: '이제부턴 길드장 님 혼자서도 잘 하실 수 있겠죠? 궁금한 게 있으면 언제든 클로에를 찾아주세요! 화이팅!', highlight: null },
 ];
 
 function startTutorial() {

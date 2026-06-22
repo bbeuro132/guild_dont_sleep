@@ -16,6 +16,7 @@
   </div>
   <div id="resources">
     <button id="btn-lore" class="lore-btn" onclick="openLorePopup()">?</button>
+    <button id="btn-chloe-help" class="lore-btn" onclick="openChloeHelp()">💬</button>
     <div class="resource-chip">
       <img src="assets/items/CoinsGold.PNG" alt="골드" class="res-icon" onerror="this.textContent='💰';this.style.fontSize='1rem'" />
       <span id="gold-amount">0</span>
@@ -208,6 +209,20 @@
       <h3 class="popup-title">🔄 리빌딩</h3>
     </div>
     <div id="rebuild-popup-body"></div>
+  </div>
+</div>
+
+<!-- 클로에 도움말 팝업 -->
+<div id="chloe-help-popup" class="popup hidden">
+  <div class="popup-inner" style="max-width:420px">
+    <button class="popup-close" onclick="closePopup('chloe-help-popup')">✕</button>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+      <img src="assets/characters/클로에_스탠딩.png" alt="클로에" style="width:80px;height:auto;object-fit:contain;border-radius:8px" onerror="this.style.display='none'" />
+      <div>
+        <div style="font-weight:bold;color:var(--brown-dark);margin-bottom:4px">길드 비서 클로에</div>
+        <div id="chloe-help-text" style="font-size:0.9rem;line-height:1.6;color:#3e2200"></div>
+      </div>
+    </div>
   </div>
 </div>
 
