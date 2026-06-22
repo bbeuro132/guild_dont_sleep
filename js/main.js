@@ -21,6 +21,7 @@ function gameTick() {
 
 // ===== UI 렌더 루프 (화면 보일 때만) =====
 let _dispatchRenderTimer = 0;
+let _dispatchInteracting = false;
 let _labRenderTimer = 0;
 let _guildRenderTimer = 0;
 let _shopRenderTimer = 0;
@@ -36,10 +37,7 @@ function renderLoop(timestamp) {
   if (tab === 'dispatch') {
     _dispatchRenderTimer -= delta;
     if (_dispatchRenderTimer <= 0) {
-      const focused = document.activeElement;
-      const selectOpen = focused && focused.tagName === 'SELECT'
-        && focused.closest('#dispatch-areas');
-      if (!selectOpen) renderDispatchTab();
+      if (!_dispatchInteracting) renderDispatchTab();
       _dispatchRenderTimer = 1;
     }
   } else if (tab === 'recruit') {
@@ -82,6 +80,23 @@ function autoSave() {
 
 // ===== 이벤트 바인딩 =====
 function bindEvents() {
+  // 파견 탭 SELECT 인터랙션 감지 — 재렌더링 방지
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'SELECT' && e.target.closest('#dispatch-areas')) {
+      _dispatchInteracting = true;
+    }
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target.tagName === 'SELECT' && e.target.closest('#dispatch-areas')) {
+      setTimeout(() => { _dispatchInteracting = false; }, 500);
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (_dispatchInteracting && e.target.tagName !== 'SELECT' && !e.target.closest('select')) {
+      _dispatchInteracting = false;
+    }
+  });
+
   // 탭 전환
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
