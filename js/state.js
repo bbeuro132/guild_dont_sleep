@@ -1101,6 +1101,31 @@ function craftEquipment(slot, materialGrade, qty = 1) {
   return results;
 }
 
+// ===== 장비 리롤 =====
+function rerollEquipment(advId, slot) {
+  const adv = State.adventurers.find(a => a.id === advId);
+  if (!adv) return false;
+  const item = adv.equipment[slot];
+  if (!item || !item.slot) { showToast('장비가 없습니다.', 'error'); return false; }
+  const cost = REROLL_COSTS[item.grade];
+  if (!cost) { showToast('리롤할 수 없는 등급입니다.', 'error'); return false; }
+  if (!spendGold(cost.gold)) { showToast('골드가 부족합니다.', 'error'); return false; }
+  if (!spendMaterials(cost.materials)) {
+    refundGold(cost.gold);
+    showToast('재료가 부족합니다.', 'error'); return false;
+  }
+  const newEq = generateEquipment(item.slot, item.grade, item.jobClass || null);
+  newEq.id = item.id;
+  newEq.name = item.name;
+  newEq.icon = item.icon;
+  newEq.stats = item.stats;
+  newEq.options = newEq.options;
+  adv.equipment[slot] = newEq;
+  saveState();
+  showToast(`${item.name} 옵션 리롤 완료!`, 'success');
+  return true;
+}
+
 // ===== 프레스티지(리빌딩) =====
 
 function getPrestigeBonusTotal(key) {
