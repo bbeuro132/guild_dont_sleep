@@ -21,12 +21,14 @@
       "assets/**/*"
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "assets/characters/세계관_티아마트.png"
     },
     "asar": true
   },
   "devDependencies": {
     "electron": "^42.4.1",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "png-to-ico": "^3.0.1"
   }
 }
