@@ -1830,8 +1830,8 @@ function renderLabTab() {
     const outputLabel = Object.entries(recipe.output)
       .map(([g, n]) => `${MAT_GRADE_LABELS[g]} ${n * sqty}`)
       .join(' + ');
-    const canAfford = Object.entries(recipe.input)
-      .every(([g, n]) => (State.materials[g] || 0) >= n * sqty);
+    const canAfford = State.gold >= (recipe.gold || 0) * sqty &&
+      Object.entries(recipe.input).every(([g, n]) => (State.materials[g] || 0) >= n * sqty);
     const busy = !!q;
     const disabled = busy || !canAfford;
     const actualMs = Math.floor(recipe.craftTime * sqty / speedMult2) * 1000;
@@ -1847,7 +1847,7 @@ function renderLabTab() {
           </div>
         </div>
         <div class="lab-recipe-cost" style="${canAfford ? '' : 'color:#e57373'}">
-          💎 ${inputLabel} &nbsp;|&nbsp; ⏱ ${formatCraftTime(actualMs)}
+          ${recipe.gold ? '💰 ' + (recipe.gold * sqty).toLocaleString() + ' &nbsp;|&nbsp; ' : ''}💎 ${inputLabel} &nbsp;|&nbsp; ⏱ ${formatCraftTime(actualMs)}
         </div>
         <div class="qty-row">
           <button class="btn btn-outline qty-btn" onclick="setLabQty('${recipe.id}',-1)">−</button>

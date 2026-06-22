@@ -1000,6 +1000,7 @@ function cancelCraft() {
   const qty = q.quantity || 1;
   if (q.type === 'synthesis') {
     for (const [grade, amt] of Object.entries(q.refundMaterials || {})) addMaterial(grade, amt);
+    if (q.refundGold) refundGold(q.refundGold);
   } else {
     const recipe = LAB_RECIPES.find(r => r.id === q.recipeId);
     if (recipe) {
@@ -1038,9 +1039,14 @@ function startSynthesis(recipeId, qty = 1) {
   if (State.labQueue) { showToast('이미 제작 중입니다.', 'error'); return false; }
   const recipe = SYNTHESIS_RECIPES.find(r => r.id === recipeId);
   if (!recipe) return false;
+  const totalGold = (recipe.gold || 0) * qty;
   const totalInput = {};
   for (const [g, n] of Object.entries(recipe.input)) totalInput[g] = n * qty;
-  if (!spendMaterials(totalInput)) { showToast('재료가 부족합니다.', 'error'); return false; }
+  if (totalGold > 0 && !spendGold(totalGold)) { showToast('골드가 부족합니다.', 'error'); return false; }
+  if (!spendMaterials(totalInput)) {
+    if (totalGold > 0) refundGold(totalGold);
+    showToast('재료가 부족합니다.', 'error'); return false;
+  }
   const labLv = getBuildingLevel('workshop');
   const speedMult = (100 + labLv * 10) / 100;
   const totalMs = Math.floor(recipe.craftTime * qty / speedMult) * 1000;
@@ -1057,6 +1063,7 @@ function startSynthesis(recipeId, qty = 1) {
     totalMs,
     output: totalOutput,
     refundMaterials: totalInput,
+    refundGold: totalGold,
   };
   saveState();
   showToast(`${recipe.name} ×${qty} 시작!`, 'success');
