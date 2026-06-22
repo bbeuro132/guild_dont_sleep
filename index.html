@@ -215,10 +215,10 @@
 <!-- 클로에 도움말 팝업 -->
 <div id="chloe-help-popup" class="popup hidden">
   <div class="popup-inner" style="max-width:460px">
-    <button class="popup-close" onclick="closePopup('chloe-help-popup')">✕</button>
-    <div style="display:flex;align-items:center;gap:14px">
+    <button class="popup-close" style="z-index:10" onclick="closePopup('chloe-help-popup')">✕</button>
+    <div style="display:flex;align-items:center;gap:14px;padding-top:4px">
       <div style="flex-shrink:0;text-align:center">
-        <img src="assets/characters/클로에_스탠딩.png" alt="클로에" style="width:110px;height:145px;object-fit:contain" onerror="this.style.display='none'" />
+        <img src="assets/characters/클로에 스탠딩.png" alt="클로에" style="width:110px;height:145px;object-fit:contain" onerror="this.style.display='none'" />
         <div class="npc-name" style="margin-top:4px">길드 비서 클로에</div>
       </div>
       <div id="chloe-help-bubble">
