@@ -4,7 +4,7 @@ const path = require('path');
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
-    height: 800,
+    height: 960,
     title: '길드는 잠들지 않는다',
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     webPreferences: {
