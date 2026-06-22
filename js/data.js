@@ -91,12 +91,12 @@ const BUILDINGS = [
     effectLabel: (lv) => {
       const slots = lv <= 1 ? 1 : lv <= 3 ? 2 : lv <= 5 ? 3 : lv <= 7 ? 4 : 5;
       const unlocks = [];
-      if (lv < 3) unlocks.push('Lv3: 상점');
-      if (lv < 4) unlocks.push('Lv4: 공방');
+      if (lv < 2) unlocks.push('Lv2: 공방');
+      if (lv < 4) unlocks.push('Lv4: 상점');
       if (lv < 5) unlocks.push('Lv5: 경지');
       return `파견 슬롯: ${slots}팀${unlocks.length ? ' · 다음: ' + unlocks[0] : ''}`;
     },
-    baseCost: { gold: 800, material: 20 },
+    baseCost: { gold: 200, material: 5 },
     costMult: 1.5,
     maxLevel: 8,
   },

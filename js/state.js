@@ -467,11 +467,24 @@ function pickJob() {
 
 // ===== 서류 갱신 =====
 function refreshApplications(isAuto = false) {
-  State.applications = [
-    generateAdventurer(),
-    generateAdventurer(),
-    generateAdventurer(),
-  ];
+  if (State.adventurers.length === 0 && State.applications.length === 0) {
+    const origPick = pickJob;
+    const firstJobs = ['warrior', 'mage', 'healer'];
+    let ji = 0;
+    window.pickJob = () => firstJobs[ji++] || origPick();
+    State.applications = [
+      generateAdventurer(),
+      generateAdventurer(),
+      generateAdventurer(),
+    ];
+    window.pickJob = origPick;
+  } else {
+    State.applications = [
+      generateAdventurer(),
+      generateAdventurer(),
+      generateAdventurer(),
+    ];
+  }
   State.lastRecruitTime = Date.now();
   if (isAuto) State.recruitForceCount = 0;
 }

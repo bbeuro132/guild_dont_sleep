@@ -47,8 +47,8 @@ function getUnlockedTabs() {
   const hqLv = getBuildingLevel('headquarters');
   return {
     guild: true, adventurer: true, dispatch: true, recruit: true,
-    shop: hqLv >= 3,
-    lab: hqLv >= 4,
+    lab: hqLv >= 2,
+    shop: hqLv >= 4,
     prestige: hqLv >= 5,
   };
 }
