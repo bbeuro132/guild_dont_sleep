@@ -88,7 +88,14 @@ const BUILDINGS = [
     name: '지휘 본부',
     icon: '🏯',
     desc: '길드의 중심. 레벨에 따라 동시 파견 가능한 팀 수가 결정됩니다.',
-    effectLabel: (lv) => `파견 슬롯: ${lv}팀`,
+    effectLabel: (lv) => {
+      const slots = lv <= 1 ? 1 : lv <= 3 ? 2 : lv <= 5 ? 3 : lv <= 7 ? 4 : 5;
+      const unlocks = [];
+      if (lv < 3) unlocks.push('Lv3: 상점');
+      if (lv < 4) unlocks.push('Lv4: 공방');
+      if (lv < 5) unlocks.push('Lv5: 경지');
+      return `파견 슬롯: ${slots}팀${unlocks.length ? ' · 다음: ' + unlocks[0] : ''}`;
+    },
     baseCost: { gold: 800, material: 20 },
     costMult: 1.5,
     maxLevel: 8,

@@ -33,6 +33,7 @@ function formatUpgradeDuration(seconds) {
 
 // ===== 헤더 업데이트 =====
 function renderHeader() {
+  updateTabVisibility();
   document.getElementById('gold-amount').textContent = Math.floor(State.gold).toLocaleString();
   const m = State.materials || {};
   document.getElementById('mat-common').textContent    = Math.floor(m.common    || 0).toLocaleString();
@@ -41,14 +42,42 @@ function renderHeader() {
   document.getElementById('mat-legendary').textContent = Math.floor(m.legendary || 0).toLocaleString();
 }
 
+// ===== 탭 해금 상태 =====
+function getUnlockedTabs() {
+  const hqLv = getBuildingLevel('headquarters');
+  return {
+    guild: true, adventurer: true, dispatch: true, recruit: true,
+    shop: hqLv >= 3,
+    lab: hqLv >= 4,
+    prestige: hqLv >= 5,
+  };
+}
+
+function updateTabVisibility() {
+  const unlocked = getUnlockedTabs();
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    const tab = btn.dataset.tab;
+    if (unlocked[tab] === false) {
+      btn.classList.add('tab-locked');
+      btn.setAttribute('disabled', 'true');
+    } else {
+      btn.classList.remove('tab-locked');
+      btn.removeAttribute('disabled');
+    }
+  });
+}
+
 // ===== 탭 전환 =====
 function switchTab(tabId) {
+  const unlocked = getUnlockedTabs();
+  if (unlocked[tabId] === false) return;
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
   document.querySelectorAll('.tab-panel').forEach(panel => {
     panel.classList.toggle('active', panel.id === `tab-${tabId}`);
   });
+  updateTabVisibility();
   renderTab(tabId);
 }
 

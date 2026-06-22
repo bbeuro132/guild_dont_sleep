@@ -504,7 +504,12 @@ function recruitAdventurer(appIndex) {
 
 // ===== 파견 =====
 function getMaxDispatchSlots() {
-  return getBuildingLevel('headquarters');
+  const lv = getBuildingLevel('headquarters');
+  if (lv <= 1) return 1;
+  if (lv <= 3) return 2;
+  if (lv <= 5) return 3;
+  if (lv <= 7) return 4;
+  return 5;
 }
 
 function getInventoryCapacity() {
@@ -1120,6 +1125,7 @@ function doRebuild() {
   const totalEarnable = calcTotalEarnablePoints();
   const newPoints = Math.max(0, totalEarnable - (State.totalPrestigeEarned || 0));
 
+  const hqLevel = State.buildings.headquarters || 1;
   const keepData = {
     lifetimeGold:         State.lifetimeGold         || 0,
     prestigePoints:       (State.prestigePoints       || 0) + newPoints,
@@ -1128,6 +1134,7 @@ function doRebuild() {
     rebuildCount:         (State.rebuildCount         || 0) + 1,
     tutorialDone:         true,
     permanentTraining:    { ...(State.permanentTraining || { hp: 0, atk: 0, def: 0 }) },
+    buildings:            { ...JSON.parse(JSON.stringify(DEFAULT_STATE)).buildings, headquarters: hqLevel },
   };
 
   State = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), keepData);

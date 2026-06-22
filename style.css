@@ -324,6 +324,11 @@ body {
   color: var(--gold);
 }
 
+.tab-btn.tab-locked {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 .tab-btn.active {
   background: linear-gradient(180deg, rgba(245,200,66,0.2) 0%, rgba(245,200,66,0.05) 100%);
   color: var(--gold);
