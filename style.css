@@ -91,6 +91,33 @@ body {
   color: #fff;
 }
 
+#chloe-help-bubble {
+  background: white;
+  border: 2px solid var(--brown);
+  border-radius: 12px;
+  padding: 12px 16px;
+  position: relative;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #3e2200;
+  box-shadow: var(--shadow);
+  flex: 0 1 auto;
+}
+#chloe-help-bubble::before {
+  content: '';
+  position: absolute;
+  left: -13px; top: 50%; transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-right-color: var(--brown);
+}
+#chloe-help-bubble::after {
+  content: '';
+  position: absolute;
+  left: -10px; top: 50%; transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: white;
+}
+
 .lore-tabs {
   display: flex;
   gap: 6px;
