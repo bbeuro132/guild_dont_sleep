@@ -1,16 +1,14 @@
 // ===== main.js: 진입점 및 게임 루프 =====
 
-let lastTick = 0;
-let _dispatchRenderTimer = 0;
-let _labRenderTimer = 0;
-let _guildRenderTimer = 0;
-let _shopRenderTimer = 0;
+let lastTick = Date.now();
 
-function gameLoop(timestamp) {
-  const delta = (timestamp - lastTick) / 1000; // 초 단위
-  lastTick = timestamp;
+// ===== 게임 로직 루프 (1초 간격, 백그라운드에서도 실행) =====
+function gameTick() {
+  const now = Date.now();
+  const delta = (now - lastTick) / 1000;
+  lastTick = now;
 
-  if (delta > 0 && delta < 60) {
+  if (delta > 0 && delta < 120) {
     tickDispatches(delta);
     tickLab();
     checkBuildingUpgradeComplete();
@@ -18,10 +16,22 @@ function gameLoop(timestamp) {
     checkShopRefresh();
   }
 
-  // 헤더 항상 갱신
+  checkAutoRecruitRefresh();
+}
+
+// ===== UI 렌더 루프 (화면 보일 때만) =====
+let _dispatchRenderTimer = 0;
+let _labRenderTimer = 0;
+let _guildRenderTimer = 0;
+let _shopRenderTimer = 0;
+let _lastRender = 0;
+
+function renderLoop(timestamp) {
+  const delta = (timestamp - _lastRender) / 1000;
+  _lastRender = timestamp;
+
   renderHeader();
 
-  // 현재 탭 실시간 갱신이 필요한 것들
   const tab = getCurrentTab();
   if (tab === 'dispatch') {
     _dispatchRenderTimer -= delta;
@@ -54,16 +64,13 @@ function gameLoop(timestamp) {
     }
   }
 
-  // 자동 서류 갱신 체크
-  checkAutoRecruitRefresh();
-
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(renderLoop);
 }
 
 function checkAutoRecruitRefresh() {
   const elapsed = Date.now() - State.lastRecruitTime;
   if (elapsed >= State.recruitInterval) {
-    refreshApplications(true);   // isAuto=true → recruitForceCount 리셋
+    refreshApplications(true);
     if (getCurrentTab() === 'recruit') renderRecruitTab();
   }
 }
@@ -90,7 +97,6 @@ function bindEvents() {
 
   // 정산 팝업 닫기
   document.getElementById('btn-close-settlement').addEventListener('click', () => closePopup('settlement-popup'));
-  // btn-close-battle은 openBattlePopup()에서 onclick으로 설정 (closeBattleViewer)
 
   // 인벤토리 팝업 닫기
   document.getElementById('btn-close-inventory').addEventListener('click', () => closePopup('inventory-popup'));
@@ -126,13 +132,13 @@ function bindEvents() {
   // 튜토리얼 다음 버튼
   document.getElementById('btn-tutorial-next').addEventListener('click', nextTutorialStep);
 
-  // 페이지 숨김/복귀 처리 (브라우저 탭 전환 시 requestAnimationFrame 정지 보상)
+  // 페이지 숨김 시 저장, 복귀 시 보정
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       autoSave();
     } else {
       processOfflineProgress();
-      lastTick = performance.now();
+      lastTick = Date.now();
       saveState();
     }
   });
@@ -158,9 +164,13 @@ function init() {
   // 자동 저장 (30초마다)
   setInterval(autoSave, 30000);
 
-  // 게임 루프 시작
-  lastTick = performance.now();
-  requestAnimationFrame(gameLoop);
+  // 게임 로직 루프 (1초마다 — 백그라운드에서도 실행)
+  lastTick = Date.now();
+  setInterval(gameTick, 1000);
+
+  // UI 렌더 루프 (화면 보일 때만)
+  _lastRender = performance.now();
+  requestAnimationFrame(renderLoop);
 
   // 오프라인 복귀 알림 (저장 데이터가 있을 때만)
   if (window._pendingOffline) {
