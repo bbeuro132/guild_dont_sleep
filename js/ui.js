@@ -688,7 +688,7 @@ function renderDispatchTab() {
             <div class="monster-sprites">${monsterIcons}</div>
           </div>
           <div style="font-size:0.78rem;color:#888;margin-top:8px">
-            💰 ${area.goldPerSec}/초 · 재료 ${area.materialPerMin}/분
+            ⚔️ 승리 시 💰${Math.max(1, Math.floor(0.5 * Math.pow(area.stage, 1.8)))} · 보스 ×5
           </div>
         `;
       }

@@ -215,7 +215,7 @@ function processOfflineProgress() {
     const bossWins     = Math.floor(wins * 0.2);
     const normalWins   = wins - bossWins;
 
-    // 몬스터 드롭 공식: 0.5 × stage^1.8 (1/10 적용)
+    // 몬스터 드롭 공식: 0.5 × stage^1.8
     const normalGold = Math.max(1, Math.floor(0.5 * Math.pow(st, 1.8)));
     const bossGold   = normalGold * 5;
     const normalMat  = 0.03 * Math.pow(st, 1.2);
@@ -1132,7 +1132,6 @@ function rerollEquipment(advId, slot) {
   newEq.name = item.name;
   newEq.icon = item.icon;
   newEq.stats = item.stats;
-  newEq.options = newEq.options;
   adv.equipment[slot] = newEq;
   saveState();
   showToast(`${item.name} 옵션 리롤 완료!`, 'success');
