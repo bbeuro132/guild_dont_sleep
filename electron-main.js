@@ -6,7 +6,7 @@ function createWindow() {
     width: 1280,
     height: 800,
     title: '길드는 잠들지 않는다',
-    icon: path.join(__dirname, 'assets', 'items', 'CoinsGold.PNG'),
+    icon: path.join(__dirname, 'assets', 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
