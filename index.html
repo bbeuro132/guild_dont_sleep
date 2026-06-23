@@ -337,6 +337,19 @@
   </div>
 </div>
 
+<!-- 전직 미리보기 팝업 -->
+<div id="promo-popup" class="popup hidden">
+  <div class="popup-inner" style="max-width:420px">
+    <button class="popup-close" onclick="closePopup('promo-popup')">✕</button>
+    <h3 class="popup-title" id="promo-popup-title"></h3>
+    <div id="promo-popup-body" style="font-size:0.88rem;line-height:1.6;color:#3e2200"></div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button class="btn btn-primary" id="promo-popup-confirm" style="min-width:100px">전직하기</button>
+      <button class="btn btn-outline" onclick="closePopup('promo-popup')" style="min-width:100px">취소</button>
+    </div>
+  </div>
+</div>
+
 <!-- 티아마트 알현 팝업 -->
 <div id="tiamat-popup" class="popup hidden">
   <div class="popup-inner" style="max-width:500px;text-align:center">

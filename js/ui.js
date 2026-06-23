@@ -257,7 +257,7 @@ function renderAdvDetail(advId) {
       && State.gold >= promoCost.gold
       && (State.materials.common || 0) >= promoCost.material;
     return `<button class="btn btn-primary" ${canPromo ? '' : 'disabled'}
-      onclick="promoteAdventurer(${adv.id}, '${pJob}'); renderAdventurerTab()">
+      onclick="openPromoPreview(${adv.id}, '${pJob}')">
       → ${pInfo.name}
     </button>`;
   }).join('');
@@ -493,6 +493,34 @@ function renderEquipPicker(adv, slot) {
 
 function gradeColor(grade) {
   return { '일반': '#9e9e9e', '마법': '#388e3c', '희귀': '#1976d2', '영웅': '#7b1fa2', '전설': '#f57c00', '신화': '#e53935' }[grade] || '#9e9e9e';
+}
+
+function openPromoPreview(advId, targetJob) {
+  const pInfo = JOBS[targetJob];
+  if (!pInfo) return;
+  const skillIds = JOB_SKILLS[targetJob] || [];
+  const skillHtml = skillIds.map(sid => {
+    const sk = SKILLS[sid];
+    if (!sk) return '';
+    const typeLabel = sk.type === 'passive' ? '패시브' : `쿨다운 ${sk.cooldown}턴`;
+    return `<div style="margin-bottom:8px;padding:8px;background:rgba(0,0,0,0.04);border-radius:6px">
+      <div style="font-weight:bold;color:var(--brown-dark)">${sk.name} <span style="font-size:0.75rem;color:#888;font-weight:normal">${typeLabel}</span></div>
+      <div style="font-size:0.82rem;color:#666;margin-top:2px">${sk.desc}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('promo-popup-title').innerHTML =
+    `<span class="${pInfo.cssClass}" style="padding:3px 10px;border-radius:6px;color:white;font-size:0.9rem">${pInfo.name}</span> 전직 미리보기`;
+  document.getElementById('promo-popup-body').innerHTML = `
+    <div style="margin-bottom:12px;font-size:0.82rem;color:#888">이 직업의 스킬:</div>
+    ${skillHtml || '<p style="color:#aaa">스킬 정보가 없습니다.</p>'}
+  `;
+  document.getElementById('promo-popup-confirm').onclick = () => {
+    closePopup('promo-popup');
+    promoteAdventurer(advId, targetJob);
+    renderAdventurerTab();
+  };
+  openPopup('promo-popup');
 }
 
 function promoteAdventurer(advId, targetJob) {
