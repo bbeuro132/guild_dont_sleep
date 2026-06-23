@@ -742,6 +742,19 @@ function getEffectiveStats(adv) {
   if (pt.hp  > 0) s.hp  = Math.floor(s.hp  * (1 + pt.hp  / 100));
   if (pt.atk > 0) s.atk = Math.floor(s.atk * (1 + pt.atk / 100));
   if (pt.def > 0) s.def = Math.floor(s.def * (1 + pt.def / 100));
+  // 용의 가호 보정 (티아마트 알현 후, 건물 레벨 기반)
+  if (State.tiamatMet) {
+    const hqLv  = getBuildingLevel('headquarters');
+    const appLv = getBuildingLevel('application');
+    const lngLv = getBuildingLevel('lounge');
+    const wsLv  = getBuildingLevel('workshop');
+    const whLv  = getBuildingLevel('warehouse');
+    s.crit = Math.floor(s.crit + hqLv * 1);
+    s.spd  = Math.floor(s.spd  * (1 + appLv * 1.25 / 100));
+    s.atk  = Math.floor(s.atk  * (1 + lngLv * 1 / 100));
+    s.def  = Math.floor(s.def  * (1 + wsLv * 0.83 / 100));
+    s.hp   = Math.floor(s.hp   * (1 + whLv * 0.56 / 100));
+  }
   return s;
 }
 

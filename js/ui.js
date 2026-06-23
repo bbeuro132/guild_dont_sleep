@@ -1684,14 +1684,19 @@ function renderPrestigeTab() {
       </div>
     </div>` : '';
 
-  // 용의 가호 가지 (알현 후, 준비 중)
+  // 용의 가호 가지 (알현 후)
   const dragonBranchHtml = State.tiamatMet ? `
     <div class="prestige-branch">
-      <div class="branch-title" style="color:#e53935">🐉 용의 가호 가지</div>
-      <div class="prestige-node node-locked" style="opacity:0.5">
-        <div class="node-name">🐉 용의 가호</div>
-        <div class="node-desc">티아마트의 축복이 깃든 힘. 효과 미정.</div>
-        <span class="node-status locked-txt">🔒 준비 중</span>
+      <div class="branch-title" style="color:#e53935">🐉 용의 가호</div>
+      <div class="prestige-node node-done">
+        <div class="node-name">🐉 티아마트의 축복</div>
+        <div class="node-desc">건물 레벨에 따라 모험가 전체 능력치 강화</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:4px;line-height:1.5">
+          본부 Lv×1% 치명타 · 서류 Lv×1.25% 속도<br>
+          대기실 Lv×1% 공격력 · 공방 Lv×0.83% 방어력<br>
+          창고 Lv×0.56% 체력
+        </div>
+        <span class="node-status">✓ 활성</span>
       </div>
     </div>` : '';
 
