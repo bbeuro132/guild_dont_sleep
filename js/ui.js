@@ -386,20 +386,12 @@ function renderEquipSlot(adv, slot, label) {
       <div style="font-size:0.65rem;color:${gradeColor(item.grade)};font-weight:bold">${item.grade}급</div>
       <div style="font-size:0.6rem;color:#888;line-height:1.4;margin:2px 0">${formatEquipStats(item.stats)}</div>
       ${optHtml ? `<div class="equip-options-wrap">${optHtml}</div>` : ''}
-      ${dispatched ? '' : `<div style="display:flex;gap:4px;margin-top:4px">
+      <div style="display:flex;gap:4px;margin-top:4px">
         <button class="btn btn-outline" style="font-size:0.6rem;padding:2px 6px;flex:1"
           onclick="event.stopPropagation();unequipItem(${adv.id},'${slot}');renderAdventurerTab()">해제</button>
         <button class="btn btn-outline" style="font-size:0.6rem;padding:2px 6px;flex:1;color:var(--gold)"
           onclick="event.stopPropagation();if(rerollEquipment(${adv.id},'${slot}')){renderAdvDetail(${adv.id});renderHeader()}">리롤</button>
-      </div>`}
-    </div>`;
-  }
-
-  if (dispatched) {
-    return `<div class="equip-slot">
-      <div style="font-size:1.2rem">＋</div>
-      <div style="font-size:0.75rem">${label}</div>
-      <div style="font-size:0.6rem;color:#bbb">파견 중</div>
+      </div>
     </div>`;
   }
 
