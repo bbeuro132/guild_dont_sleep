@@ -1063,21 +1063,21 @@ const AREAS = [
 const EQUIPMENT_TEMPLATES = {
   weapon: {
     warrior: {
-      names: { '일반': '낡은 검', '마법': '강철 검', '희귀': '은빛 검', '영웅': '성검', '전설': '전설의 검', '신화': '신화의 검' },
+      names: { '일반': '낡은 검', '마법': '강철 검', '희귀': '은빛 검', '영웅': '성검', '전설': '성벽의 대검', '신화': '용왕의 검' },
       icons: { '일반': 'assets/items/W_Sword001.png', '마법': 'assets/items/W_Sword003.png',
                '희귀': 'assets/items/W_Sword006.png', '영웅': 'assets/items/W_Sword009.png',
                '전설': 'assets/items/W_Sword013.png', '신화': 'assets/items/W_Sword016.png' },
       stats: { '일반': { atk: 8 }, '마법': { atk: 18 }, '희귀': { atk: 40 }, '영웅': { atk: 80 }, '전설': { atk: 160 }, '신화': { atk: 320 } },
     },
     rogue: {
-      names: { '일반': '낡은 단검', '마법': '강철 단검', '희귀': '은빛 단검', '영웅': '암살자의 단검', '전설': '전설의 단검', '신화': '신화의 단검' },
+      names: { '일반': '낡은 단검', '마법': '강철 단검', '희귀': '은빛 단검', '영웅': '암살자의 단검', '전설': '그림자 단검', '신화': '심연의 비수' },
       icons: { '일반': 'assets/items/W_Dagger001.png', '마법': 'assets/items/W_Dagger003.png',
                '희귀': 'assets/items/W_Dagger007.png', '영웅': 'assets/items/W_Dagger010.png',
                '전설': 'assets/items/W_Dagger014.png', '신화': 'assets/items/W_Dagger018.png' },
       stats: { '일반': { atk: 8 }, '마법': { atk: 18 }, '희귀': { atk: 40 }, '영웅': { atk: 80 }, '전설': { atk: 160 }, '신화': { atk: 320 } },
     },
     mage: {
-      names: { '일반': '낡은 지팡이', '마법': '마법 지팡이', '희귀': '현자의 지팡이', '영웅': '대마법사 지팡이', '전설': '전설의 지팡이', '신화': '신화의 지팡이' },
+      names: { '일반': '낡은 지팡이', '마법': '마법 지팡이', '희귀': '현자의 지팡이', '영웅': '대마법사 지팡이', '전설': '상아탑의 지팡이', '신화': '대성당의 홀' },
       icons: { '일반': 'assets/items/W_Staff01.png', '마법': 'assets/items/W_Staff02.png',
                '희귀': 'assets/items/W_Staff04.png', '영웅': 'assets/items/W_Staff05.png',
                '전설': 'assets/items/W_Staff07.png', '신화': 'assets/items/W_Staff08.png' },
@@ -1085,15 +1085,15 @@ const EQUIPMENT_TEMPLATES = {
     },
   },
   armor: {
-    names: { '일반': '낡은 갑옷', '마법': '강철 갑옷', '희귀': '미스릴 갑옷', '영웅': '성기사 갑옷', '전설': '전설의 갑옷', '신화': '신화의 갑옷'  },
+    names: { '일반': '천옷', '마법': '가죽 갑옷', '희귀': '강철 갑옷', '영웅': '성기사의 갑옷', '전설': '드래곤 비늘 갑옷', '신화': '용왕의 의장'  },
     icons: { '일반': 'assets/items/A_Clothing01.png', '마법': 'assets/items/A_Armour01.png',
              '희귀': 'assets/items/A_Armour02.png',   '영웅': 'assets/items/A_Armour03.png',
-             '전설': 'assets/items/A_Armor05.png',    '신화': 'assets/items/A_Armor04.png' },
+             '전설': 'assets/items/A_Armor04.png',    '신화': 'assets/items/A_Armor05.png' },
     stats: { '일반': { hp: 30, def: 5 }, '마법': { hp: 70, def: 12 }, '희귀': { hp: 150, def: 25 },
              '영웅': { hp: 300, def: 50 }, '전설': { hp: 600, def: 100 }, '신화': { hp: 1200, def: 200 } },
   },
   accessory: {
-    names: { '일반': '낡은 반지', '마법': '은 목걸이', '희귀': '마법 반지', '영웅': '성기사 훈장', '전설': '전설의 보석', '신화': '신화의 유물'  },
+    names: { '일반': '낡은 반지', '마법': '은 목걸이', '희귀': '마법 반지', '영웅': '성기사 훈장', '전설': '용의 눈', '신화': '티아마트의 보물'  },
     icons: { '일반': 'assets/items/Ac_Necklace01.png', '마법': 'assets/items/Ac_Ring01.png',
              '희귀': 'assets/items/Ac_Necklace03.png',  '영웅': 'assets/items/Ac_Medal02.png',
              '전설': 'assets/items/Ac_Ring02.png',      '신화': 'assets/items/Ac_Medal03.png' },
