@@ -1789,7 +1789,32 @@ function doCraftEquipment() {
   const qty = getLabQty('equip');
   const results = craftEquipment(_craftSlot, _craftGrade, qty);
   if (results) {
-    showToast(`🔨 장비 ${results.length}개 제작 완료! 인벤토리에 추가됨`, 'success');
+    const slotLabel = { weapon: '무기', armor: '방어구', accessory: '악세서리' }[_craftSlot];
+    const listHtml = results.map(eq => {
+      const col = gradeColor(eq.grade);
+      const optHtml = eq.options && eq.options.length > 0
+        ? eq.options.map(o => `<span style="font-size:0.75rem;color:#888">· ${o.display || o.name}</span>`).join('<br>')
+        : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px;margin-bottom:6px;background:rgba(0,0,0,0.04);border-radius:6px;border-left:3px solid ${col}">
+        <img src="${eq.icon}" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" />
+        <div>
+          <div style="font-weight:bold;color:${col}">${eq.name} <span style="font-size:0.78rem">${eq.grade}급</span></div>
+          ${optHtml ? `<div style="margin-top:2px">${optHtml}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const summary = {};
+    results.forEach(eq => { summary[eq.grade] = (summary[eq.grade] || 0) + 1; });
+    const summaryHtml = Object.entries(summary)
+      .map(([g, n]) => `<span style="color:${gradeColor(g)};font-weight:bold">${g}급 ${n}개</span>`)
+      .join(' · ');
+
+    document.getElementById('craft-result-body').innerHTML = `
+      <div style="font-size:0.85rem;color:#888;margin-bottom:10px">${slotLabel} ${results.length}개 제작 완료 — ${summaryHtml}</div>
+      ${listHtml}
+    `;
+    openPopup('craft-result-popup');
     renderLabTab();
     renderHeader();
   }

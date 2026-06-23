@@ -130,6 +130,7 @@ function bindEvents() {
     closePopup('confirm-popup');
     closePopup('tiamat-popup');
     closePopup('promo-popup');
+    closePopup('craft-result-popup');
     // 전투 관람 팝업 닫힐 때 viewerActive 해제 및 HP 동기화
     if (window._battleAreaId) {
       const d = State.dispatches.find(dd => dd.areaId === window._battleAreaId);
