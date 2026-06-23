@@ -71,6 +71,8 @@ function updateTabVisibility() {
 function switchTab(tabId) {
   const unlocked = getUnlockedTabs();
   if (unlocked[tabId] === false) return;
+  if (tabId === 'lab') unlockCharacter('aida');
+  if (tabId === 'shop') unlockCharacter('sion');
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
@@ -983,7 +985,45 @@ function openLorePopup() {
   document.getElementById('char-chloe').classList.remove('hidden');
   document.querySelectorAll('.char-subtab').forEach(btn => btn.classList.remove('active'));
   document.querySelector('.char-subtab').classList.add('active');
+  updateCharLock();
   openPopup('lore-popup');
+}
+
+function updateCharLock() {
+  const met = State.metCharacters || ['chloe'];
+  const chars = { chloe: '클로에', sion: '시온', aida: '에이다', tiamat: '티아마트' };
+  document.querySelectorAll('.char-subtab').forEach(btn => {
+    const charId = btn.getAttribute('onclick')?.match(/switchCharTab\('(\w+)'\)/)?.[1];
+    if (!charId) return;
+    if (met.includes(charId)) {
+      btn.textContent = chars[charId];
+      btn.disabled = false;
+      btn.style.opacity = '';
+    } else {
+      btn.textContent = '???';
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+    }
+  });
+  document.querySelectorAll('.char-profile').forEach(el => {
+    const charId = el.id.replace('char-', '');
+    if (!met.includes(charId)) {
+      el.querySelectorAll('.char-profile-body, .char-title').forEach(c => c.style.display = 'none');
+      let lock = el.querySelector('.char-lock-msg');
+      if (!lock) {
+        lock = document.createElement('p');
+        lock.className = 'char-lock-msg';
+        lock.style.cssText = 'color:#888;text-align:center;padding:30px 0;font-size:0.9rem';
+        lock.textContent = '아직 만나지 못한 인물입니다.';
+        el.appendChild(lock);
+      }
+      lock.style.display = '';
+    } else {
+      el.querySelectorAll('.char-profile-body, .char-title').forEach(c => c.style.display = '');
+      const lock = el.querySelector('.char-lock-msg');
+      if (lock) lock.style.display = 'none';
+    }
+  });
 }
 
 function switchLoreTab(tabId) {

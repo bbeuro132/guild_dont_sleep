@@ -35,6 +35,7 @@ const DEFAULT_STATE = {
   activeBuffs: [],       // [{id, name, effect, value, expiresAt}]
 
   tiamatMet: false,       // 티아마트 알현 완료 여부
+  metCharacters: ['chloe'], // 만난 캐릭터 목록 (인물 소개 해금)
 
   lastSaveTime: 0,
   totalPlayTime: 0,
@@ -1183,6 +1184,7 @@ function doRebuild() {
     permanentTraining:    { ...(State.permanentTraining || { hp: 0, atk: 0, def: 0 }) },
     buildings:            { ...JSON.parse(JSON.stringify(DEFAULT_STATE)).buildings, headquarters: hqLevel },
     tiamatMet:            State.tiamatMet || false,
+    metCharacters:        [...(State.metCharacters || ['chloe'])],
   };
 
   State = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), keepData);
@@ -1212,6 +1214,15 @@ function spendPrestigeNode(nodeId) {
   return true;
 }
 
+// ===== 캐릭터 해금 =====
+function unlockCharacter(charId) {
+  if (!State.metCharacters) State.metCharacters = ['chloe'];
+  if (!State.metCharacters.includes(charId)) {
+    State.metCharacters.push(charId);
+    saveState();
+  }
+}
+
 // ===== 티아마트 알현 =====
 function checkTiamatMeeting() {
   if (State.tiamatMet) return;
@@ -1224,6 +1235,7 @@ function checkTiamatMeeting() {
 
 function completeTiamatMeeting() {
   State.tiamatMet = true;
+  unlockCharacter('tiamat');
   closePopup('tiamat-popup');
   saveState();
   showToast('미지의 영역이 개방되었습니다! 티아마트 12세의 허가 아래, 드래곤 왕국 너머의 탐사가 가능해졌습니다.', 'success');
