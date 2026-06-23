@@ -750,10 +750,10 @@ function getEffectiveStats(adv) {
     const wsLv  = getBuildingLevel('workshop');
     const whLv  = getBuildingLevel('warehouse');
     s.crit = Math.floor(s.crit + hqLv * 1);
-    s.spd  = Math.floor(s.spd  * (1 + appLv * 1.25 / 100));
+    s.spd  = Math.floor(s.spd  * (1 + appLv * 2 / 100));
     s.atk  = Math.floor(s.atk  * (1 + lngLv * 1 / 100));
-    s.def  = Math.floor(s.def  * (1 + wsLv * 0.83 / 100));
-    s.hp   = Math.floor(s.hp   * (1 + whLv * 0.56 / 100));
+    s.def  = Math.floor(s.def  * (1 + wsLv * 1 / 100));
+    s.hp   = Math.floor(s.hp   * (1 + whLv * 1 / 100));
   }
   return s;
 }

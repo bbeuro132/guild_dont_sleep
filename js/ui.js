@@ -1692,9 +1692,9 @@ function renderPrestigeTab() {
         <div class="node-name">🐉 티아마트의 축복</div>
         <div class="node-desc">건물 레벨에 따라 모험가 전체 능력치 강화</div>
         <div style="font-size:0.75rem;color:#888;margin-top:4px;line-height:1.5">
-          본부 Lv×1% 치명타 · 서류 Lv×1.25% 속도<br>
-          대기실 Lv×1% 공격력 · 공방 Lv×0.83% 방어력<br>
-          창고 Lv×0.56% 체력
+          본부 Lv×1% 치명타 · 서류 Lv×2% 속도<br>
+          대기실 Lv×1% 공격력 · 공방 Lv×1% 방어력<br>
+          창고 Lv×1% 체력
         </div>
         <span class="node-status">✓ 활성</span>
       </div>
