@@ -1617,7 +1617,7 @@ function renderPrestigeTab() {
   const tiamatNpcHtml = State.tiamatMet ? `
     <div id="prestige-tiamat-npc" style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
       <div style="flex-shrink:0;text-align:center">
-        <img src="assets/characters/티아마트_스탠딩.png" alt="티아마트" style="width:110px;height:145px;object-fit:contain" onerror="this.style.display='none'" />
+        <img src="assets/characters/티아마트_스탠딩.png" alt="티아마트" class="npc-standing" style="width:110px;height:145px;object-fit:contain" onerror="this.style.display='none'" />
         <div class="npc-name" style="margin-top:4px">드래곤 여왕 티아마트</div>
       </div>
       <div id="tiamat-npc-bubble" style="background:white;border:2px solid var(--gold-dark);border-radius:12px;padding:12px 16px;position:relative;font-size:0.88rem;line-height:1.5;color:#3e2200;box-shadow:var(--shadow);flex:0 1 auto;cursor:pointer"
