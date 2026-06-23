@@ -108,7 +108,7 @@
              onerror="this.style.display='none'" />
         <div class="npc-name">길드 비서 클로에</div>
       </div>
-      <div id="chloe-speech">
+      <div id="chloe-speech" style="cursor:pointer" onclick="document.getElementById('chloe-text').textContent = pickNpcQuote('chloe')">
         <p id="chloe-text">길드장 님! 오늘도 모험가 지원서가 들어왔어요. 함께 검토해 볼까요?</p>
       </div>
     </div>
@@ -138,7 +138,7 @@
              onerror="this.style.display='none'" />
         <div class="npc-name">공방 담당관 에이다</div>
       </div>
-      <div id="lab-npc-bubble">
+      <div id="lab-npc-bubble" style="cursor:pointer" onclick="this.querySelector('p').textContent = pickNpcQuote('aida')">
         <p>안녕하십니까, 길드장 님. 공방 가동이 필요하신가요?</p>
       </div>
     </div>
@@ -153,7 +153,7 @@
         <img src="assets/characters/황금_상인.png" alt="황금의 길 상인" id="shop-npc-img" />
         <div class="npc-name">황금의 길 상인 시온</div>
       </div>
-      <div id="shop-npc-bubble">
+      <div id="shop-npc-bubble" style="cursor:pointer" onclick="this.querySelector('p').textContent = pickNpcQuote('sion')">
         <p>어서오세요~ 황금의 길 최고의 상품들을 준비했답니다! 마음에 드는 게 있으면 주저 말고 말씀해 주세요.</p>
       </div>
     </div>
