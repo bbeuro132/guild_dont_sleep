@@ -1089,7 +1089,7 @@ class BattleEngine {
         }
 
         // 스킬 우선, 없으면 일반 공격
-        const usedSkill = unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t));
+        const usedSkill = unit.trySkill(myTeam, oppTeam, (t) => this.addLog(t));
         if (!usedSkill) {
           unit.normalAttack(oppTeam, myTeam, (t) => this.addLog(t));
         }
@@ -1339,7 +1339,7 @@ class LiveBattle {
     }
 
     // 스킬 우선, 없으면 일반 공격
-    const usedSkill = unit.trySkill(this.allies, this.enemies, (t) => this.addLog(t));
+    const usedSkill = unit.trySkill(myTeam, oppTeam, (t) => this.addLog(t));
     if (!usedSkill) {
       unit.normalAttack(oppTeam, myTeam, (t) => this.addLog(t));
     }
