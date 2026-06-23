@@ -455,7 +455,7 @@ function renderEquipPicker(adv, slot) {
         <strong>${slotLabels[slot]} 선택</strong>
         <button class="btn btn-outline" style="font-size:0.7rem;padding:2px 8px" onclick="closeEquipPicker()">닫기</button>
       </div>
-      <p style="color:#888;font-size:0.82rem;text-align:center;padding:16px 0">장착 가능한 ${slotLabels[slot]}이(가) 없습니다.</p>
+      <p style="color:#888;font-size:0.82rem;text-align:center;padding:16px 0">장착 가능한 ${slotLabels[slot]}가 없습니다.</p>
     </div>`;
   }
 
