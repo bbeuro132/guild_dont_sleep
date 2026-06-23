@@ -544,6 +544,7 @@ function renderDispatchTab() {
   const maxSlots   = getMaxDispatchSlots();
 
   for (const [country, meta] of Object.entries(NATION_META)) {
+    if (country === '미지의 영역' && !State.tiamatMet) continue;
     const nationAreas       = AREAS.filter(a => a.country === country);
     if (nationAreas.length === 0) continue;
 
@@ -1612,7 +1613,32 @@ function renderPrestigeTab() {
     </div>`;
   }).join('');
 
+  // 티아마트 NPC (알현 후)
+  const tiamatNpcHtml = State.tiamatMet ? `
+    <div id="prestige-tiamat-npc" style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      <div style="flex-shrink:0;text-align:center">
+        <img src="assets/characters/티아마트_스탠딩.png" alt="티아마트" style="width:110px;height:145px;object-fit:contain" onerror="this.style.display='none'" />
+        <div class="npc-name" style="margin-top:4px">드래곤 여왕 티아마트</div>
+      </div>
+      <div id="tiamat-npc-bubble" style="background:white;border:2px solid var(--gold-dark);border-radius:12px;padding:12px 16px;position:relative;font-size:0.88rem;line-height:1.5;color:#3e2200;box-shadow:var(--shadow);flex:0 1 auto;cursor:pointer"
+        onclick="this.querySelector('p').textContent = ['아직도 여기 있느냐. 뭘 꾸물거리는 것이냐.','미지의 영역 탐사는 잘 되고 있는 것이겠지?','이 몸이 허가를 내린 이상, 반드시 결과를 가져와야 할 것이다.'][Math.floor(Math.random()*3)]">
+        <p>네 길드의 성장을 인정하마. 그러나 아직 갈 길이 멀다.</p>
+      </div>
+    </div>` : '';
+
+  // 용의 가호 가지 (알현 후, 준비 중)
+  const dragonBranchHtml = State.tiamatMet ? `
+    <div class="prestige-branch">
+      <div class="branch-title" style="color:#e53935">🐉 용의 가호 가지</div>
+      <div class="prestige-node node-locked" style="opacity:0.5">
+        <div class="node-name">🐉 용의 가호</div>
+        <div class="node-desc">티아마트의 축복이 깃든 힘. 효과 미정.</div>
+        <span class="node-status locked-txt">🔒 준비 중</span>
+      </div>
+    </div>` : '';
+
   el.innerHTML = `
+    ${tiamatNpcHtml}
     <div class="prestige-header">
       <div class="prestige-stat-row">
         <div class="prestige-stat"><span class="pstat-label">보유 스킬포인트</span><span class="pstat-val gold-text">${pts}pt</span></div>
@@ -1630,7 +1656,8 @@ function renderPrestigeTab() {
 
     <div class="prestige-tree-title">경지 트리</div>
     <div class="prestige-center-wrap">${genesisHtml}</div>
-    <div class="prestige-branches">${branchesHtml}</div>`;
+    <div class="prestige-branches">${branchesHtml}</div>
+    ${dragonBranchHtml}`;
 }
 
 function openRebuildDialog() {
