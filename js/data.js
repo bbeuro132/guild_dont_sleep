@@ -1093,7 +1093,7 @@ const EQUIPMENT_TEMPLATES = {
              '영웅': { hp: 300, def: 50 }, '전설': { hp: 600, def: 100 }, '신화': { hp: 1200, def: 200 } },
   },
   accessory: {
-    names: { '일반': '낡은 반지', '마법': '은 목걸이', '희귀': '마법 반지', '영웅': '성기사 훈장', '전설': '용의 눈', '신화': '티아마트의 보물'  },
+    names: { '일반': '낡은 반지', '마법': '은 목걸이', '희귀': '마법 반지', '영웅': '성기사 훈장', '전설': '용의 보석', '신화': '티아마트의 보물'  },
     icons: { '일반': 'assets/items/Ac_Necklace01.png', '마법': 'assets/items/Ac_Ring01.png',
              '희귀': 'assets/items/Ac_Necklace03.png',  '영웅': 'assets/items/Ac_Medal02.png',
              '전설': 'assets/items/Ac_Ring02.png',      '신화': 'assets/items/Ac_Medal03.png' },
@@ -1210,9 +1210,9 @@ function generateEquipment(slot, grade, branch = null) {
 
 // ===== 상점 — 상시 판매 =====
 const SHOP_PERMANENT = [
-  { id: 'mat_common_5',  name: '일반 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { common: 5 },   price: 40,   desc: '일반 재료 5개' },
-  { id: 'mat_adv_3',     name: '고급 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { advanced: 3 }, price: 200,  desc: '고급 재료 3개' },
-  { id: 'mat_rare_1',    name: '희귀 재료',            icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { rare: 1 },     price: 600,  desc: '희귀 재료 1개' },
+  { id: 'mat_common_5',  name: '일반 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { common: 5 },   price: 100,  desc: '일반 재료 5개' },
+  { id: 'mat_adv_3',     name: '고급 재료 묶음',       icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { advanced: 3 }, price: 400,  desc: '고급 재료 3개' },
+  { id: 'mat_rare_1',    name: '희귀 재료',            icon: 'assets/items/I_Crystal01.png', type: 'material_pack', materials: { rare: 1 },     price: 1000, desc: '희귀 재료 1개' },
   { id: 'buff_exp',      name: '경험치 부스트 스크롤', icon: 'assets/items/I_Scroll02.png',  type: 'consumable', effect: 'expBonus',  value: 30, duration: 1800, price: 300, desc: '경험치 +30% (30분)' },
   { id: 'buff_gold',     name: '골드 부스트 스크롤',   icon: 'assets/items/I_Scroll02.png',  type: 'consumable', effect: 'goldBonus', value: 30, duration: 1800, price: 300, desc: '골드 +30% (30분)' },
 ];
@@ -1220,14 +1220,11 @@ const SHOP_PERMANENT = [
 // ===== 상점 — 로테이션 풀 =====
 const SHOP_ROTATION_POOL = [
   { type: 'equipment', slot: 'weapon',    grade: '마법', price: 250,   weight: 10 },
-  { type: 'equipment', slot: 'weapon',    grade: '희귀', price: 800,   weight: 5  },
-  { type: 'equipment', slot: 'weapon',    grade: '영웅', price: 2500,  weight: 2  },
+  { type: 'equipment', slot: 'weapon',    grade: '희귀', price: 800,   weight: 2  },
   { type: 'equipment', slot: 'armor',     grade: '마법', price: 250,   weight: 10 },
-  { type: 'equipment', slot: 'armor',     grade: '희귀', price: 800,   weight: 5  },
-  { type: 'equipment', slot: 'armor',     grade: '영웅', price: 2500,  weight: 2  },
+  { type: 'equipment', slot: 'armor',     grade: '희귀', price: 800,   weight: 2  },
   { type: 'equipment', slot: 'accessory', grade: '마법', price: 250,   weight: 10 },
-  { type: 'equipment', slot: 'accessory', grade: '희귀', price: 800,   weight: 5  },
-  { type: 'equipment', slot: 'accessory', grade: '영웅', price: 2500,  weight: 2  },
+  { type: 'equipment', slot: 'accessory', grade: '희귀', price: 800,   weight: 2  },
   { type: 'material_pack', name: '일반 재료 대량팩', icon: 'assets/items/I_Crystal01.png', materials: { common: 20 },    price: 120,   weight: 8, desc: '일반 재료 20개 (할인)' },
   { type: 'material_pack', name: '고급 재료 대량팩', icon: 'assets/items/I_Crystal01.png', materials: { advanced: 8 },   price: 450,   weight: 5, desc: '고급 재료 8개 (할인)' },
   { type: 'material_pack', name: '희귀 재료 묶음',   icon: 'assets/items/I_Crystal01.png', materials: { rare: 3 },       price: 1400,  weight: 3, desc: '희귀 재료 3개 (할인)' },
