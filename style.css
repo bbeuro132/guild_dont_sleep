@@ -1405,17 +1405,43 @@ body {
   color: #ccc;
 }
 
+.lab-subtabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.lab-subtab {
+  flex: 1;
+  padding: 10px 0;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  color: #aaa;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  min-width: 100px;
+}
+.lab-subtab:hover { background: rgba(255,255,255,0.1); }
+.lab-subtab.active {
+  background: rgba(245,200,66,0.15);
+  border-color: var(--gold-dark);
+  color: var(--gold);
+  font-weight: bold;
+}
+
 .lab-recipes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
 
 .lab-recipe-card {
   background: var(--panel-bg);
   border-radius: var(--radius);
   border: 2px solid var(--brown);
-  padding: 14px;
+  padding: 16px;
   box-shadow: var(--shadow);
   overflow: hidden;
   display: flex;
@@ -1448,16 +1474,16 @@ body {
 
 .lab-recipe-name {
   font-weight: bold;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
 }
 
 .lab-recipe-exp {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: #aaa;
 }
 
 .lab-recipe-cost {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: #ccc;
   min-height: 2.4em;
 }

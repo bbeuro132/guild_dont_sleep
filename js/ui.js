@@ -1028,6 +1028,7 @@ const NPC_QUOTES = {
     '경지 따위로 만족하느냐? 진정한 힘은 그 너머에 있다.',
     '이 몸을 실망시키지 마라. 내가 직접 행차한 것에 대한 최소한의 값일지니.',
     '나의 힘으로 네녀석의 길드에 특별한 축복을 내려주지. 이로써 더욱 강해질 수 있을 것이다.',
+    '가끔 보이는 유랑 상인은 뭐 하는 녀석이지? 이 몸을 감히 어린아이 취급 하다니... 기세에 순간 밀렸다만, 용서치 않으리라.',
   ],
 };
 
@@ -1845,8 +1846,14 @@ function confirmRebuild() {
   switchTab('prestige');
 }
 
+let _labSubTab = 'book';
 let _craftSlot = null;
 let _craftGrade = null;
+
+function switchLabSubTab(tab) {
+  _labSubTab = tab;
+  renderLabTab();
+}
 const _labQty = {};
 
 function setLabQty(key, delta) {
@@ -2094,21 +2101,47 @@ function renderLabTab() {
       </div>`;
   }).join('');
 
-  el.innerHTML = `
-    <div class="lab-section-title">현재 제작</div>
-    ${queueHtml}
-    <div class="lab-section-title" style="margin-top:20px">경험치 책 제작</div>
-    <div class="lab-recipes-grid">${recipesHtml}</div>
-    <div class="lab-section-title" style="margin-top:20px">장비 즉시 제작
-      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">시간 소요 없음 · 랜덤 옵션</span>
-    </div>
-    <div style="padding:4px 0">${craftEquipHtml}</div>
-    <div class="lab-section-title" style="margin-top:20px">재료 합성
-      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">10:1 비율 · 공방 속도 적용</span>
-    </div>
-    <div class="lab-recipes-grid">${synthHtml}</div>
-    <div class="lab-section-title" style="margin-top:20px">영구 단련
-      <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">리빌딩 후에도 유지됩니다</span>
-    </div>
-    <div class="lab-recipes-grid">${permHtml}</div>`;
+  // 서브탭 버튼
+  const subTabs = [
+    { id: 'book',  label: '📖 서적 제작' },
+    { id: 'equip', label: '⚔️ 장비 연성' },
+    { id: 'synth', label: '🔄 재료 합성' },
+    { id: 'train', label: '💪 영구 단련' },
+  ];
+  const subTabHtml = `<div class="lab-subtabs">
+    ${subTabs.map(t => `<button class="lab-subtab${_labSubTab === t.id ? ' active' : ''}"
+      onclick="switchLabSubTab('${t.id}')">${t.label}</button>`).join('')}
+  </div>`;
+
+  // 서브탭별 내용
+  let contentHtml = '';
+  if (_labSubTab === 'book') {
+    contentHtml = `
+      <div class="lab-section-title">현재 제작</div>
+      ${queueHtml}
+      <div class="lab-section-title" style="margin-top:20px">경험치 책 제작</div>
+      <div class="lab-recipes-grid">${recipesHtml}</div>`;
+  } else if (_labSubTab === 'equip') {
+    contentHtml = `
+      <div class="lab-section-title">장비 연성
+        <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">시간 소요 없음 · 랜덤 옵션</span>
+      </div>
+      <div style="padding:4px 0">${craftEquipHtml}</div>`;
+  } else if (_labSubTab === 'synth') {
+    contentHtml = `
+      <div class="lab-section-title">현재 제작</div>
+      ${queueHtml}
+      <div class="lab-section-title" style="margin-top:20px">재료 합성
+        <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">10:1 비율 · 공방 속도 적용</span>
+      </div>
+      <div class="lab-recipes-grid">${synthHtml}</div>`;
+  } else if (_labSubTab === 'train') {
+    contentHtml = `
+      <div class="lab-section-title">영구 단련
+        <span style="font-size:11px;font-weight:normal;color:#aaa;margin-left:8px">리빌딩 후에도 유지됩니다</span>
+      </div>
+      <div class="lab-recipes-grid">${permHtml}</div>`;
+  }
+
+  el.innerHTML = `${subTabHtml}${contentHtml}`;
 }
