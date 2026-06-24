@@ -657,7 +657,7 @@ class CombatUnit {
       this.crit    = stats.crit;
       this.critDmg = stats.critDmg;
       this.maxHp   = stats.hp;
-      this.currentHp = (src._dispatchHp !== undefined) ? src._dispatchHp : stats.hp;
+      this.currentHp = (src._dispatchHp !== undefined) ? Math.min(src._dispatchHp, stats.hp) : stats.hp;
     } else {
       this.id      = 'm_' + Math.random().toString(36).slice(2, 7);
       this.name    = src.name;

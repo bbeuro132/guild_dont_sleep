@@ -971,7 +971,7 @@ function sellEquipment(idx) {
   if (!item || !item.slot) return;
   const gold = SELL_PRICES[item.grade] || 80;
   State.inventory.splice(idx, 1);
-  addGold(gold);
+  refundGold(gold);
   saveState();
   showToast(`${item.name} 판매 → 💰 ${gold.toLocaleString()} 골드`, 'success');
 }

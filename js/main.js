@@ -151,14 +151,12 @@ function bindEvents() {
   // 튜토리얼 다음 버튼
   document.getElementById('btn-tutorial-next').addEventListener('click', nextTutorialStep);
 
-  // 페이지 숨김 시 저장, 복귀 시 보정
+  // 페이지 숨김 시 저장 (setInterval이 백그라운드에서도 동작하므로 복귀 시 재계산 불필요)
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       autoSave();
     } else {
-      processOfflineProgress();
       lastTick = Date.now();
-      saveState();
     }
   });
 
