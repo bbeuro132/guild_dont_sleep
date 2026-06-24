@@ -35,6 +35,16 @@ const JOBS = {
   grand_sage:         { name: '대현자',         tier: 4, branch: 'mage',    cssClass: 'job-grand-sage' },
   light_apostle:      { name: '빛의 사도',     tier: 4, branch: 'healer',  cssClass: 'job-light-apostle' },
   fanatic:            { name: '광신자',         tier: 4, branch: 'healer',  cssClass: 'job-fanatic' },
+
+  // 5차 전직
+  colossus:           { name: '거상',           tier: 5, branch: 'warrior', cssClass: 'job-colossus' },
+  warmonger:          { name: '전쟁광',         tier: 5, branch: 'warrior', cssClass: 'job-warmonger' },
+  shadow:             { name: '그림자',         tier: 5, branch: 'rogue',   cssClass: 'job-shadow' },
+  executioner:        { name: '처형인',         tier: 5, branch: 'rogue',   cssClass: 'job-executioner' },
+  overseer:           { name: '감독관',         tier: 5, branch: 'mage',    cssClass: 'job-overseer' },
+  archmage:           { name: '대마도사',       tier: 5, branch: 'mage',    cssClass: 'job-archmage' },
+  devotee:            { name: '헌신자',         tier: 5, branch: 'healer',  cssClass: 'job-devotee' },
+  half_dragon:        { name: '반룡인',         tier: 5, branch: 'healer',  cssClass: 'job-half-dragon' },
 };
 
 // 전직 트리 (jobKey → 가능한 2차 전직 목록)
@@ -60,6 +70,15 @@ const JOB_PROMOTIONS = {
   ivory_sage:         ['grand_sage'],
   priest:             ['light_apostle'],
   inquisitor:         ['fanatic'],
+  // 5차 전직
+  citadel:            ['colossus'],
+  destroyer:          ['warmonger'],
+  great_ninja:        ['shadow'],
+  tracker:            ['executioner'],
+  controller:         ['overseer'],
+  grand_sage:         ['archmage'],
+  light_apostle:      ['devotee'],
+  fanatic:            ['half_dragon'],
 };
 
 // 전직 비용 (레벨, 골드, 재료)
@@ -67,6 +86,7 @@ const PROMOTION_COST = {
   tier2: { level: 10, gold: 200,   material: 10 },
   tier3: { level: 25, gold: 800,   material: 30 },
   tier4: { level: 40, gold: 2500,  material: 80 },
+  tier5: { level: 55, gold: 5000,  material: 150 },
 };
 
 // 특성 목록

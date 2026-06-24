@@ -503,6 +503,56 @@ const SKILLS = {
     exec(u) { u.hasDragonBless = true; },
   },
 
+  /* ---------- 5차 전직 패시브 ---------- */
+
+  // 거상 - 방패 밀쳐내기: 피격 시 ATK×1.0 물리 + 기절 1턴 반격
+  colossus_shield_push: {
+    name: '방패 밀쳐내기', type: 'passive', desc: '피격 시 ATK×1.0 물리 피해 + 기절 1턴 반격.',
+    exec(u) { u.hasShieldPush = true; },
+  },
+
+  // 전쟁광 - 이중 타격: 기본 공격 + 반격 2회 수행
+  warmonger_double_strike: {
+    name: '이중 타격', type: 'passive', desc: '기본 공격과 반격을 2회 수행.',
+    exec(u) { u.hasDoubleStrike = true; },
+  },
+
+  // 그림자 - 잔상: 회피 성공 시 기본 공격 1회 추가
+  shadow_afterimage: {
+    name: '잔상', type: 'passive', desc: '회피 성공 시 즉시 기본 공격 1회 추가 발동.',
+    exec(u) { u.hasAfterimage = true; },
+  },
+
+  // 처형인 - 매 날리기: 집착 지정/이전 시 ATK×1.5 즉시 피해
+  executioner_hawk: {
+    name: '매 날리기', type: 'passive', desc: '집착 지정·이전 시 ATK×1.5 물리 피해 즉시 발동.',
+    exec(u) { u.hasHawk = true; },
+  },
+
+  // 감독관 - 완전 봉쇄: 보호막 파괴 시 공격자 기절 1턴
+  overseer_lockdown: {
+    name: '완전 봉쇄', type: 'passive', desc: '보호막이 파괴될 때 공격자에게 기절 1턴 부여.',
+    exec(u) { u.hasLockdown = true; },
+  },
+
+  // 대마도사 - 고유 좌표 각인: 좌표 붕괴 대상에 좌표 디버프, 모든 공격 집중
+  archmage_coordinate_mark: {
+    name: '고유 좌표 각인', type: 'passive', desc: '좌표 붕괴 피격 대상에게 고유 좌표 부여. 모든 공격이 해당 대상에 집중.',
+    exec(u) { u.hasCoordinateMark = true; },
+  },
+
+  // 헌신자 - 기적: 전투 시작 시 아군 전체 가호, HP 0 시 25% 부활 (1회)
+  devotee_miracle: {
+    name: '기적', type: 'passive', desc: '전투 시작 시 아군 전체에 기적의 가호 부여. HP가 0이 되면 25%로 부활 (1회).',
+    exec(u, al) { al.forEach(a => { a.hasMiracle = true; }); },
+  },
+
+  // 반룡인 - 신성한 메아리: 웅변 총 피해 50% 아군 전체 회복
+  half_dragon_echo: {
+    name: '신성한 메아리', type: 'passive', desc: '웅변 발동 시 적에게 가한 총 피해의 50%만큼 아군 전체 회복.',
+    exec(u) { u.hasEcho = true; },
+  },
+
   /* ---------- 몬스터 전용 (쿨다운 5턴 고정) ---------- */
 
   // 짐승류: 야수의 일격 — 강한 단일 물리 피해
@@ -613,6 +663,15 @@ const JOB_SKILLS = {
   grand_sage:    ['sage_collapse', 'sage_lightning_hell', 'grand_sage_magic_temper'],
   light_apostle: ['priest_blessing', 'priest_embrace', 'light_apostle_devotion'],
   fanatic:       ['inquisitor_conviction', 'inquisitor_oration', 'fanatic_dragon_bless'],
+  // 5차 전직 (4차 스킬 유지 + 패시브 1개 추가)
+  colossus:      ['guardian_fortress', 'guardian_judgment', 'citadel_consecration', 'colossus_shield_push'],
+  warmonger:     ['champion_boiling', 'champion_storm', 'destroyer_weak_spot', 'warmonger_double_strike'],
+  shadow:        ['ninja_mass_assassinate', 'ninja_poison_fog', 'great_ninja_agility', 'shadow_afterimage'],
+  executioner:   ['bounty_obsession', 'bounty_finisher', 'tracker_unleash', 'executioner_hawk'],
+  overseer:      ['scholar_shield2', 'scholar_isolate', 'controller_protocol', 'overseer_lockdown'],
+  archmage:      ['sage_collapse', 'sage_lightning_hell', 'grand_sage_magic_temper', 'archmage_coordinate_mark'],
+  devotee:       ['priest_blessing', 'priest_embrace', 'light_apostle_devotion', 'devotee_miracle'],
+  half_dragon:   ['inquisitor_conviction', 'inquisitor_oration', 'fanatic_dragon_bless', 'half_dragon_echo'],
 
   monster_beast:      ['monster_beast_strike'],
   monster_insect:     ['monster_insect_poison'],
@@ -756,6 +815,12 @@ class CombatUnit {
 
     dmg = Math.max(0, dmg);
     this.currentHp = Math.max(0, this.currentHp - dmg);
+    // 기적의 가호: HP 0이 되면 25%로 부활 (1회)
+    if (this.currentHp <= 0 && this.hasMiracle) {
+      this.currentHp = Math.floor(this.maxHp * 0.25);
+      this.hasMiracle = false;
+      this._miracleTriggered = true;
+    }
     return { actual: dmg, reflected };
   }
 
@@ -878,6 +943,13 @@ class CombatUnit {
     // 회피 (장비 옵션)
     if (target.evasion > 0 && Math.random() * 100 < target.evasion) {
       log(`💨 ${target.name}: 회피!`);
+      // 그림자: 잔상 — 회피 시 기본 공격 1회 추가
+      if (target.hasAfterimage && target.isAlive() && !target._afterimaging) {
+        target._afterimaging = true;
+        target.normalAttack(enemies, allies, log);
+        target._afterimaging = false;
+        log(`👤 [잔상] ${target.name}: 회피 후 반격!`);
+      }
       return;
     }
 
@@ -958,6 +1030,27 @@ class CombatUnit {
       const dogDmg = physDmg(this.atk, target.def, 0.3, false, this.critDmg);
       const dogR = target.takeDamage(dogDmg);
       log(`🐕 사냥개가 ${target.name}를 물었다! <b class="log-damage">${dogR.actual}</b>`);
+    }
+
+    // 전쟁광: 이중 타격 — 기본 공격 2회 (반복 방지 플래그)
+    if (this.hasDoubleStrike && r.actual > 0 && target.isAlive() && !this._doubleStriking) {
+      this._doubleStriking = true;
+      this.normalAttack(enemies, allies, log);
+      this._doubleStriking = false;
+    }
+
+    // 거상: 방패 밀쳐내기 — 피격 시 반격 + 기절
+    if (r.actual > 0 && target.hasShieldPush && target.isAlive() && this.isAlive()) {
+      const pushDmg = physDmg(target.atk, this.def, 1.0, false, target.critDmg);
+      const pushR = this.takeDamage(pushDmg);
+      this.addStatus('stun', 1);
+      log(`🛡️ [방패 밀쳐내기] ${target.name}→${this.name}: <b class="log-damage">${pushR.actual}</b> + 기절!`);
+    }
+
+    // 기적 발동 로그
+    if (target._miracleTriggered) {
+      log(`✨ [기적의 가호] ${target.name}: HP 25%로 부활!`);
+      target._miracleTriggered = false;
     }
 
     if (!target.isAlive()) log(`<span class="log-system">💀 ${target.name} 쓰러짐!</span>`);

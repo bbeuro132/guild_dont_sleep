@@ -249,7 +249,7 @@ function renderAdvDetail(advId) {
   const expPct  = Math.min(100, (adv.exp / expNeed * 100)).toFixed(1);
 
   const promoTargets = JOB_PROMOTIONS[adv.job] || [];
-  const promoCostTier = jobInfo.tier === 1 ? 'tier2' : jobInfo.tier === 3 ? 'tier4' : 'tier3';
+  const promoCostTier = jobInfo.tier === 1 ? 'tier2' : jobInfo.tier === 2 ? 'tier3' : jobInfo.tier === 3 ? 'tier4' : 'tier5';
   const promoCost = PROMOTION_COST[promoCostTier];
 
   const promoButtons = promoTargets.map(pJob => {
@@ -527,7 +527,7 @@ function promoteAdventurer(advId, targetJob) {
     showToast('4차 전직은 경지 개방 Ⅱ가 필요합니다. (경지 탭 → 경지 가지 노드 개방)', 'error');
     return;
   }
-  const costKey = tier === 1 ? 'tier2' : tier === 3 ? 'tier4' : 'tier3';
+  const costKey = tier === 1 ? 'tier2' : tier === 2 ? 'tier3' : tier === 3 ? 'tier4' : 'tier5';
   const cost = PROMOTION_COST[costKey];
   if (adv.level < cost.level) { showToast(`레벨 ${cost.level} 이상 필요합니다.`, 'error'); return; }
   if (!spendGold(cost.gold)) { showToast('골드가 부족합니다.', 'error'); return; }

@@ -642,6 +642,15 @@ body {
 .job-light-apostle { background: #e65100; }
 .job-fanatic { background: #bf360c; }
 
+.job-colossus { background: #4a148c; }
+.job-warmonger { background: #b71c1c; }
+.job-shadow { background: #1a237e; }
+.job-executioner { background: #263238; }
+.job-overseer { background: #311b92; }
+.job-archmage { background: #01579b; }
+.job-devotee { background: #e65100; }
+.job-half-dragon { background: #bf360c; }
+
 .adv-name {
   font-size: 0.95rem;
   font-weight: bold;
@@ -1094,6 +1103,7 @@ body {
   font-size: 0.88rem;
   line-height: 1.5;
   color: #3e2200;
+  margin-top: 15px;
 }
 
 #chloe-speech::before {
