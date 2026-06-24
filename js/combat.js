@@ -226,12 +226,19 @@ const SKILLS = {
   bounty_obsession: {
     name: '집착', type: 'cooldown', cooldown: 4, desc: '적 1명을 집착 표적으로 지정. 해당 대상에게 피해 +30%.',
     exec(u, al, en, log) {
-      if (u.markTarget && u.markTarget.isAlive()) return; // 기존 집착 표적 유효 → 재적용 안 함
+      if (u.markTarget && u.markTarget.isAlive()) return;
       if (u.markTarget) { u.markTarget.marked = false; }
       const t = pickRandom(en.filter(e => e.isAlive()));
       if (!t) return;
       u.markTarget = t; u.markBonus = 0.3; t.marked = true;
       log(`👁️ [집착] ${u.name}: ${t.name}에게 집착 (피해 +30%)!`);
+      // 처형인: 매 날리기 — 집착 지정 시 ATK×1.5 즉시 피해
+      if (u.hasHawk && t.isAlive()) {
+        const d = physDmg(u.atk, t.def, 1.5, false, u.critDmg);
+        const r = t.takeDamage(d);
+        log(`🦅 [매 날리기] ${u.name}→${t.name}: <b class="log-damage">${r.actual}</b>`);
+        if (!t.isAlive()) log(`<span class="log-system">💀 ${t.name} 쓰러짐!</span>`);
+      }
     },
   },
   bounty_finisher: {
@@ -338,8 +345,15 @@ const SKILLS = {
       const crit = rollCrit(u);
       const magAtk = Math.floor(u.atk * (1 + (u.magicBonus || 0)));
       const d = magicDmg(magAtk, 2.8, crit, u.critDmg);
-      t.currentHp = Math.max(0, t.currentHp - d); // 회피 불가, shield 무시
+      t.currentHp = Math.max(0, t.currentHp - d);
       log(`💥 [좌표 붕괴] ${u.name}→${t.name}: <b class="log-damage">${d}</b> (모든 방어 무시)${crit ? ' 💥' : ''}`);
+      // 대마도사: 고유 좌표 각인 — 피격 대상에 좌표 디버프
+      if (u.hasCoordinateMark && t.isAlive()) {
+        en.forEach(e => { e.coordinateMarked = false; });
+        t.coordinateMarked = true;
+        u._coordinateTarget = t;
+        log(`📍 [고유 좌표] ${t.name}에게 좌표 각인! 모든 공격이 집중됩니다.`);
+      }
       if (!t.isAlive()) log(`💀 ${t.name} 쓰러짐!`);
     },
   },
@@ -444,6 +458,12 @@ const SKILLS = {
         t.addStatus('acc_down', 1, 0.35);
       });
       log(`📣 [웅변] ${u.name}: 적 전체 총 <b class="log-damage">${total}</b> 피해 + 1턴 명중률 하락!`);
+      // 반룡인: 신성한 메아리 — 총 피해 50% 아군 전체 회복
+      if (u.hasEcho && total > 0) {
+        const healEach = Math.floor(total * 0.5 / al.filter(a => a.isAlive()).length);
+        al.filter(a => a.isAlive()).forEach(a => a.heal(healEach));
+        log(`🔔 [신성한 메아리] 아군 전체 <b class="log-heal">${healEach}</b>씩 회복!`);
+      }
     },
   },
 
@@ -806,11 +826,13 @@ class CombatUnit {
 
     // 보호막
     let reflected = 0;
+    let shieldBroken = false;
     if (!opts.ignoreShield && this.shield > 0) {
       const absorbed = Math.min(this.shield, dmg);
       reflected = Math.floor(absorbed * this.shieldReflect);
       this.shield -= absorbed;
       dmg -= absorbed;
+      if (this.shield <= 0) shieldBroken = true;
     }
 
     dmg = Math.max(0, dmg);
@@ -821,7 +843,7 @@ class CombatUnit {
       this.hasMiracle = false;
       this._miracleTriggered = true;
     }
-    return { actual: dmg, reflected };
+    return { actual: dmg, reflected, shieldBroken };
   }
 
   heal(amount) {
@@ -984,6 +1006,11 @@ class CombatUnit {
     // 보호막 반사 처리
     if (r.reflected > 0 && this.isAlive()) {
       this.currentHp = Math.max(0, this.currentHp - r.reflected);
+    }
+    // 감독관: 완전 봉쇄 — 보호막 파괴 시 공격자 기절
+    if (r.shieldBroken && target.hasLockdown && this.isAlive()) {
+      this.addStatus('stun', 1);
+      log(`🔒 [완전 봉쇄] ${this.name}: 보호막 파괴로 기절!`);
     }
 
     // 명중 후 추가 효과 (장비 옵션)
