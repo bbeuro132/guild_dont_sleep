@@ -73,6 +73,7 @@ function switchTab(tabId) {
   if (unlocked[tabId] === false) return;
   if (tabId === 'lab') unlockCharacter('aida');
   if (tabId === 'shop') unlockCharacter('sion');
+  resetNpcQuotes();
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
@@ -530,7 +531,7 @@ function promoteAdventurer(advId, targetJob) {
   const cost = PROMOTION_COST[costKey];
   if (adv.level < cost.level) { showToast(`레벨 ${cost.level} 이상 필요합니다.`, 'error'); return; }
   if (!spendGold(cost.gold)) { showToast('골드가 부족합니다.', 'error'); return; }
-  if (!spendMaterials({ common: cost.material })) { refundGold(cost.gold); showToast('일반 재료가 부족합니다.', 'error'); return; }
+  if (!spendMaterials({ common: cost.material })) { addGold(cost.gold); showToast('일반 재료가 부족합니다.', 'error'); return; }
   adv.job = targetJob;
   showToast(`${adv.name} → ${JOBS[targetJob].name} 전직 완료!`, 'success');
 }
@@ -999,8 +1000,9 @@ const NPC_QUOTES = {
     '부스트 스크롤은 제가 직접 만든 거예요. 효과는 보장합니다~',
     '황금의 길 학파에서는 마법보다 장사를 더 잘 가르쳐줬어요. 딱 제 스타일이었죠!',
     '길드장 님, 투자는 곧 성장이에요. 쓸 때 쓰셔야죠!',
-    '무역 연합 솔에서 태어나서 좋은 점? 물건만 갖고 있으면 세상 어디서든 환영 받는다는 점?',
+    '무역 연합 솔에서 태어나서 좋은 점? 물건만 갖고 있으면 세상 어디서든 환영 받는다는 점이랄까요?',
     '다른 길드에서도 거래 제안이 오긴 하는데... 여기가 제일 편해요.',
+    '가끔씩 소개해드리는 공방 가속 스크롤은 조심해서 써주세요. 공방의 에이다 씨가... 좀 무섭거든요!',
   ],
   aida: [
     '안녕하십니까, 길드장 님. 공방 가동이 필요하신가요?',
@@ -1012,6 +1014,7 @@ const NPC_QUOTES = {
     '경험치 서 제작은 모험가 양성에 효과적입니다. 적극 권장 드립니다.',
     '교국 에테리아에서 온 제가 베른에 정착한 이유요? ...업무 환경이 마음에 들었습니다.',
     '사고 예방에는 완벽한 프로세스 만한 것이 없습니다. 대성당 학파 출신인 제게는 당연한 것이지요.',
+    '유랑 상인의 스크롤에 너무 의존하지 말아주세요. 유용한 것은 인정하지만, 마법적으로 뒤죽박죽입니다. 참으로 황금 학파 답지요.',
   ],
   tiamat: [
     '아직도 여기 있느냐. 뭘 꾸물거리는 것이냐.',
@@ -1028,10 +1031,29 @@ const NPC_QUOTES = {
   ],
 };
 
+const _npcQuoteQueue = {};
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function pickNpcQuote(npcId) {
   const quotes = NPC_QUOTES[npcId];
   if (!quotes || quotes.length === 0) return '';
-  return quotes[Math.floor(Math.random() * quotes.length)];
+  if (!_npcQuoteQueue[npcId] || _npcQuoteQueue[npcId].length === 0) {
+    _npcQuoteQueue[npcId] = shuffleArray(quotes);
+  }
+  return _npcQuoteQueue[npcId].pop();
+}
+
+function resetNpcQuotes(npcId) {
+  if (npcId) delete _npcQuoteQueue[npcId];
+  else for (const k in _npcQuoteQueue) delete _npcQuoteQueue[k];
 }
 
 const CHLOE_HELP = {
