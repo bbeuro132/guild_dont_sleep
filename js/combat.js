@@ -365,7 +365,8 @@ const SKILLS = {
       const magAtk = Math.floor(u.atk * (1 + (u.magicBonus || 0)));
       let total = 0;
       for (let i = 0; i < hits; i++) {
-        const t = pickRandom(alive.filter(e => e.isAlive()));
+        const coordTarget = u._coordinateTarget && u._coordinateTarget.isAlive() ? u._coordinateTarget : null;
+        const t = coordTarget || pickRandom(alive.filter(e => e.isAlive()));
         if (!t) break;
         const d = magicDmg(magAtk, 0.85, false, u.critDmg);
         total += t.takeDamage(d).actual;
@@ -843,6 +844,10 @@ class CombatUnit {
       this.hasMiracle = false;
       this._miracleTriggered = true;
     }
+    // 고유 좌표 대상 사망 시 디버프 소멸
+    if (this.currentHp <= 0 && this.coordinateMarked) {
+      this.coordinateMarked = false;
+    }
     return { actual: dmg, reflected, shieldBroken };
   }
 
@@ -947,7 +952,9 @@ class CombatUnit {
 
     let target;
     if (isHunterJob) {
-      target = this.markTarget; // 표식 대상만 공격
+      target = this.markTarget;
+    } else if (this._coordinateTarget && this._coordinateTarget.isAlive()) {
+      target = this._coordinateTarget;
     } else {
       const alive = enemies.filter(e => e.isAlive());
       if (alive.length === 0) return;
