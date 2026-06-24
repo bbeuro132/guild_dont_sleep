@@ -1006,7 +1006,7 @@ function startCraft(recipeId, qty = 1) {
     refundGold(totalGold);
     showToast('재료가 부족합니다.', 'error'); return false;
   }
-  const speedMult = (100 + labLv * 10) / 100;
+  const speedMult = (100 + labLv * 10 + getBuffBonus('craftSpeed')) / 100;
   const totalMs = Math.floor(recipe.craftTime * qty / speedMult) * 1000;
   State.labQueue = {
     recipeId,
@@ -1078,7 +1078,7 @@ function startSynthesis(recipeId, qty = 1) {
     showToast('재료가 부족합니다.', 'error'); return false;
   }
   const labLv = getBuildingLevel('workshop');
-  const speedMult = (100 + labLv * 10) / 100;
+  const speedMult = (100 + labLv * 10 + getBuffBonus('craftSpeed')) / 100;
   const totalMs = Math.floor(recipe.craftTime * qty / speedMult) * 1000;
   const now = Date.now();
   const totalOutput = {};

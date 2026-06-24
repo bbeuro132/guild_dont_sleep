@@ -1230,6 +1230,7 @@ const SHOP_ROTATION_POOL = [
   { type: 'material_pack', name: '희귀 재료 묶음',   icon: 'assets/items/I_Crystal01.png', materials: { rare: 3 },       price: 1400,  weight: 3, desc: '희귀 재료 3개 (할인)' },
   { type: 'material_pack', name: '전설 재료',         icon: 'assets/items/I_Crystal01.png', materials: { legendary: 1 }, price: 2500,  weight: 1, desc: '전설 재료 1개' },
   { type: 'consumable', name: '재료 부스트 스크롤', icon: 'assets/items/I_Scroll02.png', effect: 'materialBonus', value: 30, duration: 1800, price: 300, weight: 4, desc: '재료 획득 +30% (30분)' },
+  { type: 'consumable', name: '공방 가속 스크롤', icon: 'assets/items/I_Scroll02.png', effect: 'craftSpeed', value: 100, duration: 1800, price: 500, weight: 3, desc: '공방 제작 속도 2배 (30분)' },
 ];
 
 const SHOP_REFRESH_INTERVAL = 60 * 60 * 1000;
