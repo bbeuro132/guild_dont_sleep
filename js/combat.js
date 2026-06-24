@@ -1044,18 +1044,27 @@ class CombatUnit {
 
     // 반격 태세 처리 (피격 시)
     if (r.actual > 0 && target.counterStance && target.counterStance.turns > 0 && target.isAlive()) {
-      const cd = physDmg(target.atk, this.def, 0.6, false, target.critDmg);
-      const cr = this.takeDamage(cd);
-      log(`⚔️ [반격] ${target.name}→${this.name}: <b class="log-damage">${cr.actual}</b>`);
+      const counterHits = target.hasDoubleStrike ? 2 : 1;
+      for (let ci = 0; ci < counterHits; ci++) {
+        if (!this.isAlive() || !target.isAlive()) break;
+        const cd = physDmg(target.atk, this.def, 0.6, false, target.critDmg);
+        const cr = this.takeDamage(cd);
+        log(`⚔️ [반격${counterHits > 1 ? ` ${ci+1}타` : ''}] ${target.name}→${this.name}: <b class="log-damage">${cr.actual}</b>`);
+      }
     }
 
-    // 챔피언: 팀 반격
-    if (r.actual > 0 && !this.isAlly) {
+    // 챔피언/전쟁광: 팀 반격 (한 턴 1회, AOE도 1회 피격 취급)
+    if (r.actual > 0 && !this.isAlly && !this._teamCountered) {
       const champion = allies.find(a => a.isAlive() && a.counterStance?.teamCounter && a !== target);
       if (champion) {
-        const cd = physDmg(champion.atk, this.def, 0.6, false, champion.critDmg);
-        const cr = this.takeDamage(cd);
-        log(`🔥 [끓어오르는 피 반격] ${champion.name}→${this.name}: <b class="log-damage">${cr.actual}</b>`);
+        this._teamCountered = true;
+        const counterHits = champion.hasDoubleStrike ? 2 : 1;
+        for (let ci = 0; ci < counterHits; ci++) {
+          if (!this.isAlive() || !champion.isAlive()) break;
+          const cd = physDmg(champion.atk, this.def, 0.6, false, champion.critDmg);
+          const cr = this.takeDamage(cd);
+          log(`🔥 [끓어오르는 피 반격${counterHits > 1 ? ` ${ci+1}타` : ''}] ${champion.name}→${this.name}: <b class="log-damage">${cr.actual}</b>`);
+        }
       }
     }
 
@@ -1191,6 +1200,10 @@ class BattleEngine {
 
     while (this.turn < MAX_TURNS) {
       this.turn++;
+      // 턴 시작 시 팀 반격 플래그 리셋
+      this.enemies.forEach(e => { e._teamCountered = false; });
+      this.allies.forEach(a => { a._teamCountered = false; });
+
       const all = [...this.allies, ...this.enemies].filter(u => u.isAlive());
       all.sort((a, b) => b.spd - a.spd);
 
@@ -1427,6 +1440,8 @@ class LiveBattle {
       const alive = [...this.allies, ...this.enemies].filter(u => u.isAlive());
       if (alive.length === 0) return;
       this.round++;
+      this.enemies.forEach(e => { e._teamCountered = false; });
+      this.allies.forEach(a => { a._teamCountered = false; });
       this._actionQueue = alive.sort((a, b) => b.spd - a.spd);
       this.addLog(`<span class="log-system">── ${this.round}라운드 ──</span>`);
     }
