@@ -102,6 +102,19 @@ function loadState() {
           d.accumulated.materials = { common: 0, advanced: 0, rare: 0, legendary: 0 };
         }
       }
+      // 경험치 서 스택 마이그레이션 (개별 → 종류별 1개로 합치기)
+      const bookStacks = {};
+      State.inventory = State.inventory.filter(i => {
+        if (i.type === 'exp_book') {
+          const key = i.expValue;
+          if (!bookStacks[key]) { bookStacks[key] = { ...i, quantity: 0 }; }
+          bookStacks[key].quantity += (i.quantity || 1);
+          return false;
+        }
+        return true;
+      });
+      Object.values(bookStacks).forEach(b => State.inventory.push(b));
+
       // 오프라인 누적 처리 — 결과를 init()에서 팝업으로 표시
       window._pendingOffline = processOfflineProgress();
       // 저장된 areaProgress 기반으로 지역 해금 복원 (토스트 없이)
