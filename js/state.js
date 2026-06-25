@@ -288,6 +288,16 @@ function spendGold(amount) {
   return true;
 }
 
+// 경험치 서 스택 추가 (같은 이름이면 수량 증가)
+function addExpBook(name, icon, grade, expValue, qty = 1) {
+  const existing = State.inventory.find(i => i.type === 'exp_book' && i.expValue === expValue);
+  if (existing) {
+    existing.quantity = (existing.quantity || 1) + qty;
+  } else {
+    State.inventory.push({ type: 'exp_book', name, icon, grade, expValue, quantity: qty });
+  }
+}
+
 function refundGold(amount) {
   State.gold += Math.floor(amount);
 }
@@ -1053,9 +1063,7 @@ function tickLab() {
       for (const [grade, amt] of Object.entries(q.output)) addMaterial(grade, amt);
       showToast(`${q.name} 완료! 재료를 획득했습니다.`, 'success');
     } else {
-      for (let i = 0; i < qty; i++) {
-        State.inventory.push({ type: 'exp_book', name: q.name.replace(/ ×\d+$/, ''), icon: q.icon, grade: q.grade, expValue: q.expValue });
-      }
+      addExpBook(q.name.replace(/ ×\d+$/, ''), q.icon, q.grade, q.expValue, qty);
       showToast(`${q.name} 제작 완료! ${qty > 1 ? qty + '개 ' : ''}인벤토리에 추가됐습니다.`, 'success');
     }
     State.labQueue = null;

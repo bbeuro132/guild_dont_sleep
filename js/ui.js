@@ -309,20 +309,15 @@ function renderAdvDetail(advId) {
     </div>
     ${_equipPickerAdvId === adv.id && _equipPickerSlot ? renderEquipPicker(adv, _equipPickerSlot) : ''}
     ${(() => {
-      const bookCount = State.inventory.filter(i => i.type === 'exp_book').length;
-      if (bookCount === 0) return '';
-      const bookMap = {};
-      State.inventory.forEach((item, idx) => {
-        if (item.type !== 'exp_book') return;
-        if (!bookMap[item.name]) bookMap[item.name] = { item, count: 0 };
-        bookMap[item.name].count++;
-      });
-      const btnHtml = Object.values(bookMap).map(({ item, count }) =>
-        `<button class="btn btn-gold" style="font-size:0.75rem;padding:4px 10px"
+      const books = State.inventory.filter(i => i.type === 'exp_book');
+      if (books.length === 0) return '';
+      const btnHtml = books.map(item => {
+        const qty = item.quantity || 1;
+        return `<button class="btn btn-gold" style="font-size:0.75rem;padding:4px 10px"
           onclick="useExpBookByName(${adv.id}, '${item.name}')">
-          📚 ${item.name}${count > 1 ? ` ×${count}` : ''} (+${item.expValue.toLocaleString()} XP)
-        </button>`
-      ).join('');
+          📚 ${item.name}${qty > 1 ? ` ×${qty}` : ''} (+${item.expValue.toLocaleString()} XP)
+        </button>`;
+      }).join('');
       return `<div style="margin-bottom:10px">
         <div style="font-size:0.8rem;font-weight:bold;color:#888;margin-bottom:5px">경험치 서 사용</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${btnHtml}</div>
@@ -539,7 +534,11 @@ function promoteAdventurer(advId, targetJob) {
 function useExpBook(advId, itemIdx) {
   const item = State.inventory[itemIdx];
   if (!item || item.type !== 'exp_book') { showToast('아이템을 찾을 수 없습니다.', 'error'); return; }
-  State.inventory.splice(itemIdx, 1);
+  if (item.quantity && item.quantity > 1) {
+    item.quantity--;
+  } else {
+    State.inventory.splice(itemIdx, 1);
+  }
   giveExp(advId, item.expValue);
 }
 
@@ -1570,19 +1569,13 @@ function useBookByName(bookName, advIdStr) {
   const adv = State.adventurers.find(a => a.id === advId);
   if (!adv) { showToast('모험가를 선택하세요.', 'error'); return; }
 
-  // 같은 이름의 책 전부 수거
-  let totalExp = 0;
-  let count = 0;
-  State.inventory = State.inventory.filter(i => {
-    if (i.type === 'exp_book' && i.name === bookName) {
-      totalExp += i.expValue;
-      count++;
-      return false;
-    }
-    return true;
-  });
+  // 같은 이름의 책 스택에서 전부 사용
+  const item = State.inventory.find(i => i.type === 'exp_book' && i.name === bookName);
+  if (!item) { showToast('해당 경험치 서를 찾을 수 없습니다.', 'error'); return; }
+  const count = item.quantity || 1;
+  const totalExp = item.expValue * count;
+  State.inventory = State.inventory.filter(i => i !== item);
 
-  if (count === 0) { showToast('해당 경험치 서를 찾을 수 없습니다.', 'error'); return; }
   giveExp(advId, totalExp);
   showToast(`${adv.name}에게 ${bookName} ×${count} 사용 (총 경험치 +${totalExp.toLocaleString()})`, 'success');
   updateInvBadge();
@@ -1598,7 +1591,9 @@ function useExpBookByName(advId, bookName) {
 
 function updateInvBadge() {
   const badge = document.getElementById('inv-count-badge');
-  if (badge) badge.textContent = State.inventory.length > 0 ? `(${State.inventory.length})` : '';
+  if (!badge) return;
+  const total = State.inventory.reduce((s, i) => s + (i.type === 'exp_book' ? 1 : 1), 0);
+  badge.textContent = total > 0 ? `(${total})` : '';
 }
 
 // ===== 튜토리얼 =====
